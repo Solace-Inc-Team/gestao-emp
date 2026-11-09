@@ -53,15 +53,6 @@ export function Empty({ children }: { children: ReactNode }) {
 }
 
 /** Cabeçalho interno de painel: título à esquerda, ação ou link à direita. */
-export function PanelHeader({ title, children }: { title: string; children?: ReactNode }) {
-  return (
-    <div className="flex min-h-12 items-center justify-between gap-3 border-b border-line px-4 py-2.5">
-      <h2 className="h2">{title}</h2>
-      {children}
-    </div>
-  );
-}
-
 const dt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });
 const tm = new Intl.DateTimeFormat("pt-BR", { timeStyle: "short", timeZone: "America/Sao_Paulo" });
 export const fmtDateTime = (d: Date | null) => (d ? dt.format(d) : "-");

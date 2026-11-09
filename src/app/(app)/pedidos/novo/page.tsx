@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
-import { listCustomers, listDrivers, listProducts, listShifts, stockOverview } from "@/domain/queries";
+import { getCustomer, listDrivers, listProducts, listShifts, stockOverview } from "@/domain/queries";
+import { withTenant } from "@/db";
 import { NewOrderForm } from "./new-order-form";
 
 export const metadata = { title: "Novo pedido" };
@@ -7,13 +8,16 @@ export const metadata = { title: "Novo pedido" };
 export default async function NovoPedido({ searchParams }: PageProps<"/pedidos/novo">) {
   const user = await requireUser("dono", "atendente");
   const { cliente } = await searchParams;
-  const [products, customers, drivers, open, stock] = await Promise.all([
-    listProducts(user.tenantId, true),
-    listCustomers(user.tenantId),
-    listDrivers(user.tenantId),
-    listShifts(user.tenantId, "aberto"),
-    stockOverview(user.tenantId),
-  ]);
+  // uma transação só para as leituras da tela: não ocupa 5 conexões do banco por visita
+  const [products, initial, drivers, open, stock] = await withTenant(user.tenantId, () =>
+    Promise.all([
+      listProducts(user.tenantId, true),
+      typeof cliente === "string" && /^[0-9a-f-]{36}$/.test(cliente) ? getCustomer(user.tenantId, cliente) : null,
+      listDrivers(user.tenantId),
+      listShifts(user.tenantId, "aberto"),
+      stockOverview(user.tenantId),
+    ]),
+  );
   const onShift = new Set(open.map((s) => s.driverId));
   return (
     <>
@@ -26,9 +30,8 @@ export default async function NovoPedido({ searchParams }: PageProps<"/pedidos/n
           returnable: p.returnable,
           available: stock.find((s) => s.id === p.id)?.fullStore ?? 0,
         }))}
-        customers={customers.map((c) => ({ id: c.id, name: c.name, phone: c.phone, address: c.address }))}
         drivers={drivers.map((d) => ({ ...d, onShift: onShift.has(d.id) }))}
-        initialCustomerId={typeof cliente === "string" ? cliente : undefined}
+        initialCustomer={initial ? { id: initial.id, name: initial.name, phone: initial.phone, address: initial.address } : undefined}
       />
     </>
   );

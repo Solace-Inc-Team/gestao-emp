@@ -32,13 +32,22 @@ export const listUsers = scoped((tenantId: string) =>
 
 export const listCustomers = scoped(function listCustomers(tenantId: string, q: string = "") {
   const term = `%${q.trim()}%`;
+  // telefone digitado só com números acha "(11) 98811-2034"
+  const digits = q.replace(/\D/g, "");
   return db
     .select()
     .from(customers)
     .where(
       and(
         eq(customers.tenantId, tenantId),
-        q.trim() ? or(ilike(customers.name, term), ilike(customers.phone, term), ilike(customers.address, term)) : undefined,
+        q.trim()
+          ? or(
+              ilike(customers.name, term),
+              ilike(customers.phone, term),
+              ilike(customers.address, term),
+              digits.length >= 4 ? sql`regexp_replace(${customers.phone}, '\\D', '', 'g') like ${`%${digits}%`}` : undefined,
+            )
+          : undefined,
       ),
     )
     .orderBy(asc(customers.name))
@@ -252,7 +261,8 @@ export const listShifts = scoped(async function listShifts(tenantId: string, sta
     .limit(100);
   return Promise.all(
     rows.map(async (r) => {
-      const os = await listShiftOrders(tenantId, r.shift.id);
+      // turno fechado já guardou o esperado; buscar os pedidos dele seria uma consulta por linha à toa
+      const os = r.shift.status === "aberto" ? await listShiftOrders(tenantId, r.shift.id) : [];
       return {
         ...r.shift,
         driverName: r.driverName,

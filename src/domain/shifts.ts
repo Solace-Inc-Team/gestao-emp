@@ -11,7 +11,8 @@ export async function openShift(ctx: Ctx, driverId: string, openingCashCents: nu
     const [driver] = await tx
       .select()
       .from(users)
-      .where(and(eq(users.id, driverId), eq(users.tenantId, ctx.tenantId), eq(users.role, "entregador"), eq(users.active, true)));
+      .where(and(eq(users.id, driverId), eq(users.tenantId, ctx.tenantId), eq(users.role, "entregador"), eq(users.active, true)))
+      .for("update"); // dois cliques em "Abrir turno" não abrem dois turnos
     if (!driver) throw new DomainError("Entregador não encontrado.");
     const [open] = await tx
       .select({ id: shifts.id })

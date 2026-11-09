@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { ActionForm } from "@/components/action-form";
 import { createOrderAction } from "@/app/actions";
 import { formatBRL, parseBRL } from "@/lib/money";
@@ -18,32 +18,40 @@ const payments = [
 
 export function NewOrderForm({
   products,
-  customers,
   drivers,
-  initialCustomerId,
+  initialCustomer,
 }: {
   products: Product[];
-  customers: Customer[];
   drivers: Driver[];
-  initialCustomerId?: string;
+  initialCustomer?: Customer;
 }) {
   const [mode, setMode] = useState<"entrega" | "balcao">("entrega");
   const [qty, setQty] = useState<Record<string, number>>({});
   const [keepsBottle, setKeepsBottle] = useState<Record<string, boolean>>({}); // true = cliente compra o vasilhame
-  const [customerId, setCustomerId] = useState(initialCustomerId ?? "");
+  const [customer, setCustomer] = useState<Customer | undefined>(initialCustomer);
   const [search, setSearch] = useState("");
+  const [matches, setMatches] = useState<Customer[]>([]);
   const [creating, setCreating] = useState(false);
   const [payment, setPayment] = useState<(typeof payments)[number][0]>("dinheiro");
   const [fee, setFee] = useState("");
 
-  const customer = customers.find((c) => c.id === customerId);
-  const matches = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    if (!q) return [];
-    return customers
-      .filter((c) => c.name.toLowerCase().includes(q) || c.phone.replace(/\D/g, "").includes(q.replace(/\D/g, "") || "§") || c.address.toLowerCase().includes(q))
-      .slice(0, 6);
-  }, [search, customers]);
+  // busca no servidor enquanto digita; a resposta de uma busca antiga não sobrescreve a nova
+  useEffect(() => {
+    const q = search.trim();
+    if (q.length < 2) return;
+    const ctrl = new AbortController();
+    const t = setTimeout(() => {
+      fetch(`/clientes/busca?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
+        .then((r) => (r.ok ? r.json() : []))
+        .then(setMatches)
+        .catch(() => {});
+    }, 200);
+    return () => {
+      clearTimeout(t);
+      ctrl.abort();
+    };
+  }, [search]);
+  const shown = search.trim().length >= 2 ? matches : [];
 
   const items = products
     .filter((p) => qty[p.id] > 0)
@@ -57,7 +65,7 @@ export function NewOrderForm({
     <ActionForm action={createOrderAction} className="grid gap-6 lg:grid-cols-[1fr_20rem]">
       <input type="hidden" name="mode" value={mode} />
       <input type="hidden" name="items" value={JSON.stringify(items)} />
-      <input type="hidden" name="customerId" value={creating ? "" : customerId} />
+      <input type="hidden" name="customerId" value={creating ? "" : (customer?.id ?? "")} />
       <input type="hidden" name="paymentMethod" value={payment} />
 
       <div className="space-y-6">
@@ -85,7 +93,7 @@ export function NewOrderForm({
                 <p className="text-sm text-muted">{customer.address || "Sem endereço"}</p>
                 <p className="text-sm text-muted">{customer.phone}</p>
               </div>
-              <button type="button" className="text-sm text-accent underline" onClick={() => setCustomerId("")}>Trocar</button>
+              <button type="button" className="text-sm text-accent underline" onClick={() => setCustomer(undefined)}>Trocar</button>
             </div>
           ) : creating ? (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -113,13 +121,13 @@ export function NewOrderForm({
             <div>
               <label className="label" htmlFor="busca">Buscar por nome, telefone ou endereço</label>
               <input id="busca" value={search} onChange={(e) => setSearch(e.target.value)} className="input" autoComplete="off" />
-              {matches.length > 0 && (
+              {shown.length > 0 && (
                 <ul className="mt-2 divide-y divide-line rounded-md border border-line">
-                  {matches.map((c) => (
+                  {shown.map((c) => (
                     <li key={c.id}>
                       <button
                         type="button"
-                        onClick={() => { setCustomerId(c.id); setSearch(""); }}
+                        onClick={() => { setCustomer(c); setSearch(""); }}
                         className="block w-full px-3 py-2 text-left hover:bg-subtle"
                       >
                         <span className="font-medium">{c.name}</span>

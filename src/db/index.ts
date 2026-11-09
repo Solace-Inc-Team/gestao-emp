@@ -13,7 +13,7 @@ function connect() {
   // no `next build` não há banco; o cliente postgres só conecta na primeira consulta
   if (!url && process.env.NEXT_PHASE !== "phase-production-build")
     throw new Error("DATABASE_URL não definido. Em desenvolvimento, use `npm run dev` (sobe o Postgres local).");
-  const client = postgres(url ?? "", { max: 10, onnotice: () => {} });
+  const client = postgres(url ?? "", { max: 20, onnotice: () => {} });
   return { client, db: drizzle(client, { schema }) };
 }
 

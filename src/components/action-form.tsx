@@ -25,6 +25,8 @@ export function ActionForm({
   const [seq, setSeq] = useState(0); // remonta o toast a cada envio, mesmo com a mesma mensagem
   return (
     <form
+      // se enviado antes do JS carregar, vai como POST: senha nunca aparece na URL
+      method="post"
       className={className}
       onSubmit={(e) => {
         e.preventDefault();

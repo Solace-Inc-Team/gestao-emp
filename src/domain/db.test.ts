@@ -335,7 +335,7 @@ test("exclusão de empresa: travas, apaga tudo dela e mais nada", async () => {
   const { eq } = await import("drizzle-orm");
   const C = await makeTenant("C");
   await db.insert(sessions).values({ id: "sessao-c", userId: C.owner.id, expiresAt: new Date(Date.now() + 3600e3) });
-  await db.insert(loginAttempts).values({ key: `login:${C.owner.email}` });
+  await db.insert(loginAttempts).values({ key: `login:${C.owner.email}:10.0.0.1` });
 
   const admin = { ...A.ctx, platformAdmin: true, name: "", email: "admin@teste", tenantName: "", totpEnabled: false, termsVersion: null };
   const countOf = async (table: string, t: string) =>
@@ -401,4 +401,32 @@ test("RLS: e-mail usado em outra empresa vira mensagem, não erro 500", async ()
     m.registry.createUser(A.ctx, { name: "Copia", email: B.owner.email, password: "senha-qualquer-1", role: "atendente" }),
     /Já existe um usuário com este e-mail/,
   );
+});
+
+test("caixa: despacho espera o acerto e não entra em turno fechado", async () => {
+  // turno aberto do entregador de B (criado na montagem), com um pedido aguardando
+  const o = await m.orders.createOrder(B.ctx, {
+    mode: "entrega",
+    customerId: B.customer.id,
+    items: [{ productId: B.product.id, quantity: 1, returnsEmpty: true }],
+    paymentMethod: "pix",
+    deliveryFeeCents: 0,
+    changeForCents: null,
+    notes: "",
+    driverId: null,
+  });
+  // fechar e despachar ao mesmo tempo: o despacho precisa ver o turno já fechado
+  const [closed, dispatched] = await Promise.allSettled([
+    m.shifts.closeShift(B.ctx, B.shift.id, 0, ""),
+    m.orders.dispatchOrder(B.ctx, o.id, B.driver.id),
+  ]);
+  const order = await m.q.getOrder(B.t.id, o.id);
+  if (closed.status === "fulfilled") {
+    assert.equal(dispatched.status, "rejected");
+    assert.equal(order?.status, "aberto");
+  } else {
+    // o despacho ganhou: o acerto recusou por ter pedido em rota, que é o comportamento certo
+    assert.equal(order?.status, "em_rota");
+  }
+  await assert.rejects(m.shifts.openShift(B.ctx, B.driver.id, 0).then(() => m.shifts.openShift(B.ctx, B.driver.id, 0)), /já tem um turno aberto/);
 });

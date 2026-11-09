@@ -6,14 +6,17 @@ import { loginAttempts } from "@/db/schema";
 const WINDOW_MS = 15 * 60 * 1000;
 const MAX_FAILURES = 5;
 
-/** true quando a chave (ex.: "login:fulano@x.com") já errou demais na janela. */
-export async function isBlocked(key: string) {
+/** true quando a chave (ex.: "login:fulano@x.com:1.2.3.4") já errou demais na janela. */
+export async function isBlocked(key: string, max = MAX_FAILURES) {
   const [{ n }] = await db
     .select({ n: count() })
     .from(loginAttempts)
     .where(and(eq(loginAttempts.key, key), gte(loginAttempts.createdAt, new Date(Date.now() - WINDOW_MS))));
-  return n >= MAX_FAILURES;
+  return n >= max;
 }
+
+/** Limite geral por IP, somando todos os e-mails tentados dali. */
+export const IP_MAX_FAILURES = 30;
 
 export async function recordFailure(key: string) {
   await db.insert(loginAttempts).values({ key });

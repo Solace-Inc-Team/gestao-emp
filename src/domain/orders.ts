@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { and, eq, sql } from "drizzle-orm";
 import { tenantTransaction, type Tx } from "@/db";
-import { orders, orderItems, customers, shifts, expenses } from "@/db/schema";
+import { orders, orderItems, customers, shifts, expenses, tenants } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { orderTotal } from "@/lib/cash";
 import { todayISO } from "@/lib/period";
@@ -64,6 +64,8 @@ export async function createOrder(ctx: Ctx, input: NewOrder) {
     if (input.paymentMethod === "dinheiro" && input.changeForCents !== null && input.changeForCents < total)
       throw new DomainError("O valor para troco é menor que o total.");
 
+    // trava a empresa: dois pedidos ao mesmo tempo não pegam o mesmo número
+    await tx.select({ id: tenants.id }).from(tenants).where(eq(tenants.id, ctx.tenantId)).for("update");
     const [{ next }] = await tx
       .select({ next: sql<number>`coalesce(max(${orders.number}), 0)::int + 1` })
       .from(orders)
@@ -117,7 +119,9 @@ async function dispatchInTx(tx: Tx, ctx: Ctx, orderId: string, driverId: string)
   const [shift] = await tx
     .select()
     .from(shifts)
-    .where(and(eq(shifts.tenantId, ctx.tenantId), eq(shifts.driverId, driverId), eq(shifts.status, "aberto")));
+    .where(and(eq(shifts.tenantId, ctx.tenantId), eq(shifts.driverId, driverId), eq(shifts.status, "aberto")))
+    // espera um acerto em andamento terminar; se ele fechar o turno, esta busca não acha mais nada
+    .for("update");
   if (!shift) throw new DomainError("Este entregador não tem turno aberto. Abra o turno no Caixa.");
 
   for (const i of items) {

@@ -4,10 +4,11 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { db } from "@/db";
-import { users, tenants } from "@/db/schema";
+import { users, tenants, sessions } from "@/db/schema";
 import { requireUser, requireAdmin, createSession, destroySession, getPendingMfa, completeMfa } from "@/lib/auth";
-import { isBlocked, recordFailure, clearFailures, BLOCKED_MESSAGE } from "@/lib/rate-limit";
+import { isBlocked, recordFailure, clearFailures, BLOCKED_MESSAGE, IP_MAX_FAILURES } from "@/lib/rate-limit";
 import { newTotpSecret, verifyTotp } from "@/lib/totp";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { DomainError } from "@/lib/ctx";
@@ -56,16 +57,22 @@ async function run(fn: () => Promise<unknown>, paths: string[], ok?: string): Pr
 export async function login(fd: FormData): Promise<ActionState> {
   const email = str(fd, "email").toLowerCase();
   const password = str(fd, "password");
-  const key = `login:${email}`;
-  if (await isBlocked(key)) return { error: BLOCKED_MESSAGE };
+  // por e-mail + IP: errar de propósito em outro lugar não tranca o dono para fora
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0].trim() || "local";
+  const key = `login:${email}:${ip}`;
+  const ipKey = `ip:${ip}`;
+  if ((await isBlocked(key)) || (await isBlocked(ipKey, IP_MAX_FAILURES))) return { error: BLOCKED_MESSAGE };
   const [u] = await db
     .select({ user: users, tenantActive: tenants.active })
     .from(users)
     .innerJoin(tenants, eq(tenants.id, users.tenantId))
     .where(eq(users.email, email));
+  // sempre confere uma senha (falsa se o e-mail não existe): o tempo de resposta não entrega quem é cliente
+  const passwordOk = await verifyPassword(password, u?.user.passwordHash ?? (await dummyHash));
   // mesma mensagem nos dois casos pra não entregar quais e-mails existem
-  if (!u || !u.user.active || !(await verifyPassword(password, u.user.passwordHash))) {
+  if (!u || !u.user.active || !passwordOk) {
     await recordFailure(key);
+    await recordFailure(ipKey);
     return { error: "E-mail ou senha incorretos." };
   }
   await clearFailures(key);
@@ -77,6 +84,9 @@ export async function login(fd: FormData): Promise<ActionState> {
   await createSession(u.user.id);
   redirect(homeFor(u.user));
 }
+
+// hash de uma senha que ninguém usa, para o login gastar o mesmo tempo quando o e-mail não existe
+const dummyHash = hashPassword("senha-inexistente-para-tempo-igual");
 
 const homeFor = (u: { platformAdmin: boolean; role: string }) =>
   u.platformAdmin ? "/admin" : u.role === "entregador" ? "/entregador" : "/";
@@ -290,7 +300,10 @@ export async function changePasswordAction(fd: FormData): Promise<ActionState> {
   const [u] = await db.select({ hash: users.passwordHash }).from(users).where(eq(users.id, user.userId));
   if (!u || !(await verifyPassword(str(fd, "current"), u.hash))) return { error: "Senha atual incorreta." };
   await db.update(users).set({ passwordHash: await hashPassword(next) }).where(eq(users.id, user.userId));
-  return { ok: "Senha alterada." };
+  // derruba todo aparelho que estava logado com a senha antiga e abre uma sessão nova só para este
+  await db.delete(sessions).where(eq(sessions.userId, user.userId));
+  await createSession(user.userId);
+  return { ok: "Senha alterada. Outros aparelhos foram desconectados." };
 }
 
 export async function startTotpAction(): Promise<ActionState> {
