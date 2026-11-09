@@ -6,6 +6,7 @@ const statusStyle = {
   em_rota: ["Em rota", "bg-accent"],
   entregue: ["Entregue", "bg-ok"],
   cancelado: ["Cancelado", "bg-muted/50"],
+  estornado: ["Estornado", "bg-danger"],
 } as const;
 
 export function StatusBadge({ status }: { status: keyof typeof statusStyle }) {
@@ -13,7 +14,7 @@ export function StatusBadge({ status }: { status: keyof typeof statusStyle }) {
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-line px-2 py-0.5 text-xs font-medium whitespace-nowrap">
       <span aria-hidden="true" className={`size-1.5 rounded-full ${dot}`} />
-      <span className={status === "cancelado" ? "text-muted" : ""}>{label}</span>
+      <span className={status === "cancelado" || status === "estornado" ? "text-muted" : ""}>{label}</span>
     </span>
   );
 }

@@ -119,6 +119,7 @@ export async function getOrder(tenantId: string, id: string) {
       changeForCents: orders.changeForCents,
       notes: orders.notes,
       cancelReason: orders.cancelReason,
+      refundReason: orders.refundReason,
       dispatchedAt: orders.dispatchedAt,
       shiftId: orders.shiftId,
     })

@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { getCustomer, listOrders } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
 import { CustomerFields } from "@/components/customer-fields";
-import { receivePaymentAction, saveCustomerAction } from "@/app/actions";
+import { receivePaymentAction, saveCustomerAction, voidPaymentAction } from "@/app/actions";
 import { customerStatement } from "@/domain/receivables";
 import { centsToInput } from "@/lib/money";
 import { Empty, Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
@@ -63,20 +63,37 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
               )}
               <ul>
                 {st.entries.map((e) => (
-                  <li key={e.id} className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5 text-[13px] last:border-0">
-                    <div>
+                  <li key={e.id} className={`flex items-center justify-between gap-3 border-b border-line px-4 py-2.5 text-[13px] last:border-0 ${e.voidedAt ? "text-muted" : ""}`}>
+                    <div className="min-w-0">
                       {e.kind === "compra" ? (
                         <Link href={`/pedidos/${e.id}`} className="font-medium hover:underline">Compra #{e.number}</Link>
                       ) : (
-                        <span className="font-medium">Pagamento em {paymentLabel[e.method!].toLowerCase()}</span>
+                        <span className={`font-medium ${e.voidedAt ? "line-through" : ""}`}>Pagamento em {paymentLabel[e.method!].toLowerCase()}</span>
                       )}
                       <p className="text-muted">
                         {fmtDateTime(e.at)}
                         {e.by && `, recebido por ${e.by}`}
                         {e.note && `. ${e.note}`}
+                        {e.voidedAt && `. Estornado: ${e.voidReason}`}
                       </p>
                     </div>
-                    <Money cents={e.kind === "compra" ? e.amount : -e.amount} className={e.kind === "pagamento" ? "text-ok" : ""} />
+                    <div className="flex shrink-0 items-center gap-3">
+                      <Money
+                        cents={e.kind === "compra" ? e.amount : -e.amount}
+                        className={e.voidedAt ? "line-through" : e.kind === "pagamento" ? "text-ok" : ""}
+                      />
+                      {e.kind === "pagamento" && !e.voidedAt && user.role === "dono" && (
+                        <details className="relative">
+                          <summary className="cursor-pointer list-none text-muted hover:text-fg">Estornar</summary>
+                          <ActionForm action={voidPaymentAction} className="absolute right-0 z-10 mt-2 flex w-64 flex-col gap-2 rounded-lg border border-line bg-surface p-3 shadow-[0_8px_30px_rgb(0_0_0/0.12)]">
+                            <input type="hidden" name="paymentId" value={e.id} />
+                            <label className="label mb-0" htmlFor={`v-${e.id}`}>Motivo</label>
+                            <input id={`v-${e.id}`} name="reason" required minLength={3} className="input" />
+                            <button className="btn btn-danger">Estornar pagamento</button>
+                          </ActionForm>
+                        </details>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>

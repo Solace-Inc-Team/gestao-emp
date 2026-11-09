@@ -1,5 +1,5 @@
 export type ShiftOrder = {
-  status: "aberto" | "em_rota" | "entregue" | "cancelado";
+  status: "aberto" | "em_rota" | "entregue" | "cancelado" | "estornado";
   paymentMethod: "dinheiro" | "pix" | "cartao" | "fiado";
   totalCents: number;
 };

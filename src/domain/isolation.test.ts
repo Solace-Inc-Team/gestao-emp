@@ -19,6 +19,7 @@ let m: {
   stock: typeof import("@/domain/stock");
   q: typeof import("@/domain/queries");
   rec: typeof import("@/domain/receivables");
+  exp: typeof import("@/domain/expenses");
 };
 
 type World = Awaited<ReturnType<typeof makeTenant>>;
@@ -66,6 +67,7 @@ before(async () => {
     stock: await import("@/domain/stock"),
     q: await import("@/domain/queries"),
     rec: await import("@/domain/receivables"),
+    exp: await import("@/domain/expenses"),
   };
   await m.db.runMigrations();
   A = await makeTenant("A");
@@ -163,4 +165,70 @@ test("fiado: saldo, pagamento parcial, teto e isolamento", async () => {
   const st = await m.rec.customerStatement(A.t.id, A.customer.id);
   assert.equal(st.owed, 0);
   assert.deepEqual(st.entries.map((e) => e.kind).sort(), ["compra", "pagamento", "pagamento"]);
+});
+
+test("estorno: turno aberto bloqueia, estoque volta e a devolução vira despesa", async () => {
+  const sale = await m.orders.createOrder(A.ctx, {
+    mode: "entrega",
+    customerId: A.customer.id,
+    items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
+    paymentMethod: "dinheiro",
+    deliveryFeeCents: 0,
+    changeForCents: null,
+    notes: "",
+    driverId: A.driver.id,
+  });
+  await m.orders.deliverOrder(A.ctx, sale.id);
+  const refund = { orderId: sale.id, reason: "cliente devolveu", restock: true };
+  await assert.rejects(m.orders.refundOrder(A.ctx, refund), /turno deste pedido ainda está aberto/);
+
+  await m.shifts.closeShift(A.ctx, A.shift.id, 11000, "");
+  const before = (await m.q.stockOverview(A.t.id))[0];
+  await assert.rejects(m.orders.refundOrder(B.ctx, refund), /não encontrado/);
+  await m.orders.refundOrder(A.ctx, refund);
+  const after = (await m.q.stockOverview(A.t.id))[0];
+  assert.equal(after.fullStore, before.fullStore + 1);
+  assert.equal(after.emptyStore, before.emptyStore - 1);
+  assert.equal((await m.q.getOrder(A.t.id, sale.id))?.status, "estornado");
+  await assert.rejects(m.orders.refundOrder(A.ctx, refund), /Só pedidos entregues/);
+
+  const today = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+  const list = await m.exp.listExpenses(A.t.id, today, today);
+  const auto = list.find((e) => e.orderId === sale.id);
+  assert.equal(auto?.category, "estorno");
+  assert.equal(auto?.amountCents, 11000);
+  await assert.rejects(m.exp.voidExpense(A.ctx, auto!.id, "engano"), /não pode ser cancelada/);
+  // no resultado, a devolução não desconta de novo o que já saiu das vendas
+  assert.equal(
+    (await m.exp.expensesTotal(A.t.id, today, today)) - (await m.exp.expensesTotal(A.t.id, today, today, true)),
+    11000,
+  );
+  assert.equal((await m.exp.listExpenses(B.t.id, today, today)).length, 0);
+});
+
+test("estorno de fiado exige estornar os pagamentos antes", async () => {
+  const st = await m.rec.customerStatement(A.t.id, A.customer.id);
+  const fiadoOrder = st.entries.find((e) => e.kind === "compra")!;
+  const payments = st.entries.filter((e) => e.kind === "pagamento");
+  const refund = { orderId: fiadoOrder.id, reason: "lançado errado", restock: false };
+
+  await assert.rejects(m.orders.refundOrder(A.ctx, refund), /já pagou parte/);
+  await assert.rejects(m.rec.voidPayment(B.ctx, payments[0].id, "teste"), /não encontrado/);
+  for (const p of payments) await m.rec.voidPayment(A.ctx, p.id, "lançado em dobro");
+  await assert.rejects(m.rec.voidPayment(A.ctx, payments[0].id, "de novo"), /já estornado/);
+  assert.equal(await m.rec.customerBalance(A.t.id, A.customer.id), 11000);
+
+  await m.orders.refundOrder(A.ctx, refund);
+  assert.equal(await m.rec.customerBalance(A.t.id, A.customer.id), 0);
+});
+
+test("despesas: lançar, cancelar e totalizar só o que vale", async () => {
+  const today = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+  const base = await m.exp.expensesTotal(A.t.id, today, today);
+  const e = await m.exp.createExpense(A.ctx, { category: "combustivel", description: "Diesel", amountCents: 20000, method: "pix", paidOn: today });
+  assert.equal(await m.exp.expensesTotal(A.t.id, today, today), base + 20000);
+  await assert.rejects(m.exp.voidExpense(B.ctx, e.id, "teste"), /não encontrada/);
+  await m.exp.voidExpense(A.ctx, e.id, "lançado em dobro");
+  assert.equal(await m.exp.expensesTotal(A.t.id, today, today), base);
+  await assert.rejects(m.exp.voidExpense({ ...A.ctx, role: "atendente" }, e.id, "x"), /Sem permissão/);
 });

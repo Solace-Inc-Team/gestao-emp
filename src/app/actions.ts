@@ -13,10 +13,11 @@ import { hashPassword, verifyPassword } from "@/lib/password";
 import { DomainError } from "@/lib/ctx";
 import { parseBRL } from "@/lib/money";
 import type { ActionState } from "@/components/action-form";
-import { createOrder, dispatchOrder, deliverOrder, cancelOrder, newOrderSchema } from "@/domain/orders";
+import { createOrder, dispatchOrder, deliverOrder, cancelOrder, refundOrder, newOrderSchema } from "@/domain/orders";
+import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
 import { openShift, closeShift } from "@/domain/shifts";
 import { receivePurchase, adjustStock } from "@/domain/stock";
-import { receivePayment, paymentSchema } from "@/domain/receivables";
+import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
 import { createTenant, newTenantSchema, setTenantActive } from "@/domain/platform";
 import { saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive } from "@/domain/registry";
 
@@ -327,4 +328,42 @@ export async function receivePaymentAction(fd: FormData) {
     ["/"],
     "Pagamento registrado.",
   );
+}
+
+export async function refundOrderAction(fd: FormData) {
+  const user = await requireUser("dono");
+  return run(
+    () => refundOrder(user, { orderId: str(fd, "orderId"), reason: str(fd, "reason"), restock: fd.get("restock") === "on" }),
+    ["/"],
+    "Pedido estornado.",
+  );
+}
+
+export async function voidPaymentAction(fd: FormData) {
+  const user = await requireUser("dono");
+  return run(() => voidPayment(user, str(fd, "paymentId"), str(fd, "reason")), ["/"], "Pagamento estornado.");
+}
+
+export async function createExpenseAction(fd: FormData) {
+  const user = await requireUser("dono", "atendente");
+  return run(
+    async () =>
+      createExpense(
+        user,
+        expenseSchema.parse({
+          category: str(fd, "category"),
+          description: str(fd, "description"),
+          amountCents: money(fd, "amount"),
+          method: str(fd, "method"),
+          paidOn: str(fd, "paidOn"),
+        }),
+      ),
+    ["/"],
+    "Despesa lançada.",
+  );
+}
+
+export async function voidExpenseAction(fd: FormData) {
+  const user = await requireUser("dono");
+  return run(() => voidExpense(user, str(fd, "expenseId"), str(fd, "reason")), ["/"], "Despesa cancelada.");
 }

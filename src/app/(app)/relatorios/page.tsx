@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { periodReport } from "@/domain/queries";
 import { parsePeriod } from "@/lib/period";
 import { paymentsByDay } from "@/domain/receivables";
+import { expensesTotal } from "@/domain/expenses";
 import { Difference, Empty, Money, PageHeader, fmtDateTime } from "@/components/ui";
 
 export const metadata = { title: "Relatórios" };
@@ -10,7 +11,11 @@ export const metadata = { title: "Relatórios" };
 export default async function Relatorios({ searchParams }: PageProps<"/relatorios">) {
   const user = await requireUser("dono", "atendente");
   const { fromStr, toStr, from, to } = parsePeriod(await searchParams);
-  const [{ days, closed }, fiadoPaid] = await Promise.all([periodReport(user.tenantId, from, to), paymentsByDay(user.tenantId, from, to)]);
+  const [{ days, closed }, fiadoPaid, spent] = await Promise.all([
+    periodReport(user.tenantId, from, to),
+    paymentsByDay(user.tenantId, from, to),
+    expensesTotal(user.tenantId, fromStr, toStr, true),
+  ]);
   const fiadoTotal = fiadoPaid.reduce((s, d) => s + d.total, 0);
   const sum = (k: "total" | "cash" | "pix" | "card" | "credit" | "count") => days.reduce((s, d) => s + d[k], 0);
   const diffTotal = closed.reduce((s, c) => s + (c.shift.differenceCents ?? 0), 0);
@@ -71,12 +76,27 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
         )}
       </section>
 
-      <section className="panel mb-6 flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
-        <div>
-          <h2 className="h2">Fiado recebido no período</h2>
-          <p className="text-[13px] text-muted">Pagamentos de dívidas antigas; não entram nas vendas acima.</p>
+      <section className="panel mb-6 grid sm:grid-cols-3 sm:divide-x sm:divide-line">
+        <div className="p-5">
+          <p className="text-[13px] text-muted">Vendas entregues</p>
+          <Money cents={sum("total")} className="mt-1 block text-2xl font-semibold tracking-[-0.03em]" />
         </div>
-        <Money cents={fiadoTotal} className="text-xl font-semibold tracking-[-0.02em]" />
+        <div className="border-t border-line p-5 sm:border-t-0">
+          <p className="text-[13px] text-muted">
+            <Link href={`/despesas?de=${fromStr}&ate=${toStr}`} className="hover:text-fg hover:underline">Despesas</Link>
+          </p>
+          <Money cents={spent} className="mt-1 block text-2xl font-semibold tracking-[-0.03em]" />
+        </div>
+        <div className="border-t border-line p-5 sm:border-t-0">
+          <p className="text-[13px] text-muted">Resultado (vendas menos despesas)</p>
+          <Money
+            cents={sum("total") - spent}
+            className={`mt-1 block text-2xl font-semibold tracking-[-0.03em] ${sum("total") - spent < 0 ? "text-danger" : ""}`}
+          />
+        </div>
+        <p className="border-t border-line px-5 py-3 text-[13px] text-muted sm:col-span-3">
+          Fiado recebido no período: <Money cents={fiadoTotal} className="font-medium text-fg" />. Já contado como venda no dia da entrega. Devoluções de pedidos estornados não entram nas despesas acima, porque a venda estornada já saiu das vendas.
+        </p>
       </section>
 
       <section className="panel overflow-x-auto">

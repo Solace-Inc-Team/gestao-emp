@@ -5,6 +5,7 @@ import {
   integer,
   boolean,
   timestamp,
+  date,
   uuid,
   jsonb,
   index,
@@ -24,9 +25,11 @@ export const orderStatusEnum = pgEnum("order_status", [
   "em_rota",
   "entregue",
   "cancelado",
+  "estornado",
 ]);
 export const paymentMethodEnum = pgEnum("payment_method", ["dinheiro", "pix", "cartao", "fiado"]);
 export const shiftStatusEnum = pgEnum("shift_status", ["aberto", "fechado"]);
+export const expenseMethodEnum = pgEnum("expense_method", ["dinheiro", "pix", "cartao", "boleto"]);
 export const containerStateEnum = pgEnum("container_state", ["cheio", "vazio"]);
 
 export const tenants = pgTable("tenants", {
@@ -149,6 +152,8 @@ export const orders = pgTable(
     changeForCents: integer("change_for_cents"),
     notes: text("notes").notNull().default(""),
     cancelReason: text("cancel_reason"),
+    refundReason: text("refund_reason"),
+    refundedAt: timestamp("refunded_at", { withTimezone: true }),
     createdBy: uuid("created_by")
       .notNull()
       .references(() => users.id),
@@ -194,8 +199,35 @@ export const customerPayments = pgTable(
       .notNull()
       .references(() => users.id),
     createdAt: createdAt(),
+    // lançado por engano: fica no histórico, mas não abate a dívida
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidedBy: uuid("voided_by").references(() => users.id),
+    voidReason: text("void_reason"),
   },
   (t) => [index("customer_payments_tenant_customer_idx").on(t.tenantId, t.customerId)],
+);
+
+export const expenses = pgTable(
+  "expenses",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    category: text("category").notNull(),
+    description: text("description").notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    method: expenseMethodEnum("method").notNull(),
+    paidOn: date("paid_on", { mode: "string" }).notNull(),
+    // preenchido quando a despesa é a devolução de um pedido estornado
+    orderId: uuid("order_id").references(() => orders.id),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: createdAt(),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidedBy: uuid("voided_by").references(() => users.id),
+    voidReason: text("void_reason"),
+  },
+  (t) => [index("expenses_tenant_paid_idx").on(t.tenantId, t.paidOn)],
 );
 
 // saldo = soma das movimentações; driver_id null = loja

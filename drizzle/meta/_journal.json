@@ -29,6 +29,13 @@
       "when": 1794245135792,
       "tag": "0003_baixa_de_fiado",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794246199186,
+      "tag": "0004_estorno_e_despesas",
+      "breakpoints": true
     }
   ]
 }

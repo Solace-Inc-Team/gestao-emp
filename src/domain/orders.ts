@@ -1,10 +1,12 @@
 import { z } from "zod";
 import { and, eq, sql } from "drizzle-orm";
 import { db, type Tx } from "@/db";
-import { orders, orderItems, customers, shifts } from "@/db/schema";
+import { orders, orderItems, customers, shifts, expenses } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { orderTotal } from "@/lib/cash";
+import { todayISO } from "@/lib/period";
 import { audit, lockProducts, move } from "./stock";
+import { fiadoBalance } from "./receivables";
 
 export const newOrderSchema = z
   .object({
@@ -168,5 +170,59 @@ export async function cancelOrder(ctx: Ctx, orderId: string, reason: string) {
     }
     await tx.update(orders).set({ status: "cancelado", cancelReason: reason.trim() }).where(eq(orders.id, o.id));
     await audit(tx, ctx, "pedido.cancelar", "order", o.id, { reason, previous: o.status });
+  });
+}
+
+/**
+ * Estorno de pedido já entregue. A venda sai dos números; se o cliente devolveu
+ * os produtos, eles voltam ao estoque da loja; o dinheiro devolvido vira saída de caixa.
+ */
+export async function refundOrder(ctx: Ctx, input: { orderId: string; reason: string; restock: boolean }) {
+  assertRole(ctx, "dono");
+  if (input.reason.trim().length < 3) throw new DomainError("Informe o motivo do estorno.");
+  await db.transaction(async (tx) => {
+    const { o, items, name } = await loadOrder(tx, ctx, input.orderId);
+    if (o.status !== "entregue") throw new DomainError("Só pedidos entregues podem ser estornados.");
+
+    if (o.paymentMethod === "dinheiro" && o.shiftId) {
+      const [sh] = await tx.select({ status: shifts.status }).from(shifts).where(eq(shifts.id, o.shiftId));
+      if (sh?.status === "aberto")
+        throw new DomainError("O turno deste pedido ainda está aberto. Faça o acerto do entregador antes de estornar.");
+    }
+    if (o.paymentMethod === "fiado" && o.customerId) {
+      // trava o cliente junto com os pagamentos de fiado
+      await tx.select({ id: customers.id }).from(customers).where(eq(customers.id, o.customerId)).for("update");
+      const owed = await fiadoBalance(tx, ctx.tenantId, o.customerId);
+      if (owed < o.totalCents)
+        throw new DomainError("O cliente já pagou parte deste fiado. Estorne os pagamentos antes de estornar o pedido.");
+    }
+
+    if (input.restock) {
+      for (const i of items) {
+        const base = { productId: i.productId, driverId: null, orderId: o.id, reason: `estorno pedido #${o.number}` };
+        await move(tx, ctx, { ...base, state: "cheio", quantity: i.quantity }, name(i.productId));
+        // o cliente recebe de volta o vazio que tinha entregado na troca
+        if (i.returnsEmpty) await move(tx, ctx, { ...base, state: "vazio", quantity: -i.quantity }, name(i.productId));
+      }
+    }
+
+    await tx
+      .update(orders)
+      .set({ status: "estornado", refundReason: input.reason.trim(), refundedAt: new Date() })
+      .where(eq(orders.id, o.id));
+
+    if (o.paymentMethod !== "fiado") {
+      await tx.insert(expenses).values({
+        tenantId: ctx.tenantId,
+        category: "estorno",
+        description: `Devolução do pedido #${o.number}`,
+        amountCents: o.totalCents,
+        method: o.paymentMethod,
+        paidOn: todayISO(),
+        orderId: o.id,
+        createdBy: ctx.userId,
+      });
+    }
+    await audit(tx, ctx, "pedido.estornar", "order", o.id, input);
   });
 }

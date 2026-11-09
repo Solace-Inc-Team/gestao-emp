@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { getOrder, listDrivers, listShifts } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
-import { cancelAction, deliverAction, dispatchAction } from "@/app/actions";
+import { cancelAction, deliverAction, dispatchAction, refundOrderAction } from "@/app/actions";
 import { Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
 
 export const metadata = { title: "Pedido" };
@@ -13,6 +13,7 @@ const actionLabel: Record<string, string> = {
   "pedido.saida": "Saiu para entrega",
   "pedido.entregue": "Entrega confirmada",
   "pedido.cancelar": "Pedido cancelado",
+  "pedido.estornar": "Pedido estornado",
 };
 
 export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
@@ -79,6 +80,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
               ))}
             </ol>
             {o.cancelReason && <p className="mt-3 rounded-md bg-subtle p-3 text-sm">Motivo do cancelamento: {o.cancelReason}</p>}
+            {o.refundReason && <p className="mt-3 rounded-md bg-subtle p-3 text-sm">Motivo do estorno: {o.refundReason}</p>}
           </section>
         </div>
 
@@ -124,6 +126,29 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
               <ActionForm action={deliverAction}>
                 <input type="hidden" name="orderId" value={o.id} />
                 <button className="btn btn-primary w-full">Confirmar entrega</button>
+              </ActionForm>
+            </section>
+          )}
+
+          {o.status === "entregue" && user.role === "dono" && (
+            <section className="panel p-4">
+              <h2 className="h2 mb-1">Estornar pedido</h2>
+              <p className="mb-3 text-[13px] text-muted">
+                {o.paymentMethod === "fiado"
+                  ? "A venda sai dos números e a dívida do cliente diminui."
+                  : "A venda sai dos números e a devolução do dinheiro entra nas despesas de hoje."}
+              </p>
+              <ActionForm action={refundOrderAction} className="space-y-3" confirm="Estornar este pedido? Não dá para desfazer.">
+                <input type="hidden" name="orderId" value={o.id} />
+                <div>
+                  <label className="label" htmlFor="refund-reason">Motivo</label>
+                  <input id="refund-reason" name="reason" required minLength={3} className="input" />
+                </div>
+                <label className="flex items-center gap-2 text-[13px]">
+                  <input type="checkbox" name="restock" defaultChecked />
+                  Os produtos voltaram para a loja
+                </label>
+                <button className="btn btn-danger">Estornar pedido</button>
               </ActionForm>
             </section>
           )}

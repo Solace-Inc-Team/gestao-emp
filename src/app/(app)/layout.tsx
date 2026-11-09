@@ -40,6 +40,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       title: "Gestão",
       links: [
         { href: "/relatorios", label: "Relatórios" },
+        { href: "/despesas", label: "Despesas" },
         ...(user.role === "dono"
           ? [
               { href: "/produtos", label: "Produtos e preços" },

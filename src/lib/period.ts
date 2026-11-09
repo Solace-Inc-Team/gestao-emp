@@ -1,6 +1,9 @@
 // Datas de filtro em horário de Brasília (sem horário de verão desde 2019).
 const iso = (d: Date) => new Date(d.getTime() - 3 * 3600e3).toISOString().slice(0, 10);
 
+/** Data de hoje (YYYY-MM-DD) no fuso de Brasília. */
+export const todayISO = () => iso(new Date());
+
 export function parsePeriod(sp: Record<string, string | string[] | undefined>) {
   const ok = (v: unknown) => typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
   const today = iso(new Date());

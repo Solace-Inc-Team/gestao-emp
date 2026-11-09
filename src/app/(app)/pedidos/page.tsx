@@ -12,6 +12,7 @@ const tabs = [
   ["em_rota", "Em rota"],
   ["entregue", "Entregues"],
   ["cancelado", "Cancelados"],
+  ["estornado", "Estornados"],
 ] as const;
 
 export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
