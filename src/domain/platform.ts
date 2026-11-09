@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { tenants, users } from "@/db/schema";
+import { sessions, tenants, users } from "@/db/schema";
 import { DomainError } from "@/lib/ctx";
 import { hashPassword } from "@/lib/password";
 import type { SessionUser } from "@/lib/auth";
@@ -45,6 +45,26 @@ export async function setTenantActive(admin: SessionUser, tenantId: string, acti
     const [t] = await tx.update(tenants).set({ active }).where(eq(tenants.id, tenantId)).returning({ id: tenants.id });
     if (!t) throw new DomainError("Empresa não encontrada.");
     await audit(tx, { tenantId, userId: admin.userId, role: "dono" }, active ? "empresa.reativar" : "empresa.suspender", "tenant", tenantId);
+  });
+}
+
+/** Dono esqueceu a senha ou perdeu o celular do 2FA: senha nova e 2FA desligado. */
+export async function resetOwnerAccess(admin: SessionUser, tenantId: string, password: string) {
+  assertAdmin(admin);
+  if (password.length < 8) throw new DomainError("A senha nova precisa de ao menos 8 caracteres.");
+  const passwordHash = await hashPassword(password);
+  return db.transaction(async (tx) => {
+    const [owner] = await tx
+      .select({ id: users.id, email: users.email })
+      .from(users)
+      .where(and(eq(users.tenantId, tenantId), eq(users.role, "dono")))
+      .orderBy(users.createdAt)
+      .limit(1);
+    if (!owner) throw new DomainError("Empresa sem dono cadastrado.");
+    await tx.update(users).set({ passwordHash, totpEnabled: false, totpSecret: null }).where(eq(users.id, owner.id));
+    await tx.delete(sessions).where(eq(sessions.userId, owner.id));
+    await audit(tx, { tenantId, userId: admin.userId, role: "dono" }, "empresa.redefinir_acesso_dono", "user", owner.id);
+    return owner.email;
   });
 }
 

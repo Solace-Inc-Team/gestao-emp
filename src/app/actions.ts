@@ -18,8 +18,8 @@ import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
 import { openShift, closeShift } from "@/domain/shifts";
 import { receivePurchase, adjustStock } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
-import { createTenant, newTenantSchema, setTenantActive } from "@/domain/platform";
-import { saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive } from "@/domain/registry";
+import { createTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
+import { saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword } from "@/domain/registry";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const optId = (fd: FormData, k: string) => str(fd, k) || null;
@@ -366,4 +366,18 @@ export async function createExpenseAction(fd: FormData) {
 export async function voidExpenseAction(fd: FormData) {
   const user = await requireUser("dono");
   return run(() => voidExpense(user, str(fd, "expenseId"), str(fd, "reason")), ["/"], "Despesa cancelada.");
+}
+
+export async function resetUserPasswordAction(fd: FormData) {
+  const user = await requireUser("dono");
+  return run(() => resetUserPassword(user, str(fd, "userId"), str(fd, "password")), ["/equipe"], "Senha redefinida. Passe a senha nova para a pessoa.");
+}
+
+export async function resetOwnerAccessAction(fd: FormData): Promise<ActionState> {
+  const admin = await requireAdmin();
+  let email = "";
+  const r = await run(async () => {
+    email = await resetOwnerAccess(admin, str(fd, "tenantId"), str(fd, "password"));
+  }, ["/admin"]);
+  return r?.error ? r : { ok: `Acesso de ${email} redefinido, com 2FA desligado.` };
 }

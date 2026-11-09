@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { customers, products, users } from "@/db/schema";
+import { customers, products, sessions, users } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { hashPassword } from "@/lib/password";
 import { audit } from "./stock";
@@ -79,6 +79,23 @@ export async function createUser(ctx: Ctx, input: z.infer<typeof userSchema>) {
       .returning({ id: users.id });
     await audit(tx, ctx, "usuario.criar", "user", u.id, { email: input.email, role: input.role });
     return u;
+  });
+}
+
+export async function resetUserPassword(ctx: Ctx, userId: string, password: string) {
+  assertRole(ctx, "dono");
+  if (userId === ctx.userId) throw new DomainError("Para trocar a sua própria senha, use a página Senha.");
+  if (password.length < 8) throw new DomainError("A senha nova precisa de ao menos 8 caracteres.");
+  const passwordHash = await hashPassword(password);
+  await db.transaction(async (tx) => {
+    const [u] = await tx
+      .update(users)
+      .set({ passwordHash })
+      .where(and(eq(users.id, userId), eq(users.tenantId, ctx.tenantId)))
+      .returning({ id: users.id });
+    if (!u) throw new DomainError("Usuário não encontrado.");
+    await tx.delete(sessions).where(eq(sessions.userId, u.id)); // derruba quem estava logado com a senha antiga
+    await audit(tx, ctx, "usuario.redefinir_senha", "user", u.id);
   });
 }
 

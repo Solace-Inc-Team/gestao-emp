@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { getCustomer, listOrders } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
 import { CustomerFields } from "@/components/customer-fields";
+import { PopoverForm } from "@/components/popover-form";
 import { receivePaymentAction, saveCustomerAction, voidPaymentAction } from "@/app/actions";
 import { customerStatement } from "@/domain/receivables";
 import { centsToInput } from "@/lib/money";
@@ -83,15 +84,11 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                         className={e.voidedAt ? "line-through" : e.kind === "pagamento" ? "text-ok" : ""}
                       />
                       {e.kind === "pagamento" && !e.voidedAt && user.role === "dono" && (
-                        <details className="relative">
-                          <summary className="cursor-pointer list-none text-muted hover:text-fg">Estornar</summary>
-                          <ActionForm action={voidPaymentAction} className="absolute right-0 z-10 mt-2 flex w-64 flex-col gap-2 rounded-lg border border-line bg-surface p-3 shadow-[0_8px_30px_rgb(0_0_0/0.12)]">
-                            <input type="hidden" name="paymentId" value={e.id} />
-                            <label className="label mb-0" htmlFor={`v-${e.id}`}>Motivo</label>
-                            <input id={`v-${e.id}`} name="reason" required minLength={3} className="input" />
-                            <button className="btn btn-danger">Estornar pagamento</button>
-                          </ActionForm>
-                        </details>
+                        <PopoverForm label="Estornar" action={voidPaymentAction} submit="Estornar pagamento" danger>
+                          <input type="hidden" name="paymentId" value={e.id} />
+                          <label className="label mb-0" htmlFor={`v-${e.id}`}>Motivo</label>
+                          <input id={`v-${e.id}`} name="reason" required minLength={3} className="input" />
+                        </PopoverForm>
                       )}
                     </div>
                   </li>

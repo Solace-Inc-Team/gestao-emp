@@ -1,7 +1,8 @@
 import { requireUser } from "@/lib/auth";
 import { listUsers } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
-import { createUserAction, toggleUserAction } from "@/app/actions";
+import { createUserAction, resetUserPasswordAction, toggleUserAction } from "@/app/actions";
+import { PopoverForm } from "@/components/popover-form";
 import { PageHeader, roleLabel } from "@/components/ui";
 
 export const metadata = { title: "Equipe" };
@@ -27,11 +28,18 @@ export default async function Equipe() {
                   <td>{u.active ? "Ativo" : "Desativado"}</td>
                   <td className="text-right">
                     {u.id !== user.userId && (
-                      <ActionForm action={toggleUserAction}>
-                        <input type="hidden" name="userId" value={u.id} />
-                        <input type="hidden" name="active" value={String(!u.active)} />
-                        <button className={`btn ${u.active ? "btn-danger" : ""}`}>{u.active ? "Desativar" : "Reativar"}</button>
-                      </ActionForm>
+                      <div className="flex items-center justify-end gap-3">
+                        <PopoverForm label="Redefinir senha" action={resetUserPasswordAction} submit="Salvar senha nova">
+                          <input type="hidden" name="userId" value={u.id} />
+                          <label className="label mb-0" htmlFor={`p-${u.id}`}>Senha nova</label>
+                          <input id={`p-${u.id}`} name="password" type="text" minLength={8} required autoComplete="off" className="input" />
+                        </PopoverForm>
+                        <ActionForm action={toggleUserAction}>
+                          <input type="hidden" name="userId" value={u.id} />
+                          <input type="hidden" name="active" value={String(!u.active)} />
+                          <button className={`btn ${u.active ? "btn-danger" : ""}`}>{u.active ? "Desativar" : "Reativar"}</button>
+                        </ActionForm>
+                      </div>
                     )}
                   </td>
                 </tr>

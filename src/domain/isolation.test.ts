@@ -20,6 +20,7 @@ let m: {
   q: typeof import("@/domain/queries");
   rec: typeof import("@/domain/receivables");
   exp: typeof import("@/domain/expenses");
+  platform: typeof import("@/domain/platform");
 };
 
 type World = Awaited<ReturnType<typeof makeTenant>>;
@@ -68,6 +69,7 @@ before(async () => {
     q: await import("@/domain/queries"),
     rec: await import("@/domain/receivables"),
     exp: await import("@/domain/expenses"),
+    platform: await import("@/domain/platform"),
   };
   await m.db.runMigrations();
   A = await makeTenant("A");
@@ -231,4 +233,24 @@ test("despesas: lançar, cancelar e totalizar só o que vale", async () => {
   await m.exp.voidExpense(A.ctx, e.id, "lançado em dobro");
   assert.equal(await m.exp.expensesTotal(A.t.id, today, today), base);
   await assert.rejects(m.exp.voidExpense({ ...A.ctx, role: "atendente" }, e.id, "x"), /Sem permissão/);
+});
+
+test("redefinir senha: só dentro da empresa, derruba sessões e desliga 2FA do dono", async () => {
+  const { db } = m.db;
+  const { users, sessions } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  await assert.rejects(m.registry.resetUserPassword(B.ctx, A.driver.id, "senha-nova-1"), /não encontrado/);
+  await assert.rejects(m.registry.resetUserPassword(A.ctx, A.owner.id, "senha-nova-1"), /própria senha/);
+
+  await db.insert(sessions).values({ id: "sessao-teste", userId: A.driver.id, expiresAt: new Date(Date.now() + 3600e3) });
+  await m.registry.resetUserPassword(A.ctx, A.driver.id, "senha-nova-1");
+  assert.equal((await db.select().from(sessions).where(eq(sessions.userId, A.driver.id))).length, 0);
+
+  await db.update(users).set({ totpEnabled: true, totpSecret: "ABC" }).where(eq(users.id, A.owner.id));
+  const admin = { ...B.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false };
+  await assert.rejects(m.platform.resetOwnerAccess({ ...admin, platformAdmin: false }, A.t.id, "senha-nova-2"), /Sem permissão/);
+  assert.equal(await m.platform.resetOwnerAccess(admin, A.t.id, "senha-nova-2"), A.owner.email);
+  const [o] = await db.select().from(users).where(eq(users.id, A.owner.id));
+  assert.equal(o.totpEnabled, false);
+  assert.equal(o.totpSecret, null);
 });

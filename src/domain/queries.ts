@@ -4,12 +4,10 @@ import { alias } from "drizzle-orm/pg-core";
 import { db } from "@/db";
 import { customers, orderItems, orders, products, shifts, stockMovements, users, auditLog } from "@/db/schema";
 import { expectedCash, paymentSummary } from "@/lib/cash";
+import { todayISO } from "@/lib/period";
 
-export function startOfToday() {
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
+// meia-noite de Brasília, não a do servidor (o container roda em UTC)
+export const startOfToday = () => new Date(`${todayISO()}T00:00:00-03:00`);
 
 export const listProducts = (tenantId: string, onlyActive = false) =>
   db

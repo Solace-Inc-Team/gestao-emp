@@ -1,7 +1,8 @@
 import { requireAdmin } from "@/lib/auth";
 import { listTenants } from "@/domain/platform";
 import { ActionForm } from "@/components/action-form";
-import { createTenantAction, toggleTenantAction } from "@/app/actions";
+import { createTenantAction, resetOwnerAccessAction, toggleTenantAction } from "@/app/actions";
+import { PopoverForm } from "@/components/popover-form";
 import { Empty, PageHeader, fmtDateTime } from "@/components/ui";
 
 const daysAgo = (d: string | Date | null) => {
@@ -54,14 +55,21 @@ export default async function Admin() {
                         {idle === null ? "nunca" : idle === 0 ? "hoje" : `há ${idle} ${idle === 1 ? "dia" : "dias"}`}
                       </td>
                       <td className="text-right">
-                        <ActionForm
-                          action={toggleTenantAction}
-                          confirm={t.active ? `Suspender ${t.name}? Ninguém da empresa vai conseguir entrar.` : undefined}
-                        >
-                          <input type="hidden" name="tenantId" value={t.id} />
-                          <input type="hidden" name="active" value={String(!t.active)} />
-                          <button className={`btn ${t.active ? "btn-danger" : ""}`}>{t.active ? "Suspender" : "Reativar"}</button>
-                        </ActionForm>
+                        <div className="flex items-center justify-end gap-3">
+                          <PopoverForm label="Redefinir acesso" action={resetOwnerAccessAction} submit="Redefinir" confirm="A senha do dono será trocada e o 2FA dele desligado. Continuar?">
+                            <input type="hidden" name="tenantId" value={t.id} />
+                            <label className="label mb-0" htmlFor={`o-${t.id}`}>Senha nova do dono</label>
+                            <input id={`o-${t.id}`} name="password" type="text" minLength={8} required autoComplete="off" className="input" />
+                          </PopoverForm>
+                          <ActionForm
+                            action={toggleTenantAction}
+                            confirm={t.active ? `Suspender ${t.name}? Ninguém da empresa vai conseguir entrar.` : undefined}
+                          >
+                            <input type="hidden" name="tenantId" value={t.id} />
+                            <input type="hidden" name="active" value={String(!t.active)} />
+                            <button className={`btn ${t.active ? "btn-danger" : ""}`}>{t.active ? "Suspender" : "Reativar"}</button>
+                          </ActionForm>
+                        </div>
                       </td>
                     </tr>
                   );

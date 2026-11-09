@@ -5,6 +5,7 @@ import { parsePeriod, todayISO } from "@/lib/period";
 import { expenseCategories, listExpenses, type ExpenseCategory } from "@/domain/expenses";
 import { createExpenseAction, voidExpenseAction } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
+import { PopoverForm } from "@/components/popover-form";
 import { Money, PageHeader } from "@/components/ui";
 
 export const metadata = { title: "Despesas" };
@@ -94,15 +95,11 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
                       {user.role === "dono" && (
                         <td className="text-right">
                           {!e.voidedAt && !e.orderId && (
-                            <details className="group relative inline-block text-left">
-                              <summary className="cursor-pointer list-none text-[13px] text-muted hover:text-fg">Cancelar</summary>
-                              <ActionForm action={voidExpenseAction} className="absolute right-0 z-10 mt-2 flex w-64 flex-col gap-2 rounded-lg border border-line bg-surface p-3 shadow-[0_8px_30px_rgb(0_0_0/0.12)]">
-                                <input type="hidden" name="expenseId" value={e.id} />
-                                <label className="label mb-0" htmlFor={`r-${e.id}`}>Motivo</label>
-                                <input id={`r-${e.id}`} name="reason" required minLength={3} className="input" />
-                                <button className="btn btn-danger">Cancelar despesa</button>
-                              </ActionForm>
-                            </details>
+                            <PopoverForm label="Cancelar" action={voidExpenseAction} submit="Cancelar despesa" danger>
+                              <input type="hidden" name="expenseId" value={e.id} />
+                              <label className="label mb-0" htmlFor={`r-${e.id}`}>Motivo</label>
+                              <input id={`r-${e.id}`} name="reason" required minLength={3} className="input" />
+                            </PopoverForm>
                           )}
                         </td>
                       )}

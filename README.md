@@ -36,6 +36,8 @@ As migrações em `drizzle/` rodam sozinhas quando o servidor sobe (`src/instrum
 
 ## Deploy (Coolify)
 
+Passo a passo completo em [DEPLOY.md](DEPLOY.md). Resumo:
+
 1. Criar um PostgreSQL no Coolify.
 2. Criar a aplicação apontando pro repositório, build pelo `Dockerfile`.
 3. Definir `DATABASE_URL`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`. `SEED_DEMO` só em ambiente de demonstração.
