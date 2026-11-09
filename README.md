@@ -61,7 +61,7 @@ Algumas decisões:
 ## Pendências
 
 - Pix via API (Asaas)
-- estorno de pagamento recebido pelo entregador na rua
+- entregador receber fiado na rua (hoje só a loja registra)
 - contas a pagar com vencimento (hoje só despesas já pagas)
 - portal de pedidos para o cliente
 - PWA offline
