@@ -43,6 +43,13 @@
       "when": 1794251421732,
       "tag": "0005_erros_do_servidor",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794252352067,
+      "tag": "0006_aceite_dos_termos",
+      "breakpoints": true
     }
   ]
 }

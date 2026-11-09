@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { KeyRound, LogOut } from "lucide-react";
 import { requireUser } from "@/lib/auth";
+import { TERMS_VERSION } from "@/lib/legal";
 import { logout } from "@/app/actions";
 import { Logo } from "@/components/logo";
 import { NavLinks, type NavGroup } from "@/components/nav-links";
@@ -18,6 +19,7 @@ const initials = (name: string) =>
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser("dono", "atendente");
   if (user.platformAdmin) redirect("/admin");
+  if (user.role === "dono" && user.termsVersion !== TERMS_VERSION) redirect("/aceite");
 
   const groups: NavGroup[] = [
     {

@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { cleanPath, describeError, fingerprint, isControlFlow } from "./error-fingerprint.ts";
+import { cleanPath, describeError, fingerprint, isControlFlow, redact } from "./error-fingerprint.ts";
 
 test("caminho perde a busca e os ids", () => {
   assert.equal(cleanPath("/pedidos/3e0bd8e0-4d24-4469-a223-b2a857d53536?q=Ana"), "/pedidos/:id");
@@ -26,4 +26,9 @@ test("redirect e notFound não contam como erro", () => {
 test("descreve erro e valor qualquer", () => {
   assert.equal(describeError(new Error("boom")).message, "boom");
   assert.equal(describeError("texto").message, "texto");
+});
+
+test("alerta não leva e-mail nem telefone", () => {
+  const msg = 'duplicate key (email)=(maria.silva@gmail.com) telefone (11) 98811-2034 pedido 42';
+  assert.equal(redact(msg), "duplicate key (email)=([e-mail]) telefone [número] pedido 42");
 });

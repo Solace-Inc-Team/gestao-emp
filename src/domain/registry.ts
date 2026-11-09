@@ -99,6 +99,15 @@ export async function resetUserPassword(ctx: Ctx, userId: string, password: stri
   });
 }
 
+/** Aceite eletrônico dos termos pelo dono: guarda a versão e o momento, e registra no histórico. */
+export async function acceptTerms(ctx: Ctx, version: string) {
+  assertRole(ctx, "dono");
+  await db.transaction(async (tx) => {
+    await tx.update(users).set({ termsVersion: version, termsAcceptedAt: new Date() }).where(eq(users.id, ctx.userId));
+    await audit(tx, ctx, "termos.aceite", "user", ctx.userId, { version });
+  });
+}
+
 export async function setUserActive(ctx: Ctx, userId: string, active: boolean) {
   assertRole(ctx, "dono");
   if (userId === ctx.userId) throw new DomainError("Você não pode desativar o próprio usuário.");

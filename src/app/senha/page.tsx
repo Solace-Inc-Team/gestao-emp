@@ -104,6 +104,10 @@ export default async function Senha() {
           </ActionForm>
         )}
       </section>
+      <p className="mt-10 flex gap-4 text-[13px] text-muted">
+        <Link href="/termos" className="hover:text-fg">Termos de uso</Link>
+        <Link href="/privacidade" className="hover:text-fg">Política de privacidade</Link>
+      </p>
     </main>
   );
 }

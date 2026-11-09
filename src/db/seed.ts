@@ -1,6 +1,7 @@
 import { db } from "@/db";
 import { tenants, users, products, customers, stockMovements } from "./schema";
 import { hashPassword } from "@/lib/password";
+import { TERMS_VERSION } from "@/lib/legal";
 import type { Ctx } from "@/lib/ctx";
 import { createOrder, deliverOrder, dispatchOrder } from "@/domain/orders";
 import { openShift, closeShift } from "@/domain/shifts";
@@ -16,7 +17,7 @@ export async function seedDemo() {
   const [dono, atendente, joao, carlos] = await db
     .insert(users)
     .values([
-      mk("Marina Souza", "dono@demo.com", "dono"),
+      { ...mk("Marina Souza", "dono@demo.com", "dono"), termsVersion: TERMS_VERSION, termsAcceptedAt: new Date() },
       mk("Paulo Lima", "atendente@demo.com", "atendente"),
       mk("João Pereira", "joao@demo.com", "entregador"),
       mk("Carlos Mendes", "carlos@demo.com", "entregador"),

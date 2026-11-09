@@ -13,6 +13,11 @@ export async function register() {
   const { tenants } = await import("@/db/schema");
   await runMigrations();
 
+  const { company } = await import("@/lib/legal");
+  const missing = Object.entries(company).filter(([, v]) => v.startsWith("["));
+  if (missing.length && process.env.NODE_ENV === "production")
+    console.warn(`[termos] dados da empresa sem preencher em src/lib/legal.ts: ${missing.map(([k]) => k).join(", ")}`);
+
   // a demo vem antes do admin: ela só é criada com o banco vazio
   if (process.env.SEED_DEMO === "true") {
     const existing = await db.select({ id: tenants.id }).from(tenants).limit(1);

@@ -20,7 +20,8 @@ import { receivePurchase, adjustStock } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
 import { createTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
 import { resolveError, sendTestAlert } from "@/domain/monitoring";
-import { saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword } from "@/domain/registry";
+import { saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword, acceptTerms } from "@/domain/registry";
+import { TERMS_VERSION } from "@/lib/legal";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const optId = (fd: FormData, k: string) => str(fd, k) || null;
@@ -391,4 +392,11 @@ export async function resolveErrorAction(fd: FormData) {
 export async function testAlertAction(): Promise<ActionState> {
   const admin = await requireAdmin();
   return run(() => sendTestAlert(admin), [], "Alerta de teste enviado. Confira o Telegram.");
+}
+
+export async function acceptTermsAction(fd: FormData): Promise<ActionState> {
+  const user = await requireUser("dono");
+  if (fd.get("agree") !== "on") return { error: "Para continuar, marque que leu e aceita os termos." };
+  await acceptTerms(user, TERMS_VERSION);
+  redirect("/");
 }

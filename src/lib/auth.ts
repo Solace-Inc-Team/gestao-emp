@@ -40,6 +40,7 @@ export type SessionUser = Ctx & {
   tenantName: string;
   platformAdmin: boolean;
   totpEnabled: boolean;
+  termsVersion: string | null;
 };
 
 export const getUser = cache(async (): Promise<SessionUser | null> => {
@@ -55,6 +56,7 @@ export const getUser = cache(async (): Promise<SessionUser | null> => {
       tenantName: tenants.name,
       platformAdmin: users.platformAdmin,
       totpEnabled: users.totpEnabled,
+      termsVersion: users.termsVersion,
     })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))

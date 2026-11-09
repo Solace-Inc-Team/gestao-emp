@@ -251,7 +251,7 @@ test("redefinir senha: só dentro da empresa, derruba sessões e desliga 2FA do 
   assert.equal((await db.select().from(sessions).where(eq(sessions.userId, A.driver.id))).length, 0);
 
   await db.update(users).set({ totpEnabled: true, totpSecret: "ABC" }).where(eq(users.id, A.owner.id));
-  const admin = { ...B.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false };
+  const admin = { ...B.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false, termsVersion: null };
   await assert.rejects(m.platform.resetOwnerAccess({ ...admin, platformAdmin: false }, A.t.id, "senha-nova-2"), /Sem permissão/);
   assert.equal(await m.platform.resetOwnerAccess(admin, A.t.id, "senha-nova-2"), A.owner.email);
   const [o] = await db.select().from(users).where(eq(users.id, A.owner.id));
@@ -299,7 +299,7 @@ test("monitoramento: agrupa o mesmo erro, avisa uma vez por hora e de novo após
   await m.monitoring.recordError(boom(), req, send, new Date(t0.getTime() + 61 * 60_000));
   assert.equal(sent.length, 2);
 
-  const admin = { ...A.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false };
+  const admin = { ...A.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false, termsVersion: null };
   const [ev] = await m.monitoring.listErrors(admin);
   assert.equal(ev.count, 3);
   assert.equal(ev.path, "/pedidos/:id");
@@ -314,4 +314,17 @@ test("monitoramento: agrupa o mesmo erro, avisa uma vez por hora e de novo após
   const r = await m.monitoring.recordError(new Error("outro"), req, async () => { throw new Error("telegram fora"); });
   assert.equal(r.recorded, true);
   await assert.rejects(m.monitoring.listErrors({ ...admin, platformAdmin: false }), /Sem permissão/);
+});
+
+test("aceite dos termos: só o dono, com versão e data", async () => {
+  const { db } = m.db;
+  const { users, auditLog } = m.schema;
+  const { eq, and } = await import("drizzle-orm");
+  await assert.rejects(m.registry.acceptTerms({ ...A.ctx, role: "atendente" }, "2026-11-09"), /Sem permissão/);
+  await m.registry.acceptTerms(A.ctx, "2026-11-09");
+  const [o] = await db.select().from(users).where(eq(users.id, A.owner.id));
+  assert.equal(o.termsVersion, "2026-11-09");
+  assert.ok(o.termsAcceptedAt instanceof Date);
+  const log = await db.select().from(auditLog).where(and(eq(auditLog.tenantId, A.t.id), eq(auditLog.action, "termos.aceite")));
+  assert.equal(log.length, 1);
 });

@@ -54,6 +54,9 @@ export const users = pgTable(
     // segredo TOTP (base32); só vale depois que o usuário confirma um código
     totpSecret: text("totp_secret"),
     totpEnabled: boolean("totp_enabled").notNull().default(false),
+    // versão dos termos que o dono aceitou e quando (aceite eletrônico)
+    termsVersion: text("terms_version"),
+    termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("users_email_uq").on(t.email)],

@@ -25,3 +25,7 @@ export function fingerprint(message: string, stack: string, path: string) {
 
 /** Erros de controle do Next (redirect, notFound) não são falhas. */
 export const isControlFlow = (digest?: string) => !!digest && /^NEXT_(REDIRECT|HTTP_ERROR_FALLBACK|NOT_FOUND)/.test(digest);
+
+/** Tira do texto de alerta o que pode ser dado pessoal: e-mails e sequências longas de dígitos (telefone, documento). */
+export const redact = (text: string) =>
+  text.replace(/[\w.+-]+@[\w-]+\.[\w.-]+/g, "[e-mail]").replace(/\(?\d[\d\s().-]{7,}\d/g, "[número]");

@@ -1,8 +1,8 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { desc, eq, lt, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { errorEvents } from "@/db/schema";
 import { DomainError } from "@/lib/ctx";
-import { cleanPath, describeError, fingerprint, isControlFlow } from "@/lib/error-fingerprint";
+import { cleanPath, describeError, fingerprint, isControlFlow, redact } from "@/lib/error-fingerprint";
 import type { SessionUser } from "@/lib/auth";
 
 export type SendAlert = (text: string) => Promise<void>;
@@ -72,10 +72,12 @@ export async function recordError(
         .where(eq(errorEvents.id, row.id));
       return { alert, count: row.count + 1 };
     });
+    // a política de privacidade promete apagar registros técnicos de erro após 12 meses
+    await db.delete(errorEvents).where(lt(errorEvents.lastSeen, new Date(now.getTime() - 365 * 864e5)));
 
     if (alert) {
       const env = process.env.NODE_ENV === "production" ? "" : " (desenvolvimento)";
-      await send(`Erro no Depósito${env}\n${message.slice(0, 300)}\n${req.method} ${path}\nOcorrências: ${count}`).catch((e) =>
+      await send(`Erro no Depósito${env}\n${redact(message).slice(0, 300)}\n${req.method} ${path}\nOcorrências: ${count}`).catch((e) =>
         console.error("[monitor] falha ao enviar alerta:", e),
       );
     }

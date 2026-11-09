@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { login } from "@/app/actions";
@@ -42,7 +43,11 @@ export default async function LoginPage() {
           </div>
         )}
       </div>
-      <p className="mt-16 text-xs text-muted">Solace</p>
+      <footer className="mt-16 flex gap-4 text-xs text-muted">
+        <span>Solace</span>
+        <Link href="/termos" className="hover:text-fg">Termos de uso</Link>
+        <Link href="/privacidade" className="hover:text-fg">Privacidade</Link>
+      </footer>
     </main>
   );
 }

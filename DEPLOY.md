@@ -122,7 +122,8 @@ Isso não cobre o servidor inteiro fora do ar, porque aí ele não consegue avis
 - [ ] Senha do admin trocada e 2FA ativo
 - [ ] Porta 8000 fechada
 - [ ] Alerta de teste chegando no Telegram e monitor externo do `/api/health` ativo
-- [ ] Contrato de licença e termos de uso assinados
+- [ ] Dados da Solace preenchidos em `src/lib/legal.ts` e termos e política revisados por advogado (o log avisa no start se faltar algo)
+- [ ] Contrato de licença assinado
 - [ ] Uma a duas semanas de operação em paralelo com o controle atual
 
 ## Quando algo dá errado
