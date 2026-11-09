@@ -2,15 +2,20 @@ import type { ReactNode } from "react";
 import { formatBRL } from "@/lib/money";
 
 const statusStyle = {
-  aberto: ["Aguardando", "bg-gas-soft text-[#8a5c00]"],
-  em_rota: ["Em rota", "bg-water-soft text-water"],
-  entregue: ["Entregue", "bg-over-soft text-over"],
-  cancelado: ["Cancelado", "bg-[#eceff3] text-ink-soft line-through"],
+  aberto: ["Aguardando", "bg-warn"],
+  em_rota: ["Em rota", "bg-accent"],
+  entregue: ["Entregue", "bg-ok"],
+  cancelado: ["Cancelado", "bg-muted/50"],
 } as const;
 
 export function StatusBadge({ status }: { status: keyof typeof statusStyle }) {
-  const [label, cls] = statusStyle[status];
-  return <span className={`inline-block rounded px-2 py-0.5 text-sm font-semibold ${cls}`}>{label}</span>;
+  const [label, dot] = statusStyle[status];
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full border border-line px-2 py-0.5 text-xs font-medium whitespace-nowrap">
+      <span aria-hidden="true" className={`size-1.5 rounded-full ${dot}`} />
+      <span className={status === "cancelado" ? "text-muted" : ""}>{label}</span>
+    </span>
+  );
 }
 
 export const paymentLabel = { dinheiro: "Dinheiro", pix: "Pix", cartao: "Cartão", fiado: "Fiado" } as const;
@@ -21,7 +26,7 @@ export function Money({ cents, className = "" }: { cents: number; className?: st
 }
 
 export function Difference({ cents, className = "" }: { cents: number; className?: string }) {
-  const color = cents < 0 ? "text-short" : cents > 0 ? "text-over" : "text-ink-soft";
+  const color = cents < 0 ? "text-danger" : cents > 0 ? "text-ok" : "text-muted";
   const label = cents < 0 ? "falta " : cents > 0 ? "sobra " : "";
   return (
     <span className={`num font-semibold ${color} ${className}`}>
@@ -30,17 +35,30 @@ export function Difference({ cents, className = "" }: { cents: number; className
   );
 }
 
-export function PageHeader({ title, children }: { title: string; children?: ReactNode }) {
+export function PageHeader({ title, description, children }: { title: string; description?: ReactNode; children?: ReactNode }) {
   return (
-    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
-      <h1 className="h1">{title}</h1>
+    <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div>
+        <h1 className="h1">{title}</h1>
+        {description && <p className="mt-1 max-w-2xl text-muted">{description}</p>}
+      </div>
       {children && <div className="flex flex-wrap gap-2">{children}</div>}
     </div>
   );
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <p className="px-4 py-8 text-center text-ink-soft">{children}</p>;
+  return <p className="px-6 py-12 text-center text-muted">{children}</p>;
+}
+
+/** Cabeçalho interno de painel: título à esquerda, ação ou link à direita. */
+export function PanelHeader({ title, children }: { title: string; children?: ReactNode }) {
+  return (
+    <div className="flex min-h-12 items-center justify-between gap-3 border-b border-line px-4 py-2.5">
+      <h2 className="h2">{title}</h2>
+      {children}
+    </div>
+  );
 }
 
 const dt = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeStyle: "short", timeZone: "America/Sao_Paulo" });

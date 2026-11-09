@@ -22,7 +22,7 @@ export function CloseShiftForm({ shiftId, expectedCents }: { shiftId: string; ex
           required
           value={counted}
           onChange={(e) => setCounted(e.target.value)}
-          className="input h-14 font-[family-name:var(--font-cond)] text-3xl"
+          className="input h-14 text-3xl"
           placeholder="0,00"
         />
       </div>

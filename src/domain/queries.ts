@@ -73,7 +73,7 @@ const orderCols = {
 
 export function listOrders(
   tenantId: string,
-  f: { status?: (typeof orders.status.enumValues)[number]; since?: Date; driverId?: string; customerId?: string } = {},
+  f: { status?: (typeof orders.status.enumValues)[number]; since?: Date; driverId?: string; customerId?: string; q?: string } = {},
 ) {
   return db
     .select(orderCols)
@@ -87,10 +87,25 @@ export function listOrders(
         f.since ? gte(orders.createdAt, f.since) : undefined,
         f.driverId ? eq(orders.driverId, f.driverId) : undefined,
         f.customerId ? eq(orders.customerId, f.customerId) : undefined,
+        f.q?.trim()
+          ? /^#?\d+$/.test(f.q.trim())
+            ? eq(orders.number, Number(f.q.trim().replace("#", "")))
+            : ilike(customers.name, `%${f.q.trim()}%`)
+          : undefined,
       ),
     )
     .orderBy(desc(orders.createdAt))
     .limit(300);
+}
+
+export async function countOrdersByStatus(tenantId: string) {
+  const rows = await db
+    .select({ status: orders.status, n: sql<number>`count(*)::int` })
+    .from(orders)
+    .where(eq(orders.tenantId, tenantId))
+    .groupBy(orders.status);
+  const by = Object.fromEntries(rows.map((r) => [r.status, r.n])) as Partial<Record<(typeof orders.status.enumValues)[number], number>>;
+  return { ...by, total: rows.reduce((s, r) => s + r.n, 0) };
 }
 
 export async function getOrder(tenantId: string, id: string) {

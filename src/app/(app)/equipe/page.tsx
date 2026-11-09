@@ -18,10 +18,10 @@ export default async function Equipe() {
             <thead><tr><th>Nome</th><th>Perfil</th><th>Situação</th><th></th></tr></thead>
             <tbody>
               {team.map((u) => (
-                <tr key={u.id} className={u.active ? "" : "text-ink-soft"}>
+                <tr key={u.id} className={u.active ? "" : "text-muted"}>
                   <td>
                     <p className="font-medium">{u.name}</p>
-                    <p className="text-sm text-ink-soft">{u.email}</p>
+                    <p className="text-sm text-muted">{u.email}</p>
                   </td>
                   <td>{roleLabel[u.role]}</td>
                   <td>{u.active ? "Ativo" : "Desativado"}</td>
@@ -41,7 +41,7 @@ export default async function Equipe() {
         </section>
         <section className="panel p-4">
           <h2 className="h2 mb-1">Adicionar pessoa</h2>
-          <p className="mb-3 text-sm text-ink-soft">Entregadores veem só os próprios pedidos no celular. Atendentes não alteram preços nem estoque por ajuste.</p>
+          <p className="mb-3 text-sm text-muted">Entregadores veem só os próprios pedidos no celular. Atendentes não alteram preços nem estoque por ajuste.</p>
           <ActionForm action={createUserAction} className="space-y-3" reset>
             <div>
               <label className="label" htmlFor="u-name">Nome</label>

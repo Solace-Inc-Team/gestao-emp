@@ -29,8 +29,8 @@ export default async function Clientes({ searchParams }: PageProps<"/clientes">)
               {customers.map((c) => (
                 <li key={c.id} className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 last:border-0">
                   <div className="min-w-0">
-                    <Link href={`/clientes/${c.id}`} className="font-medium hover:text-water">{c.name}</Link>
-                    <p className="truncate text-sm text-ink-soft">{[c.address, c.phone].filter(Boolean).join(", ")}</p>
+                    <Link href={`/clientes/${c.id}`} className="font-medium hover:text-accent">{c.name}</Link>
+                    <p className="truncate text-sm text-muted">{[c.address, c.phone].filter(Boolean).join(", ")}</p>
                   </div>
                   <Link href={`/pedidos/novo?cliente=${c.id}`} className="btn shrink-0">Novo pedido</Link>
                 </li>

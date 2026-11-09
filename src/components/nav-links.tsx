@@ -2,24 +2,61 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  LayoutGrid,
+  Plus,
+  ReceiptText,
+  Wallet,
+  Package,
+  Users,
+  BarChart3,
+  Tag,
+  UserCog,
+  type LucideIcon,
+} from "lucide-react";
 
-export function NavLinks({ links }: { links: { href: string; label: string }[] }) {
+const icons: Record<string, LucideIcon> = {
+  "/": LayoutGrid,
+  "/pedidos/novo": Plus,
+  "/pedidos": ReceiptText,
+  "/caixa": Wallet,
+  "/estoque": Package,
+  "/clientes": Users,
+  "/relatorios": BarChart3,
+  "/produtos": Tag,
+  "/equipe": UserCog,
+};
+
+export type NavGroup = { title?: string; links: { href: string; label: string }[] };
+
+export function NavLinks({ groups }: { groups: NavGroup[] }) {
   const path = usePathname();
   const active = (href: string) =>
-    href === "/" ? path === "/" : href === "/pedidos" ? path === "/pedidos" || /^\/pedidos\/(?!novo)/.test(path) : path.startsWith(href);
+    href === "/" ? path === "/" : href === "/pedidos" ? /^\/pedidos(\/(?!novo).*)?$/.test(path) : path.startsWith(href);
+
   return (
-    <nav aria-label="Principal" className="flex gap-1 overflow-x-auto px-3 pb-2 lg:flex-col lg:px-3 lg:pb-4">
-      {links.map((l) => (
-        <Link
-          key={l.href}
-          href={l.href}
-          aria-current={active(l.href) ? "page" : undefined}
-          className={`shrink-0 rounded-md px-3 py-2 font-medium ${
-            active(l.href) ? "bg-water-soft text-water" : "text-ink-soft hover:bg-paper hover:text-ink"
-          } ${l.href === "/pedidos/novo" ? "lg:mb-2 lg:border lg:border-water/30" : ""}`}
-        >
-          {l.label}
-        </Link>
+    <nav aria-label="Principal" className="flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:gap-5 lg:overflow-visible lg:pb-4">
+      {groups.map((g, i) => (
+        <div key={i} className="flex shrink-0 gap-1 lg:flex-col lg:gap-0.5">
+          {g.title && <p className="hidden px-2 pb-1 text-xs font-medium text-muted lg:block">{g.title}</p>}
+          {g.links.map((l) => {
+            const Icon = icons[l.href];
+            const on = active(l.href);
+            return (
+              <Link
+                key={l.href}
+                href={l.href}
+                aria-current={on ? "page" : undefined}
+                className={`flex h-8 shrink-0 items-center gap-2.5 rounded-md px-2 text-[13px] font-medium transition-colors ${
+                  on ? "bg-subtle text-fg" : "text-muted hover:bg-subtle/70 hover:text-fg"
+                }`}
+              >
+                {Icon && <Icon size={16} strokeWidth={1.75} aria-hidden="true" />}
+                {l.label}
+              </Link>
+            );
+          })}
+        </div>
       ))}
     </nav>
   );

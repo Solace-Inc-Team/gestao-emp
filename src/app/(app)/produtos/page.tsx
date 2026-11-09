@@ -38,7 +38,7 @@ export default async function Produtos() {
   return (
     <>
       <PageHeader title="Produtos e preços" />
-      <p className="-mt-3 mb-6 max-w-2xl text-ink-soft">
+      <p className="-mt-3 mb-6 max-w-2xl text-muted">
         Mudar o preço vale para os próximos pedidos. Pedidos já lançados guardam o preço da época, e toda alteração fica registrada.
       </p>
       <section className="panel mb-6">

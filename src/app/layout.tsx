@@ -1,9 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { Barlow, Barlow_Condensed } from "next/font/google";
+import { Geist } from "next/font/google";
 import "./globals.css";
 
-const barlow = Barlow({ variable: "--font-barlow", subsets: ["latin"], weight: ["400", "500", "600", "700"] });
-const barlowCond = Barlow_Condensed({ variable: "--font-barlow-cond", subsets: ["latin"], weight: ["500", "600", "700"] });
+const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: { default: "Depósito", template: "%s | Depósito" },
@@ -11,11 +10,16 @@ export const metadata: Metadata = {
   applicationName: "Depósito",
 };
 
-export const viewport: Viewport = { themeColor: "#13233f" };
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+  ],
+};
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`${barlow.variable} ${barlowCond.variable} h-full antialiased`}>
+    <html lang="pt-BR" className={`${geist.variable} h-full`}>
       <body className="min-h-full">{children}</body>
     </html>
   );

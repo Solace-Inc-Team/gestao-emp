@@ -29,14 +29,14 @@ export default async function Caixa() {
                 <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-4 last:border-0">
                   <div>
                     <p className="text-lg font-semibold">{s.driverName}</p>
-                    <p className="text-sm text-ink-soft">
+                    <p className="text-sm text-muted">
                       Desde {fmtDateTime(s.openedAt)}, {s.orderCount} {s.orderCount === 1 ? "pedido" : "pedidos"}
                       {s.inRoute ? `, ${s.inRoute} em rota` : ""}
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="text-right">
-                      <p className="text-sm text-ink-soft">Deve apresentar</p>
+                      <p className="text-sm text-muted">Deve apresentar</p>
                       <Money cents={s.expected} className="text-2xl font-semibold" />
                     </div>
                     <Link href={`/caixa/${s.id}`} className="btn btn-primary">Fazer acerto</Link>
@@ -51,7 +51,7 @@ export default async function Caixa() {
 
         <section className="panel p-4">
           <h2 className="h2 mb-1">Abrir turno</h2>
-          <p className="mb-3 text-sm text-ink-soft">O troco inicial entra na conta do que o entregador deve devolver no acerto.</p>
+          <p className="mb-3 text-sm text-muted">O troco inicial entra na conta do que o entregador deve devolver no acerto.</p>
           {free.length ? (
             <ActionForm action={openShiftAction} className="space-y-3" reset>
               <div>
@@ -68,7 +68,7 @@ export default async function Caixa() {
               <button className="btn btn-primary">Abrir turno</button>
             </ActionForm>
           ) : (
-            <p className="text-ink-soft">Todos os entregadores ativos já estão em turno.</p>
+            <p className="text-muted">Todos os entregadores ativos já estão em turno.</p>
           )}
         </section>
       </div>
@@ -82,8 +82,8 @@ export default async function Caixa() {
             </thead>
             <tbody>
               {closed.map((s) => (
-                <tr key={s.id} className={s.differenceCents ? "bg-short-soft/40" : ""}>
-                  <td><Link href={`/caixa/${s.id}`} className="font-medium hover:text-water">{s.driverName}</Link></td>
+                <tr key={s.id} className={s.differenceCents ? "bg-danger-soft/40" : ""}>
+                  <td><Link href={`/caixa/${s.id}`} className="font-medium hover:text-accent">{s.driverName}</Link></td>
                   <td>{fmtDateTime(s.closedAt)}</td>
                   <td className="text-right"><Money cents={s.expectedCashCents ?? 0} /></td>
                   <td className="text-right"><Money cents={s.countedCashCents ?? 0} /></td>

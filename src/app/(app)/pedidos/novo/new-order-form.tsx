@@ -61,7 +61,7 @@ export function NewOrderForm({
       <input type="hidden" name="paymentMethod" value={payment} />
 
       <div className="space-y-6">
-        <div role="tablist" aria-label="Tipo de venda" className="inline-flex rounded-md border border-line bg-white p-1">
+        <div role="tablist" aria-label="Tipo de venda" className="inline-flex rounded-lg bg-subtle p-1">
           {(["entrega", "balcao"] as const).map((m) => (
             <button
               key={m}
@@ -69,7 +69,7 @@ export function NewOrderForm({
               role="tab"
               aria-selected={mode === m}
               onClick={() => setMode(m)}
-              className={`rounded px-4 py-1.5 font-semibold ${mode === m ? "bg-ink text-white" : "text-ink-soft"}`}
+              className={`rounded-md px-3.5 py-1.5 text-[13px] font-medium transition-colors ${mode === m ? "bg-surface text-fg shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1 ring-line" : "text-muted hover:text-fg"}`}
             >
               {m === "entrega" ? "Entrega" : "Venda no balcão"}
             </button>
@@ -77,15 +77,15 @@ export function NewOrderForm({
         </div>
 
         <section className="panel p-4">
-          <h2 className="h2 mb-3">Cliente{mode === "balcao" && <span className="text-base font-normal text-ink-soft"> (opcional)</span>}</h2>
+          <h2 className="h2 mb-3">Cliente{mode === "balcao" && <span className="text-base font-normal text-muted"> (opcional)</span>}</h2>
           {customer && !creating ? (
-            <div className="flex items-start justify-between gap-3 rounded-md bg-water-soft p-3">
+            <div className="flex items-start justify-between gap-3 rounded-md bg-accent-soft p-3">
               <div>
                 <p className="font-semibold">{customer.name}</p>
-                <p className="text-sm text-ink-soft">{customer.address || "Sem endereço"}</p>
-                <p className="text-sm text-ink-soft">{customer.phone}</p>
+                <p className="text-sm text-muted">{customer.address || "Sem endereço"}</p>
+                <p className="text-sm text-muted">{customer.phone}</p>
               </div>
-              <button type="button" className="text-sm text-water underline" onClick={() => setCustomerId("")}>Trocar</button>
+              <button type="button" className="text-sm text-accent underline" onClick={() => setCustomerId("")}>Trocar</button>
             </div>
           ) : creating ? (
             <div className="grid gap-3 sm:grid-cols-2">
@@ -105,7 +105,7 @@ export function NewOrderForm({
                 <label className="label" htmlFor="nc-addr">Endereço</label>
                 <input id="nc-addr" name="newCustomerAddress" className="input" />
               </div>
-              <button type="button" className="text-left text-sm text-water underline" onClick={() => setCreating(false)}>
+              <button type="button" className="text-left text-sm text-accent underline" onClick={() => setCreating(false)}>
                 Buscar cliente cadastrado
               </button>
             </div>
@@ -120,16 +120,16 @@ export function NewOrderForm({
                       <button
                         type="button"
                         onClick={() => { setCustomerId(c.id); setSearch(""); }}
-                        className="block w-full px-3 py-2 text-left hover:bg-paper"
+                        className="block w-full px-3 py-2 text-left hover:bg-subtle"
                       >
                         <span className="font-medium">{c.name}</span>
-                        <span className="block text-sm text-ink-soft">{c.address} {c.phone && `(${c.phone})`}</span>
+                        <span className="block text-sm text-muted">{c.address} {c.phone && `(${c.phone})`}</span>
                       </button>
                     </li>
                   ))}
                 </ul>
               )}
-              <button type="button" className="mt-3 text-sm font-semibold text-water" onClick={() => setCreating(true)}>
+              <button type="button" className="mt-3 text-sm font-semibold text-accent" onClick={() => setCreating(true)}>
                 + Cadastrar cliente novo
               </button>
             </div>
@@ -142,11 +142,11 @@ export function NewOrderForm({
             {products.map((p) => {
               const n = qty[p.id] ?? 0;
               return (
-                <li key={p.id} className={`border-b border-line px-4 py-3 last:border-0 ${n ? "bg-water-soft/40" : ""}`}>
+                <li key={p.id} className={`border-b border-line px-4 py-3 last:border-0 ${n ? "bg-accent-soft/40" : ""}`}>
                   <div className="flex items-center gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">{p.name}</p>
-                      <p className="text-sm text-ink-soft">
+                      <p className="text-sm text-muted">
                         <span className="num">{formatBRL(p.priceCents)}</span>, {p.available} cheios na loja
                       </p>
                     </div>
@@ -209,7 +209,7 @@ export function NewOrderForm({
                 type="button"
                 aria-pressed={payment === v}
                 onClick={() => setPayment(v)}
-                className={`btn ${payment === v ? "border-ink bg-ink text-white hover:border-ink" : ""}`}
+                className={`btn ${payment === v ? "border-fg bg-fg text-bg hover:bg-fg" : ""}`}
               >
                 {l}
               </button>
@@ -221,7 +221,7 @@ export function NewOrderForm({
               <input id="change" name="changeFor" inputMode="decimal" className="input" placeholder="100,00" />
             </div>
           )}
-          {payment === "fiado" && <p className="mt-3 text-sm text-ink-soft">Fiado exige cliente identificado.</p>}
+          {payment === "fiado" && <p className="mt-3 text-sm text-muted">Fiado exige cliente identificado.</p>}
           <div className="mt-5 border-t border-line pt-4">
             {items.length > 0 && (
               <ul className="mb-3 space-y-1 text-sm">

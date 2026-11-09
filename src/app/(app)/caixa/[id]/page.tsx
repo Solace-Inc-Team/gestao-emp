@@ -20,11 +20,11 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
   return (
     <>
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <Link href="/caixa" className="text-water hover:underline">Caixa</Link>
-        <span className="text-ink-soft">/</span>
+        <Link href="/caixa" className="text-accent hover:underline">Caixa</Link>
+        <span className="text-muted">/</span>
         <h1 className="h1">Acerto de {s.driverName}</h1>
       </div>
-      <p className="-mt-4 mb-6 text-ink-soft">
+      <p className="-mt-4 mb-6 text-muted">
         Turno aberto em {fmtDateTime(s.openedAt)}
         {s.closedAt && `, fechado em ${fmtDateTime(s.closedAt)}`}
       </p>
@@ -42,12 +42,12 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
             <Term label="Contado no acerto" cents={s.countedCashCents ?? 0} />
             <Op>→</Op>
             <div>
-              <p className="text-ink-soft">Resultado</p>
-              <Difference cents={s.differenceCents ?? 0} className="font-[family-name:var(--font-cond)] text-5xl" />
+              <p className="text-muted">Resultado</p>
+              <Difference cents={s.differenceCents ?? 0} className="text-5xl" />
             </div>
           </div>
         )}
-        <p className="mt-5 text-sm text-ink-soft">
+        <p className="mt-5 text-sm text-muted">
           Pix {formatBRL(s.summary.pix)}, cartão {formatBRL(s.summary.cartao)} e fiado {formatBRL(s.summary.fiado)} não passam pela mão do entregador.
         </p>
       </section>
@@ -59,11 +59,11 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
             <tbody>
               {s.orders.map((o) => (
                 <tr key={o.id}>
-                  <td className="num text-ink-soft"><Link href={`/pedidos/${o.id}`} className="hover:text-water">#{o.number}</Link></td>
+                  <td className="num text-muted"><Link href={`/pedidos/${o.id}`} className="hover:text-accent">#{o.number}</Link></td>
                   <td>{o.customerName ?? "Balcão"}</td>
                   <td>{paymentLabel[o.paymentMethod]}</td>
                   <td><StatusBadge status={o.status} /></td>
-                  <td className="text-right"><Money cents={o.totalCents} className={o.status === "cancelado" ? "line-through text-ink-soft" : ""} /></td>
+                  <td className="text-right"><Money cents={o.totalCents} className={o.status === "cancelado" ? "line-through text-muted" : ""} /></td>
                 </tr>
               ))}
             </tbody>
@@ -75,7 +75,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
             <section className="panel p-4">
               <h2 className="h2 mb-1">Fechar acerto</h2>
               {inRoute > 0 ? (
-                <p className="rounded-md bg-gas-soft p-3 text-[#7a5200]">
+                <p className="rounded-md bg-warn-soft p-3 text-warn-fg">
                   {inRoute} {inRoute === 1 ? "pedido ainda está" : "pedidos ainda estão"} em rota. Confirme a entrega ou cancele antes de fechar.
                 </p>
               ) : (
@@ -103,12 +103,12 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                   ))}
                 </ul>
               ) : (
-                <p className="text-ink-soft">Nada no momento.</p>
+                <p className="text-muted">Nada no momento.</p>
               )
             ) : (
-              <p className="text-ink-soft">Cheios e vazios que estavam com o entregador voltaram ao estoque da loja.</p>
+              <p className="text-muted">Cheios e vazios que estavam com o entregador voltaram ao estoque da loja.</p>
             )}
-            {isOpen && s.held.length > 0 && <p className="mt-3 text-sm text-ink-soft">Ao fechar, tudo volta para o estoque da loja.</p>}
+            {isOpen && s.held.length > 0 && <p className="mt-3 text-sm text-muted">Ao fechar, tudo volta para o estoque da loja.</p>}
           </section>
         </div>
       </div>
@@ -119,12 +119,12 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
 function Term({ label, cents, strong }: { label: string; cents: number; strong?: boolean }) {
   return (
     <div>
-      <p className="text-ink-soft">{label}</p>
-      <Money cents={cents} className={`text-4xl font-semibold sm:text-5xl ${strong ? "text-water" : ""}`} />
+      <p className="text-muted">{label}</p>
+      <Money cents={cents} className={`text-4xl font-semibold tracking-[-0.035em] sm:text-5xl ${strong ? "text-accent" : ""}`} />
     </div>
   );
 }
 
 function Op({ children }: { children: string }) {
-  return <span aria-hidden="true" className="hidden pb-1 font-[family-name:var(--font-cond)] text-4xl text-ink-soft sm:block">{children}</span>;
+  return <span aria-hidden="true" className="hidden pb-1 text-4xl text-muted sm:block">{children}</span>;
 }

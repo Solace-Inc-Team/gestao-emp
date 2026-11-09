@@ -8,51 +8,41 @@ export const metadata = { title: "Entrar" };
 
 export default async function LoginPage() {
   const user = await getUser();
-  if (user) redirect(user.role === "entregador" ? "/entregador" : "/");
+  if (user) redirect(user.platformAdmin ? "/admin" : user.role === "entregador" ? "/entregador" : "/");
   return (
-    <main className="grid min-h-screen md:grid-cols-[1.1fr_1fr]">
-      <section className="hidden flex-col justify-between bg-ink p-10 text-white md:flex">
-        <Logo light />
-        <div className="max-w-md">
-          <p className="font-[family-name:var(--font-cond)] text-5xl font-semibold leading-[1.05]">
-            Cada botijão, cada galão e cada real conferidos no fim do turno.
-          </p>
-          <p className="mt-5 text-lg text-white/70">
-            Pedidos, entregas, cheios e vazios e o acerto de cada entregador num só lugar.
-          </p>
-        </div>
-        <p className="text-sm text-white/50">Solace</p>
-      </section>
-      <section className="flex items-center justify-center p-6">
-        <div className="w-full max-w-sm">
-          <div className="mb-8 md:hidden">
-            <Logo />
+    <main className="flex min-h-screen flex-col items-center justify-center px-6 py-16">
+      <div className="w-full max-w-[22rem]">
+        <Logo size={28} />
+        <h1 className="mt-8 text-[1.75rem] leading-tight font-semibold tracking-[-0.03em]">Entrar</h1>
+        <p className="mt-1.5 text-muted">Pedidos, entregas, estoque e acerto de caixa da sua distribuidora.</p>
+        <ActionForm action={login} className="mt-8 space-y-4">
+          <div>
+            <label className="label" htmlFor="email">E-mail</label>
+            <input id="email" name="email" type="email" autoComplete="username" required className="input h-10" />
           </div>
-          <h1 className="h1 mb-6">Entrar</h1>
-          <ActionForm action={login} className="space-y-4">
-            <div>
-              <label className="label" htmlFor="email">E-mail</label>
-              <input id="email" name="email" type="email" autoComplete="username" required className="input" />
-            </div>
-            <div>
-              <label className="label" htmlFor="password">Senha</label>
-              <input id="password" name="password" type="password" autoComplete="current-password" required className="input" />
-            </div>
-            <button className="btn btn-primary w-full">Entrar</button>
-          </ActionForm>
-          {process.env.SEED_DEMO === "true" && (
-            <div className="mt-8 rounded-md border border-line bg-white p-4 text-sm text-ink-soft">
-              <p className="mb-1 font-semibold text-ink">Demonstração</p>
-              <ul className="space-y-0.5">
-                <li>Dono: <b>dono@demo.com</b></li>
-                <li>Atendente: <b>atendente@demo.com</b></li>
-                <li>Entregador: <b>joao@demo.com</b></li>
-              </ul>
-              <p className="mt-1">Senha de todos: <b>demo1234</b></p>
-            </div>
-          )}
-        </div>
-      </section>
+          <div>
+            <label className="label" htmlFor="password">Senha</label>
+            <input id="password" name="password" type="password" autoComplete="current-password" required className="input h-10" />
+          </div>
+          <button className="btn btn-primary h-10 w-full">Entrar</button>
+        </ActionForm>
+        {process.env.SEED_DEMO === "true" && (
+          <div className="mt-10 border-t border-line pt-6 text-[13px] text-muted">
+            <p className="mb-2 font-medium text-fg">Acessos de demonstração</p>
+            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+              <dt>Dono</dt>
+              <dd className="text-fg">dono@demo.com</dd>
+              <dt>Atendente</dt>
+              <dd className="text-fg">atendente@demo.com</dd>
+              <dt>Entregador</dt>
+              <dd className="text-fg">joao@demo.com</dd>
+              <dt>Senha</dt>
+              <dd className="text-fg">demo1234</dd>
+            </dl>
+          </div>
+        )}
+      </div>
+      <p className="mt-16 text-xs text-muted">Solace</p>
     </main>
   );
 }

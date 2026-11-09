@@ -26,8 +26,8 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
   return (
     <>
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <Link href="/pedidos" className="text-water hover:underline">Pedidos</Link>
-        <span className="text-ink-soft">/</span>
+        <Link href="/pedidos" className="text-accent hover:underline">Pedidos</Link>
+        <span className="text-muted">/</span>
         <h1 className="h1">Pedido #{o.number}</h1>
         <StatusBadge status={o.status} />
       </div>
@@ -44,7 +44,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                   <tr key={i.id}>
                     <td>
                       {i.name}
-                      {!i.returnsEmpty && <p className="text-sm text-ink-soft">sem troca de vasilhame</p>}
+                      {!i.returnsEmpty && <p className="text-sm text-muted">sem troca de vasilhame</p>}
                     </td>
                     <td className="num text-right">{i.quantity}</td>
                     <td className="text-right"><Money cents={i.unitPriceCents} /></td>
@@ -73,12 +73,12 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
             <ol className="space-y-2">
               {o.history.map((h, i) => (
                 <li key={i} className="flex flex-wrap justify-between gap-2">
-                  <span>{actionLabel[h.action] ?? h.action}{h.userName && <span className="text-ink-soft">, por {h.userName}</span>}</span>
-                  <span className="text-sm text-ink-soft">{fmtDateTime(h.createdAt)}</span>
+                  <span>{actionLabel[h.action] ?? h.action}{h.userName && <span className="text-muted">, por {h.userName}</span>}</span>
+                  <span className="text-sm text-muted">{fmtDateTime(h.createdAt)}</span>
                 </li>
               ))}
             </ol>
-            {o.cancelReason && <p className="mt-3 rounded-md bg-paper p-3 text-sm">Motivo do cancelamento: {o.cancelReason}</p>}
+            {o.cancelReason && <p className="mt-3 rounded-md bg-subtle p-3 text-sm">Motivo do cancelamento: {o.cancelReason}</p>}
           </section>
         </div>
 
@@ -87,13 +87,13 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
             <h2 className="h2 mb-2">Cliente</h2>
             {o.customerName ? (
               <>
-                <Link href={`/clientes/${o.customerId}`} className="font-semibold hover:text-water">{o.customerName}</Link>
+                <Link href={`/clientes/${o.customerId}`} className="font-semibold hover:text-accent">{o.customerName}</Link>
                 <p>{o.customerAddress}</p>
-                {o.customerReference && <p className="text-ink-soft">{o.customerReference}</p>}
-                {o.customerPhone && <p className="text-ink-soft">{o.customerPhone}</p>}
+                {o.customerReference && <p className="text-muted">{o.customerReference}</p>}
+                {o.customerPhone && <p className="text-muted">{o.customerPhone}</p>}
               </>
             ) : (
-              <p className="text-ink-soft">Venda no balcão</p>
+              <p className="text-muted">Venda no balcão</p>
             )}
             {o.driverName && <p className="mt-3">Entregador: <b>{o.driverName}</b></p>}
           </section>
@@ -112,7 +112,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                   <button className="btn btn-primary">Saiu para entrega</button>
                 </ActionForm>
               ) : (
-                <p className="text-ink-soft">Nenhum entregador com turno aberto. <Link href="/caixa" className="text-water underline">Abrir turno</Link></p>
+                <p className="text-muted">Nenhum entregador com turno aberto. <Link href="/caixa" className="text-accent underline">Abrir turno</Link></p>
               )}
             </section>
           )}
@@ -120,7 +120,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
           {o.status === "em_rota" && (
             <section className="panel p-4">
               <h2 className="h2 mb-1">Confirmar entrega</h2>
-              <p className="mb-3 text-sm text-ink-soft">Use quando o entregador avisar por telefone. Ele também pode confirmar pelo celular.</p>
+              <p className="mb-3 text-sm text-muted">Use quando o entregador avisar por telefone. Ele também pode confirmar pelo celular.</p>
               <ActionForm action={deliverAction}>
                 <input type="hidden" name="orderId" value={o.id} />
                 <button className="btn btn-primary w-full">Confirmar entrega</button>
@@ -131,7 +131,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
           {(o.status === "aberto" || o.status === "em_rota") && (
             <section className="panel p-4">
               <h2 className="h2 mb-1">Cancelar pedido</h2>
-              {o.status === "em_rota" && <p className="mb-2 text-sm text-ink-soft">Os produtos voltam do entregador para a loja.</p>}
+              {o.status === "em_rota" && <p className="mb-2 text-sm text-muted">Os produtos voltam do entregador para a loja.</p>}
               <ActionForm action={cancelAction} className="space-y-2" confirm="Cancelar este pedido?">
                 <input type="hidden" name="orderId" value={o.id} />
                 <label className="label" htmlFor="reason">Motivo</label>

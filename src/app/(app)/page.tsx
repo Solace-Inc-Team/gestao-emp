@@ -14,7 +14,7 @@ export default async function Painel() {
     <>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="text-ink-soft first-letter:uppercase">{hoje}</p>
+          <p className="text-muted first-letter:uppercase">{hoje}</p>
           <h1 className="h1">Painel do dia</h1>
         </div>
         <Link href="/pedidos/novo" className="btn btn-primary">Novo pedido</Link>
@@ -22,30 +22,30 @@ export default async function Painel() {
 
       <section className="panel mb-6 grid divide-line sm:grid-cols-3 sm:divide-x">
         <div className="p-5">
-          <p className="text-ink-soft">Vendido hoje</p>
-          <Money cents={d.revenue} className="text-4xl font-semibold" />
-          <p className="mt-1 text-sm text-ink-soft">{d.deliveredCount} pedidos entregues</p>
+          <p className="text-muted">Vendido hoje</p>
+          <Money cents={d.revenue} className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
+          <p className="mt-1 text-sm text-muted">{d.deliveredCount} pedidos entregues</p>
         </div>
         <div className="border-t border-line p-5 sm:border-t-0">
-          <p className="text-ink-soft">Dinheiro na rua</p>
-          <Money cents={d.cashInStreet} className="text-4xl font-semibold text-water" />
-          <p className="mt-1 text-sm text-ink-soft">
+          <p className="text-muted">Dinheiro na rua</p>
+          <Money cents={d.cashInStreet} className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
+          <p className="mt-1 text-sm text-muted">
             com {d.openShifts.length} {d.openShifts.length === 1 ? "entregador" : "entregadores"}, a acertar
           </p>
         </div>
         <div className="border-t border-line p-5 sm:border-t-0">
-          <p className="text-ink-soft">Fila agora</p>
-          <p className="num text-4xl font-semibold">
-            {d.pending} <span className="text-xl font-medium text-ink-soft">aguardando</span>
+          <p className="text-muted">Fila agora</p>
+          <p className="num text-[2rem] leading-tight font-semibold tracking-[-0.03em]">
+            {d.pending} <span className="text-xl font-medium text-muted">aguardando</span>
           </p>
-          <p className="mt-1 text-sm text-ink-soft">{d.inRoute} em rota</p>
+          <p className="mt-1 text-sm text-muted">{d.inRoute} em rota</p>
         </div>
       </section>
 
       {(d.divergentLast7 > 0 || d.lowStock.length > 0) && (
         <section aria-label="Alertas" className="mb-6 space-y-2">
           {d.divergentLast7 > 0 && (
-            <Link href="/caixa" className="flex items-center justify-between gap-3 rounded-md border border-short/30 bg-short-soft px-4 py-3 text-short">
+            <Link href="/caixa" className="flex items-center justify-between gap-3 rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-danger">
               <span className="font-semibold">
                 {d.divergentLast7} {d.divergentLast7 === 1 ? "acerto fechou" : "acertos fecharam"} com diferença nos últimos 7 dias
               </span>
@@ -53,7 +53,7 @@ export default async function Painel() {
             </Link>
           )}
           {d.lowStock.map((p) => (
-            <Link key={p.id} href="/estoque" className="flex items-center justify-between gap-3 rounded-md border border-gas/40 bg-gas-soft px-4 py-3 text-[#7a5200]">
+            <Link key={p.id} href="/estoque" className="flex items-center justify-between gap-3 rounded-md border border-warn/40 bg-warn-soft px-4 py-3 text-warn-fg">
               <span className="font-semibold">
                 {p.name}: {p.fullStore} cheios na loja (mínimo {p.minStock})
               </span>
@@ -67,19 +67,19 @@ export default async function Painel() {
         <section className="panel">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <h2 className="h2">Pedidos de hoje</h2>
-            <Link href="/pedidos" className="text-sm text-water hover:underline">Ver todos</Link>
+            <Link href="/pedidos" className="text-sm text-accent hover:underline">Ver todos</Link>
           </div>
           {d.recent.length ? (
             <table className="table">
               <tbody>
                 {d.recent.map((o) => (
                   <tr key={o.id}>
-                    <td className="num w-12 text-ink-soft">#{o.number}</td>
+                    <td className="num w-12 text-muted">#{o.number}</td>
                     <td>
-                      <Link href={`/pedidos/${o.id}`} className="font-medium hover:text-water">
+                      <Link href={`/pedidos/${o.id}`} className="font-medium hover:text-accent">
                         {o.customerName ?? "Balcão"}
                       </Link>
-                      <p className="text-sm text-ink-soft">
+                      <p className="text-sm text-muted">
                         {fmtTime(o.createdAt)}
                         {o.driverName ? `, ${o.driverName}` : ""}
                       </p>
@@ -91,7 +91,7 @@ export default async function Painel() {
               </tbody>
             </table>
           ) : (
-            <Empty>Nenhum pedido hoje. <Link href="/pedidos/novo" className="text-water underline">Lançar o primeiro</Link></Empty>
+            <Empty>Nenhum pedido hoje. <Link href="/pedidos/novo" className="text-accent underline">Lançar o primeiro</Link></Empty>
           )}
         </section>
 
@@ -104,19 +104,19 @@ export default async function Painel() {
                   <li key={s.id} className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 last:border-0">
                     <div>
                       <p className="font-medium">{s.driverName}</p>
-                      <p className="text-sm text-ink-soft">
+                      <p className="text-sm text-muted">
                         {s.orderCount} {s.orderCount === 1 ? "pedido" : "pedidos"}, {s.inRoute} em rota
                       </p>
                     </div>
                     <Link href={`/caixa/${s.id}`} className="text-right">
                       <Money cents={s.expected} className="block font-semibold" />
-                      <span className="text-sm text-water">Fazer acerto</span>
+                      <span className="text-sm text-accent">Fazer acerto</span>
                     </Link>
                   </li>
                 ))}
               </ul>
             ) : (
-              <Empty>Nenhum turno aberto. <Link href="/caixa" className="text-water underline">Abrir turno</Link></Empty>
+              <Empty>Nenhum turno aberto. <Link href="/caixa" className="text-accent underline">Abrir turno</Link></Empty>
             )}
           </section>
 
@@ -125,7 +125,7 @@ export default async function Painel() {
             <dl className="space-y-1.5">
               {(Object.keys(paymentLabel) as (keyof typeof paymentLabel)[]).map((k) => (
                 <div key={k} className="flex justify-between">
-                  <dt className="text-ink-soft">{paymentLabel[k]}</dt>
+                  <dt className="text-muted">{paymentLabel[k]}</dt>
                   <dd><Money cents={d.byMethod[k]} /></dd>
                 </div>
               ))}

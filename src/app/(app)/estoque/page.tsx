@@ -34,23 +34,23 @@ export default async function Estoque() {
               <tr key={p.id}>
                 <td className="font-medium">
                   {p.name}
-                  {!p.returnable && <p className="text-sm font-normal text-ink-soft">não retornável</p>}
+                  {!p.returnable && <p className="text-sm font-normal text-muted">não retornável</p>}
                 </td>
-                <td className={`num text-right text-xl font-semibold ${p.low ? "text-short" : ""}`}>
+                <td className={`num text-right text-xl font-semibold ${p.low ? "text-danger" : ""}`}>
                   {p.fullStore}
                   {p.low && <span className="block text-sm font-medium">abaixo do mínimo ({p.minStock})</span>}
                 </td>
                 <td className="num text-right text-xl">{p.returnable ? p.emptyStore : "-"}</td>
-                <td className="num text-right text-xl text-water">{p.fullTransit}</td>
-                <td className="num text-right text-xl text-water">{p.returnable ? p.emptyTransit : "-"}</td>
-                <td className="num text-right text-xl text-ink-soft">
+                <td className="num text-right text-xl text-accent">{p.fullTransit}</td>
+                <td className="num text-right text-xl text-accent">{p.returnable ? p.emptyTransit : "-"}</td>
+                <td className="num text-right text-xl text-muted">
                   {p.returnable ? p.fullStore + p.emptyStore + p.fullTransit + p.emptyTransit : "-"}
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        <p className="border-t border-line px-4 py-3 text-sm text-ink-soft">
+        <p className="border-t border-line px-4 py-3 text-sm text-muted">
           O total de vasilhames deve ficar estável: cada venda com troca tira um cheio e devolve um vazio. Se ele cair, há botijão ou galão sem retorno.
         </p>
       </section>
@@ -58,7 +58,7 @@ export default async function Estoque() {
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="panel p-4">
           <h2 className="h2 mb-1">Entrada de compra</h2>
-          <p className="mb-3 text-sm text-ink-soft">Cheios recebidos do fornecedor e vazios entregues a ele na troca.</p>
+          <p className="mb-3 text-sm text-muted">Cheios recebidos do fornecedor e vazios entregues a ele na troca.</p>
           <ActionForm action={purchaseAction} className="grid gap-3 sm:grid-cols-2" reset>
             <div className="sm:col-span-2">
               <label className="label" htmlFor="p-product">Produto</label>
@@ -85,7 +85,7 @@ export default async function Estoque() {
         {user.role === "dono" && (
           <section className="panel p-4">
             <h2 className="h2 mb-1">Ajuste por contagem</h2>
-            <p className="mb-3 text-sm text-ink-soft">Informe quanto existe fisicamente na loja. A diferença fica registrada com o motivo.</p>
+            <p className="mb-3 text-sm text-muted">Informe quanto existe fisicamente na loja. A diferença fica registrada com o motivo.</p>
             <ActionForm action={adjustAction} className="grid gap-3 sm:grid-cols-2" reset confirm="Registrar o ajuste de estoque?">
               <div>
                 <label className="label" htmlFor="a-product">Produto</label>
@@ -126,11 +126,11 @@ export default async function Estoque() {
                 <td className="whitespace-nowrap">{fmtDateTime(m.createdAt)}</td>
                 <td>{m.productName}, {m.state === "cheio" ? "cheio" : "vazio"}</td>
                 <td>{m.driverName ?? "Loja"}</td>
-                <td className={`num text-right font-semibold ${m.quantity < 0 ? "text-short" : "text-over"}`}>
+                <td className={`num text-right font-semibold ${m.quantity < 0 ? "text-danger" : "text-ok"}`}>
                   {m.quantity > 0 ? `+${m.quantity}` : m.quantity}
                 </td>
                 <td>{m.reason}</td>
-                <td className="text-ink-soft">{m.userName}</td>
+                <td className="text-muted">{m.userName}</td>
               </tr>
             ))}
           </tbody>

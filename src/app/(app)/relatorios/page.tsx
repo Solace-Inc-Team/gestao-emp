@@ -53,7 +53,7 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
                   <td className="text-right font-semibold"><Money cents={d.total} /></td>
                 </tr>
               ))}
-              <tr className="bg-paper font-semibold">
+              <tr className="bg-subtle font-semibold">
                 <td>Período</td>
                 <td className="num text-right">{sum("count")}</td>
                 <td className="text-right"><Money cents={sum("cash")} /></td>
@@ -80,7 +80,7 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
             <tbody>
               {closed.map(({ shift: s, driverName }) => (
                 <tr key={s.id}>
-                  <td><Link href={`/caixa/${s.id}`} className="hover:text-water">{driverName}</Link></td>
+                  <td><Link href={`/caixa/${s.id}`} className="hover:text-accent">{driverName}</Link></td>
                   <td>{fmtDateTime(s.closedAt)}</td>
                   <td className="text-right"><Money cents={s.expectedCashCents ?? 0} /></td>
                   <td className="text-right"><Money cents={s.countedCashCents ?? 0} /></td>

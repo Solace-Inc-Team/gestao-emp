@@ -17,7 +17,7 @@ export default async function Admin() {
   return (
     <>
       <PageHeader title="Empresas" />
-      <p className="-mt-3 mb-6 text-ink-soft">
+      <p className="-mt-3 mb-6 text-muted">
         {active.length} {active.length === 1 ? "ativa" : "ativas"}, {list.length - active.length}{" "}
         {list.length - active.length === 1 ? "suspensa" : "suspensas"},{" "}
         {active.reduce((s, t) => s + t.orders30, 0)} pedidos nos últimos 30 dias
@@ -40,17 +40,17 @@ export default async function Admin() {
                 {list.map((t) => {
                   const idle = daysAgo(t.lastOrder);
                   return (
-                    <tr key={t.id} className={t.active ? "" : "text-ink-soft"}>
+                    <tr key={t.id} className={t.active ? "" : "text-muted"}>
                       <td>
                         <p className="font-medium">
                           {t.name}
-                          {!t.active && <span className="ml-2 rounded bg-short-soft px-1.5 py-0.5 text-xs font-semibold text-short">suspensa</span>}
+                          {!t.active && <span className="ml-2 rounded bg-danger-soft px-1.5 py-0.5 text-xs font-semibold text-danger">suspensa</span>}
                         </p>
-                        <p className="text-sm text-ink-soft">{t.owner ?? "sem dono"}, desde {fmtDateTime(t.createdAt).split(" ")[0].replace(",", "")}</p>
+                        <p className="text-sm text-muted">{t.owner ?? "sem dono"}, desde {fmtDateTime(t.createdAt).split(" ")[0].replace(",", "")}</p>
                       </td>
                       <td className="num text-right">{t.people}</td>
                       <td className="num text-right">{t.orders30}</td>
-                      <td className={idle !== null && idle > 7 && t.active ? "font-medium text-[#7a5200]" : ""}>
+                      <td className={idle !== null && idle > 7 && t.active ? "font-medium text-warn-fg" : ""}>
                         {idle === null ? "nunca" : idle === 0 ? "hoje" : `há ${idle} ${idle === 1 ? "dia" : "dias"}`}
                       </td>
                       <td className="text-right">
@@ -75,7 +75,7 @@ export default async function Admin() {
 
         <section className="panel p-4 lg:self-start">
           <h2 className="h2 mb-1">Nova empresa</h2>
-          <p className="mb-3 text-sm text-ink-soft">
+          <p className="mb-3 text-sm text-muted">
             Cria a empresa e o acesso do dono. Ele cadastra produtos, equipe e estoque inicial na implantação.
           </p>
           <ActionForm action={createTenantAction} className="space-y-3" reset>
@@ -94,7 +94,7 @@ export default async function Admin() {
             <div>
               <label className="label" htmlFor="password">Senha inicial</label>
               <input id="password" name="password" type="text" minLength={8} required autoComplete="off" className="input" />
-              <p className="mt-1 text-sm text-ink-soft">Combine com o dono de trocar no primeiro acesso.</p>
+              <p className="mt-1 text-sm text-muted">Combine com o dono de trocar no primeiro acesso.</p>
             </div>
             <button className="btn btn-primary">Criar empresa</button>
           </ActionForm>

@@ -13,7 +13,7 @@ export default async function Senha() {
     <main className="mx-auto max-w-sm px-6 py-12">
       <Logo />
       <h1 className="h1 mt-8 mb-1">Trocar senha</h1>
-      <p className="mb-6 text-ink-soft">{user.email}</p>
+      <p className="mb-6 text-muted">{user.email}</p>
       <ActionForm action={changePasswordAction} className="space-y-4" reset>
         <div>
           <label className="label" htmlFor="current">Senha atual</label>
@@ -29,7 +29,7 @@ export default async function Senha() {
         </div>
         <button className="btn btn-primary w-full">Salvar nova senha</button>
       </ActionForm>
-      <Link href={back} className="mt-6 inline-block text-water hover:underline">Voltar</Link>
+      <Link href={back} className="mt-6 inline-block text-accent hover:underline">Voltar</Link>
     </main>
   );
 }

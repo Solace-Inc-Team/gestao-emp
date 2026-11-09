@@ -21,8 +21,8 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
     <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <Link href="/clientes" className="text-water hover:underline">Clientes</Link>
-          <span className="text-ink-soft">/</span>
+          <Link href="/clientes" className="text-accent hover:underline">Clientes</Link>
+          <span className="text-muted">/</span>
           <h1 className="h1">{c.name}</h1>
         </div>
         <Link href={`/pedidos/novo?cliente=${c.id}`} className="btn btn-primary">Novo pedido</Link>
@@ -39,14 +39,14 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
         <section className="panel">
           <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-4 py-3">
             <h2 className="h2">Pedidos</h2>
-            {owed > 0 && <p>Total em fiado: <Money cents={owed} className="font-semibold text-short" /></p>}
+            {owed > 0 && <p>Total em fiado: <Money cents={owed} className="font-semibold text-danger" /></p>}
           </div>
           {orders.length ? (
             <table className="table">
               <tbody>
                 {orders.map((o) => (
                   <tr key={o.id}>
-                    <td className="num text-ink-soft"><Link href={`/pedidos/${o.id}`} className="hover:text-water">#{o.number}</Link></td>
+                    <td className="num text-muted"><Link href={`/pedidos/${o.id}`} className="hover:text-accent">#{o.number}</Link></td>
                     <td>{fmtDateTime(o.createdAt)}</td>
                     <td>{paymentLabel[o.paymentMethod]}</td>
                     <td><StatusBadge status={o.status} /></td>
