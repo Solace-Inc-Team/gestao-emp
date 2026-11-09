@@ -27,7 +27,8 @@ Pra zerar o banco local é só apagar `~/.gestao-emp/pg`.
 Outros comandos:
 
 ```bash
-npm test              # testes das regras de caixa
+npm test              # regras de caixa e 2FA
+npm run test:db       # isolamento entre empresas (precisa do postgres do `npm run dev` de pé)
 npm run db:generate   # nova migração depois de mexer em src/db/schema.ts
 ```
 
@@ -54,11 +55,11 @@ Algumas decisões:
 - valores sempre em centavos (inteiro);
 - preço vem sempre do banco, nunca do formulário;
 - saldo de estoque e caixa é calculado a partir das movimentações, não fica num campo editável;
-- turno fechado não é alterado, e diferença no acerto exige observação.
+- turno fechado não é alterado, e diferença no acerto exige observação;
+- login bloqueia o e-mail por 15 minutos após 5 senhas erradas; 2FA (app autenticador) opcional em `/senha`.
 
 ## Pendências
 
-- 2FA para o dono e limite de tentativas no login
 - Pix via API (Asaas)
 - estorno de pedido entregue e baixa de fiado
 - contas a pagar e receber

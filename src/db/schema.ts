@@ -48,6 +48,9 @@ export const users = pgTable(
     active: boolean("active").notNull().default(true),
     // equipe da Solace: acessa /admin
     platformAdmin: boolean("platform_admin").notNull().default(false),
+    // segredo TOTP (base32); só vale depois que o usuário confirma um código
+    totpSecret: text("totp_secret"),
+    totpEnabled: boolean("totp_enabled").notNull().default(false),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("users_email_uq").on(t.email)],
@@ -60,7 +63,20 @@ export const sessions = pgTable("sessions", {
     .notNull()
     .references(() => users.id),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  // senha conferida, falta o código de 2FA: a sessão ainda não dá acesso
+  mfaPending: boolean("mfa_pending").notNull().default(false),
 });
+
+// falhas de login e de código 2FA, para bloquear tentativa em massa
+export const loginAttempts = pgTable(
+  "login_attempts",
+  {
+    id: id(),
+    key: text("key").notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("login_attempts_key_idx").on(t.key, t.createdAt)],
+);
 
 export const products = pgTable(
   "products",

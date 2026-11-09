@@ -6,7 +6,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { users, tenants } from "@/db/schema";
-import { requireUser, requireAdmin, createSession, destroySession } from "@/lib/auth";
+import { requireUser, requireAdmin, createSession, destroySession, getPendingMfa, completeMfa } from "@/lib/auth";
+import { isBlocked, recordFailure, clearFailures, BLOCKED_MESSAGE } from "@/lib/rate-limit";
+import { newTotpSecret, verifyTotp } from "@/lib/totp";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { DomainError } from "@/lib/ctx";
 import { parseBRL } from "@/lib/money";
@@ -50,17 +52,43 @@ async function run(fn: () => Promise<unknown>, paths: string[], ok?: string): Pr
 export async function login(fd: FormData): Promise<ActionState> {
   const email = str(fd, "email").toLowerCase();
   const password = str(fd, "password");
+  const key = `login:${email}`;
+  if (await isBlocked(key)) return { error: BLOCKED_MESSAGE };
   const [u] = await db
     .select({ user: users, tenantActive: tenants.active })
     .from(users)
     .innerJoin(tenants, eq(tenants.id, users.tenantId))
     .where(eq(users.email, email));
   // mesma mensagem nos dois casos pra não entregar quais e-mails existem
-  if (!u || !u.user.active || !(await verifyPassword(password, u.user.passwordHash)))
+  if (!u || !u.user.active || !(await verifyPassword(password, u.user.passwordHash))) {
+    await recordFailure(key);
     return { error: "E-mail ou senha incorretos." };
+  }
+  await clearFailures(key);
   if (!u.tenantActive) return { error: "O acesso desta empresa está suspenso. Fale com a Solace." };
+  if (u.user.totpEnabled) {
+    await createSession(u.user.id, true);
+    redirect("/login/codigo");
+  }
   await createSession(u.user.id);
-  redirect(u.user.platformAdmin ? "/admin" : u.user.role === "entregador" ? "/entregador" : "/");
+  redirect(homeFor(u.user));
+}
+
+const homeFor = (u: { platformAdmin: boolean; role: string }) =>
+  u.platformAdmin ? "/admin" : u.role === "entregador" ? "/entregador" : "/";
+
+export async function verifyMfaAction(fd: FormData): Promise<ActionState> {
+  const pending = await getPendingMfa();
+  if (!pending?.secret) redirect("/login");
+  const key = `totp:${pending.userId}`;
+  if (await isBlocked(key)) return { error: BLOCKED_MESSAGE };
+  if (!verifyTotp(pending.secret, str(fd, "code"))) {
+    await recordFailure(key);
+    return { error: "Código inválido. Confira o app autenticador e tente de novo." };
+  }
+  await clearFailures(key);
+  await completeMfa(pending.sessionId, pending.userId);
+  redirect(homeFor(pending));
 }
 
 export async function logout() {
@@ -259,4 +287,30 @@ export async function changePasswordAction(fd: FormData): Promise<ActionState> {
   if (!u || !(await verifyPassword(str(fd, "current"), u.hash))) return { error: "Senha atual incorreta." };
   await db.update(users).set({ passwordHash: await hashPassword(next) }).where(eq(users.id, user.userId));
   return { ok: "Senha alterada." };
+}
+
+export async function startTotpAction(): Promise<ActionState> {
+  const user = await requireUser();
+  if (user.totpEnabled) return { error: "A verificação em duas etapas já está ativa." };
+  await db.update(users).set({ totpSecret: newTotpSecret() }).where(eq(users.id, user.userId));
+  revalidatePath("/senha");
+}
+
+export async function confirmTotpAction(fd: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  const [u] = await db.select({ secret: users.totpSecret }).from(users).where(eq(users.id, user.userId));
+  if (!u?.secret) return { error: "Comece a configuração de novo." };
+  if (!verifyTotp(u.secret, str(fd, "code"))) return { error: "Código inválido. Confira se o relógio do celular está certo." };
+  await db.update(users).set({ totpEnabled: true }).where(eq(users.id, user.userId));
+  revalidatePath("/", "layout");
+  return { ok: "Verificação em duas etapas ativada." };
+}
+
+export async function disableTotpAction(fd: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  const [u] = await db.select({ hash: users.passwordHash }).from(users).where(eq(users.id, user.userId));
+  if (!u || !(await verifyPassword(str(fd, "password"), u.hash))) return { error: "Senha incorreta." };
+  await db.update(users).set({ totpEnabled: false, totpSecret: null }).where(eq(users.id, user.userId));
+  revalidatePath("/", "layout");
+  return { ok: "Verificação em duas etapas desativada." };
 }

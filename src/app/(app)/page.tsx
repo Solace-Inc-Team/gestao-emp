@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShieldAlert } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { dashboard } from "@/domain/queries";
 import { Money, StatusBadge, Empty, fmtTime, paymentLabel } from "@/components/ui";
@@ -41,6 +42,16 @@ export default async function Painel() {
           <p className="mt-1 text-sm text-muted">{d.inRoute} em rota</p>
         </div>
       </section>
+
+      {user.role === "dono" && !user.totpEnabled && (
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3">
+          <p className="flex items-center gap-2.5 text-[13px]">
+            <ShieldAlert size={16} strokeWidth={1.75} className="shrink-0 text-warn" aria-hidden="true" />
+            Proteja o acesso ao caixa: ative a verificação em duas etapas.
+          </p>
+          <Link href="/senha" className="btn h-8 text-[13px]">Ativar</Link>
+        </div>
+      )}
 
       {(d.divergentLast7 > 0 || d.lowStock.length > 0) && (
         <section aria-label="Alertas" className="mb-6 space-y-2">

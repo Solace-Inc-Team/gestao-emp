@@ -13,10 +13,11 @@ const TTL_MS = 1000 * 60 * 60 * 12;
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
 
-export async function createSession(userId: string) {
+export async function createSession(userId: string, mfaPending = false) {
   const token = randomBytes(32).toString("base64url");
-  const expiresAt = new Date(Date.now() + TTL_MS);
-  await db.insert(sessions).values({ id: sha(token), userId, expiresAt });
+  // enquanto espera o código, a sessão vale só 10 minutos
+  const expiresAt = new Date(Date.now() + (mfaPending ? 10 * 60 * 1000 : TTL_MS));
+  await db.insert(sessions).values({ id: sha(token), userId, expiresAt, mfaPending });
   (await cookies()).set(COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
@@ -33,7 +34,13 @@ export async function destroySession() {
   jar.delete(COOKIE);
 }
 
-export type SessionUser = Ctx & { name: string; email: string; tenantName: string; platformAdmin: boolean };
+export type SessionUser = Ctx & {
+  name: string;
+  email: string;
+  tenantName: string;
+  platformAdmin: boolean;
+  totpEnabled: boolean;
+};
 
 export const getUser = cache(async (): Promise<SessionUser | null> => {
   const token = (await cookies()).get(COOKIE)?.value;
@@ -47,13 +54,40 @@ export const getUser = cache(async (): Promise<SessionUser | null> => {
       email: users.email,
       tenantName: tenants.name,
       platformAdmin: users.platformAdmin,
+      totpEnabled: users.totpEnabled,
     })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
     .innerJoin(tenants, eq(tenants.id, users.tenantId))
-    .where(and(eq(sessions.id, sha(token)), gt(sessions.expiresAt, new Date()), eq(users.active, true), eq(tenants.active, true)));
+    .where(
+      and(
+        eq(sessions.id, sha(token)),
+        gt(sessions.expiresAt, new Date()),
+        eq(sessions.mfaPending, false),
+        eq(users.active, true),
+        eq(tenants.active, true),
+      ),
+    );
   return row ?? null;
 });
+
+/** Sessão que já passou pela senha e espera o código de 2FA. */
+export async function getPendingMfa() {
+  const token = (await cookies()).get(COOKIE)?.value;
+  if (!token) return null;
+  const [row] = await db
+    .select({ sessionId: sessions.id, userId: users.id, role: users.role, platformAdmin: users.platformAdmin, secret: users.totpSecret })
+    .from(sessions)
+    .innerJoin(users, eq(users.id, sessions.userId))
+    .where(and(eq(sessions.id, sha(token)), gt(sessions.expiresAt, new Date()), eq(sessions.mfaPending, true)));
+  return row ?? null;
+}
+
+// código conferido: troca a sessão provisória por uma normal (token novo, evita fixação de sessão)
+export async function completeMfa(sessionId: string, userId: string) {
+  await db.delete(sessions).where(eq(sessions.id, sessionId));
+  await createSession(userId);
+}
 
 export async function requireUser(...roles: Role[]): Promise<SessionUser> {
   const user = await getUser();
