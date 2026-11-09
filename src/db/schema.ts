@@ -230,6 +230,22 @@ export const expenses = pgTable(
   (t) => [index("expenses_tenant_paid_idx").on(t.tenantId, t.paidOn)],
 );
 
+// erros do servidor, agrupados por assinatura; é da plataforma (Solace), não de uma empresa
+export const errorEvents = pgTable("error_events", {
+  id: id(),
+  fingerprint: text("fingerprint").notNull().unique(),
+  message: text("message").notNull(),
+  stack: text("stack").notNull().default(""),
+  path: text("path").notNull().default(""),
+  method: text("method").notNull().default(""),
+  kind: text("kind").notNull().default(""),
+  count: integer("count").notNull().default(1),
+  firstSeen: timestamp("first_seen", { withTimezone: true }).notNull().defaultNow(),
+  lastSeen: timestamp("last_seen", { withTimezone: true }).notNull().defaultNow(),
+  lastAlertAt: timestamp("last_alert_at", { withTimezone: true }),
+  resolvedAt: timestamp("resolved_at", { withTimezone: true }),
+});
+
 // saldo = soma das movimentações; driver_id null = loja
 export const stockMovements = pgTable(
   "stock_movements",

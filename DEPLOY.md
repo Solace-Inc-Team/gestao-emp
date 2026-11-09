@@ -74,6 +74,7 @@ Para a demonstração, crie um segundo banco, `gestao-demo-db`. Assim os dados f
 | `DATABASE_URL` | URL interna do `gestao-db` |
 | `ADMIN_EMAIL` | seu e-mail da Solace |
 | `ADMIN_PASSWORD` | senha forte, só para o primeiro acesso |
+| `ALERT_TELEGRAM_BOT_TOKEN` e `ALERT_TELEGRAM_CHAT_ID` | opcionais, veja Monitoramento |
 
 6. **Deploy.** No log deve aparecer `[admin] ... criado`, e `/api/health` deve responder `{"ok":true}`.
 
@@ -101,12 +102,26 @@ Faça isso uma vez antes de entrar qualquer dado real, e repita a cada poucos me
 
 Backup que nunca foi restaurado não é garantia de nada.
 
+## 8. Monitoramento
+
+O sistema registra sozinho todo erro inesperado do servidor. Eles aparecem em `/admin/erros`, agrupados e com contador. Para receber o aviso no celular:
+
+1. No Telegram, fale com **@BotFather**, mande `/newbot` e siga as instruções. Ele devolve o **token** do bot.
+2. Mande qualquer mensagem para o bot novo. Depois abra `https://api.telegram.org/bot<TOKEN>/getUpdates` no navegador e copie o número em `"chat":{"id": ...}`. Esse é o **chat id**.
+3. No Coolify, adicione na aplicação as variáveis `ALERT_TELEGRAM_BOT_TOKEN` e `ALERT_TELEGRAM_CHAT_ID` e faça o redeploy.
+4. Em `/admin/erros`, clique em **Enviar alerta de teste**. A mensagem precisa chegar no Telegram.
+
+O mesmo erro avisa no máximo uma vez por hora. Se você marcar como resolvido e ele voltar, avisa na hora.
+
+Isso não cobre o servidor inteiro fora do ar, porque aí ele não consegue avisar. Para esse caso, cadastre um monitor externo gratuito (UptimeRobot, Better Stack ou similar) checando `https://app.meudominio.com.br/api/health` a cada 5 minutos, com aviso por e-mail ou Telegram.
+
 ## Antes de colocar o primeiro cliente
 
 - [ ] HTTPS funcionando em `app` e `demo`
 - [ ] Backup diário no R2 e restauração testada
 - [ ] Senha do admin trocada e 2FA ativo
 - [ ] Porta 8000 fechada
+- [ ] Alerta de teste chegando no Telegram e monitor externo do `/api/health` ativo
 - [ ] Contrato de licença e termos de uso assinados
 - [ ] Uma a duas semanas de operação em paralelo com o controle atual
 

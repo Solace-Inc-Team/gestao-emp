@@ -19,6 +19,7 @@ import { openShift, closeShift } from "@/domain/shifts";
 import { receivePurchase, adjustStock } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
 import { createTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
+import { resolveError, sendTestAlert } from "@/domain/monitoring";
 import { saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword } from "@/domain/registry";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
@@ -380,4 +381,14 @@ export async function resetOwnerAccessAction(fd: FormData): Promise<ActionState>
     email = await resetOwnerAccess(admin, str(fd, "tenantId"), str(fd, "password"));
   }, ["/admin"]);
   return r?.error ? r : { ok: `Acesso de ${email} redefinido, com 2FA desligado.` };
+}
+
+export async function resolveErrorAction(fd: FormData) {
+  const admin = await requireAdmin();
+  return run(() => resolveError(admin, str(fd, "errorId")), ["/admin"], "Marcado como resolvido.");
+}
+
+export async function testAlertAction(): Promise<ActionState> {
+  const admin = await requireAdmin();
+  return run(() => sendTestAlert(admin), [], "Alerta de teste enviado. Confira o Telegram.");
 }

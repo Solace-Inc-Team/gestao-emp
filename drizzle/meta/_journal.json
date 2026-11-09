@@ -36,6 +36,13 @@
       "when": 1794246199186,
       "tag": "0004_estorno_e_despesas",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794251421732,
+      "tag": "0005_erros_do_servidor",
+      "breakpoints": true
     }
   ]
 }

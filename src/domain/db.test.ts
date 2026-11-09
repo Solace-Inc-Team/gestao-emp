@@ -1,4 +1,4 @@
-// Garante que uma empresa não lê nem altera dados de outra.
+// Testes com banco de verdade: isolamento entre empresas e as regras que dependem de SQL.
 // Precisa de um Postgres de pé (o do `npm run dev` serve): cria e apaga o banco gestao_test.
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -22,6 +22,7 @@ let m: {
   exp: typeof import("@/domain/expenses");
   platform: typeof import("@/domain/platform");
   exportTenant: typeof import("@/domain/export");
+  monitoring: typeof import("@/domain/monitoring");
 };
 
 type World = Awaited<ReturnType<typeof makeTenant>>;
@@ -72,6 +73,7 @@ before(async () => {
     exp: await import("@/domain/expenses"),
     platform: await import("@/domain/platform"),
     exportTenant: await import("@/domain/export"),
+    monitoring: await import("@/domain/monitoring"),
   };
   await m.db.runMigrations();
   A = await makeTenant("A");
@@ -279,4 +281,37 @@ test("exportação leva só os dados da empresa e nada sensível", async () => {
     for (const l of lines) assert.equal(l.split(";").length, head.split(";").length, `${name}: ${l}`);
   }
   assert.ok(strFromU8(files["clientes.csv"]).includes(B.customer.name));
+});
+
+test("monitoramento: agrupa o mesmo erro, avisa uma vez por hora e de novo após resolvido", async () => {
+  const sent: string[] = [];
+  const send = async (t: string) => void sent.push(t);
+  const req = { path: "/pedidos/3e0bd8e0-4d24-4469-a223-b2a857d53536?q=Maria", method: "GET", kind: "render" };
+  const boom = () => new Error("conexão caiu no pedido 42");
+  const t0 = new Date("2026-11-09T12:00:00Z");
+
+  assert.deepEqual(await m.monitoring.recordError(boom(), req, send, t0), { recorded: true, alerted: true });
+  assert.deepEqual(await m.monitoring.recordError(boom(), req, send, new Date(t0.getTime() + 60_000)), { recorded: true, alerted: false });
+  assert.equal(sent.length, 1);
+  assert.ok(sent[0].includes("GET /pedidos/:id") && !sent[0].includes("Maria"), "caminho sem id e sem busca");
+
+  // passou uma hora: avisa de novo
+  await m.monitoring.recordError(boom(), req, send, new Date(t0.getTime() + 61 * 60_000));
+  assert.equal(sent.length, 2);
+
+  const admin = { ...A.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false };
+  const [ev] = await m.monitoring.listErrors(admin);
+  assert.equal(ev.count, 3);
+  assert.equal(ev.path, "/pedidos/:id");
+  await m.monitoring.resolveError(admin, ev.id);
+  await m.monitoring.recordError(boom(), req, send, new Date(t0.getTime() + 62 * 60_000));
+  assert.equal(sent.length, 3, "erro resolvido que volta avisa na hora");
+
+  const redirect = Object.assign(new Error("NEXT_REDIRECT"), { digest: "NEXT_REDIRECT;replace;/login;307;" });
+  assert.deepEqual(await m.monitoring.recordError(redirect, req, send), { recorded: false, alerted: false });
+
+  // alerta quebrado não derruba nada
+  const r = await m.monitoring.recordError(new Error("outro"), req, async () => { throw new Error("telegram fora"); });
+  assert.equal(r.recorded, true);
+  await assert.rejects(m.monitoring.listErrors({ ...admin, platformAdmin: false }), /Sem permissão/);
 });

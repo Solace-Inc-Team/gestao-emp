@@ -1,3 +1,12 @@
+import type { Instrumentation } from "next";
+
+// todo erro não tratado no servidor (página, rota, server action) passa por aqui
+export const onRequestError: Instrumentation.onRequestError = async (err, request, context) => {
+  if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  const { recordError } = await import("@/domain/monitoring");
+  await recordError(err, { path: request.path, method: request.method, kind: context.routeType });
+};
+
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
   const { db, runMigrations } = await import("@/db");

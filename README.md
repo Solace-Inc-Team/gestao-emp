@@ -28,7 +28,7 @@ Outros comandos:
 
 ```bash
 npm test              # regras de caixa e 2FA
-npm run test:db       # isolamento entre empresas (precisa do postgres do `npm run dev` de pé)
+npm run test:db       # testes com banco: isolamento, fiado, estorno, exportação e monitoramento (precisa do postgres do `npm run dev` de pé)
 npm run db:generate   # nova migração depois de mexer em src/db/schema.ts
 ```
 
@@ -59,6 +59,7 @@ Algumas decisões:
 - saldo de estoque e caixa é calculado a partir das movimentações, não fica num campo editável;
 - turno fechado não é alterado, e diferença no acerto exige observação;
 - o dono baixa todos os dados da empresa em `/exportar` (ZIP com um CSV por assunto, sem senhas nem segredos de 2FA); a Solace faz o mesmo por empresa em `/admin`;
+- erros inesperados do servidor ficam em `/admin/erros` e podem avisar no Telegram;
 - login bloqueia o e-mail por 15 minutos após 5 senhas erradas; 2FA (app autenticador) opcional em `/senha`.
 
 ## Pendências

@@ -9,7 +9,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test:db": "tsx --conditions=react-server --test src/domain/isolation.test.ts"
+    "test:db": "tsx --conditions=react-server --test src/domain/db.test.ts"
   },
   "dependencies": {
     "drizzle-orm": "^0.45.4",
