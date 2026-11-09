@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { sessions, tenants, users } from "@/db/schema";
+import { sessions, tenantDeletions, tenants, users } from "@/db/schema";
 import { DomainError } from "@/lib/ctx";
 import { hashPassword } from "@/lib/password";
 import type { SessionUser } from "@/lib/auth";
@@ -42,7 +42,7 @@ export async function setTenantActive(admin: SessionUser, tenantId: string, acti
   assertAdmin(admin);
   if (tenantId === admin.tenantId) throw new DomainError("Não dá pra suspender a própria Solace.");
   await db.transaction(async (tx) => {
-    const [t] = await tx.update(tenants).set({ active }).where(eq(tenants.id, tenantId)).returning({ id: tenants.id });
+    const [t] = await tx.update(tenants).set({ active, suspendedAt: active ? null : new Date() }).where(eq(tenants.id, tenantId)).returning({ id: tenants.id });
     if (!t) throw new DomainError("Empresa não encontrada.");
     await audit(tx, { tenantId, userId: admin.userId, role: "dono" }, active ? "empresa.reativar" : "empresa.suspender", "tenant", tenantId);
   });
@@ -68,6 +68,56 @@ export async function resetOwnerAccess(admin: SessionUser, tenantId: string, pas
   });
 }
 
+/** Prazo da política de privacidade para apagar empresa cancelada. */
+export const DELETE_DEADLINE_DAYS = 90;
+
+/**
+ * Apaga de vez todos os dados de uma empresa. Só empresa suspensa, com o nome digitado
+ * para confirmar. Tudo numa transação: ou some tudo, ou nada muda.
+ */
+export async function deleteTenant(admin: SessionUser, tenantId: string, confirmName: string) {
+  assertAdmin(admin);
+  if (tenantId === admin.tenantId) throw new DomainError("A Solace não pode ser excluída.");
+  return db.transaction(async (tx) => {
+    const [t] = await tx.select().from(tenants).where(eq(tenants.id, tenantId)).for("update");
+    if (!t) throw new DomainError("Empresa não encontrada.");
+    if (t.active) throw new DomainError("Suspenda a empresa antes de excluir.");
+    if (confirmName.trim() !== t.name) throw new DomainError("Digite o nome exato da empresa para confirmar.");
+
+    const counts: Record<string, number> = {};
+    const del = async (label: string, q: ReturnType<typeof sql>) => {
+      const r = await tx.execute(q);
+      counts[label] = (r as unknown as { count: number }).count;
+    };
+    // ordem pensada nas chaves estrangeiras: primeiro o que aponta para os outros
+    await del("historico", sql`delete from audit_log where tenant_id = ${t.id}`);
+    await del("pagamentos_fiado", sql`delete from customer_payments where tenant_id = ${t.id}`);
+    await del("despesas", sql`delete from expenses where tenant_id = ${t.id}`);
+    await del("movimentacoes_estoque", sql`delete from stock_movements where tenant_id = ${t.id}`);
+    await del("itens_pedido", sql`delete from order_items where tenant_id = ${t.id}`);
+    await del("pedidos", sql`delete from orders where tenant_id = ${t.id}`);
+    await del("turnos", sql`delete from shifts where tenant_id = ${t.id}`);
+    await del("clientes", sql`delete from customers where tenant_id = ${t.id}`);
+    await del("produtos", sql`delete from products where tenant_id = ${t.id}`);
+    await del("sessoes", sql`delete from sessions where user_id in (select id from users where tenant_id = ${t.id})`);
+    await del(
+      "tentativas_login",
+      sql`delete from login_attempts where key in (
+        select 'login:' || email from users where tenant_id = ${t.id}
+        union select 'totp:' || id::text from users where tenant_id = ${t.id})`,
+    );
+    await del("usuarios", sql`delete from users where tenant_id = ${t.id}`);
+    await tx.delete(tenants).where(eq(tenants.id, t.id));
+    await tx.insert(tenantDeletions).values({ tenantId: t.id, tenantName: t.name, deletedBy: admin.email, counts });
+    return counts;
+  });
+}
+
+export async function listDeletions(admin: SessionUser) {
+  assertAdmin(admin);
+  return db.select().from(tenantDeletions).orderBy(desc(tenantDeletions.deletedAt)).limit(50);
+}
+
 export async function listTenants(admin: SessionUser) {
   assertAdmin(admin);
   const since = new Date(Date.now() - 30 * 864e5);
@@ -77,6 +127,7 @@ export async function listTenants(admin: SessionUser) {
       name: tenants.name,
       active: tenants.active,
       createdAt: tenants.createdAt,
+      suspendedAt: tenants.suspendedAt,
       // nomes qualificados à mão: dentro da subquery o drizzle solta só "id", que viraria users.id
       owner: sql<string | null>`(select u.email from users u where u.tenant_id = tenants.id and u.role = 'dono' order by u.created_at limit 1)`,
       people: sql<number>`(select count(*)::int from users u where u.tenant_id = tenants.id and u.active)`,

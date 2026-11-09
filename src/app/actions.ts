@@ -18,7 +18,7 @@ import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
 import { openShift, closeShift } from "@/domain/shifts";
 import { receivePurchase, adjustStock } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
-import { createTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
+import { createTenant, deleteTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
 import { resolveError, sendTestAlert } from "@/domain/monitoring";
 import { saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword, acceptTerms } from "@/domain/registry";
 import { TERMS_VERSION } from "@/lib/legal";
@@ -399,4 +399,14 @@ export async function acceptTermsAction(fd: FormData): Promise<ActionState> {
   if (fd.get("agree") !== "on") return { error: "Para continuar, marque que leu e aceita os termos." };
   await acceptTerms(user, TERMS_VERSION);
   redirect("/");
+}
+
+export async function deleteTenantAction(fd: FormData): Promise<ActionState> {
+  const admin = await requireAdmin();
+  let total = 0;
+  const r = await run(async () => {
+    const counts = await deleteTenant(admin, str(fd, "tenantId"), str(fd, "confirmName"));
+    total = Object.values(counts).reduce((s, n) => s + n, 0);
+  }, ["/admin"]);
+  return r?.error ? r : { ok: `Empresa excluída: ${total} registros apagados.` };
 }

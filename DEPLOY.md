@@ -133,6 +133,7 @@ Isso não cobre o servidor inteiro fora do ar, porque aí ele não consegue avis
 | Deploy fica "unhealthy" | Logs da aplicação. Quase sempre é a `DATABASE_URL` errada ou o banco parado. |
 | `/api/health` responde 503 | O app subiu, mas não alcança o banco. Confira se o banco está rodando. |
 | Cliente vê "acesso suspenso" | A empresa foi suspensa em `/admin`. |
+| Cliente cancelou | Em `/admin`: suspenda, mande a exportação se ele pedir (prazo de 30 dias) e use **Excluir** em até 90 dias. A tela avisa quando o prazo passa. Os backups antigos expiram sozinhos em 14 dias. |
 | Atendente ou entregador esqueceu a senha | O dono define uma senha nova em **Equipe → Redefinir senha**. |
 | Dono esqueceu a senha ou perdeu o celular do 2FA | Em `/admin`, **Redefinir acesso** na linha da empresa: senha nova e 2FA desligado. Confirme a identidade do dono antes. |
 

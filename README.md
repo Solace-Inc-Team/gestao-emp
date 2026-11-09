@@ -60,13 +60,13 @@ Algumas decisões:
 - turno fechado não é alterado, e diferença no acerto exige observação;
 - o dono baixa todos os dados da empresa em `/exportar` (ZIP com um CSV por assunto, sem senhas nem segredos de 2FA); a Solace faz o mesmo por empresa em `/admin`;
 - termos de uso em `/termos` e política de privacidade em `/privacidade`; o dono aceita no primeiro acesso e de novo quando `TERMS_VERSION` muda;
+- empresa cancelada: suspender em `/admin`, exportar se o cliente pedir e excluir de vez em até 90 dias (a exclusão fica registrada);
 - erros inesperados do servidor ficam em `/admin/erros` e podem avisar no Telegram;
 - login bloqueia o e-mail por 15 minutos após 5 senhas erradas; 2FA (app autenticador) opcional em `/senha`.
 
 ## Pendências
 
 - preencher os dados da Solace em `src/lib/legal.ts` e revisar `/termos` e `/privacidade` com um advogado
-- exclusão definitiva dos dados de uma empresa cancelada (hoje é manual, a política promete em até 90 dias)
 
 - Pix via API (Asaas)
 - entregador receber fiado na rua (hoje só a loja registra)

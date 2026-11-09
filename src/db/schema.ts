@@ -36,7 +36,19 @@ export const tenants = pgTable("tenants", {
   id: id(),
   name: text("name").notNull(),
   active: boolean("active").notNull().default(true),
+  // conta o prazo da política: dados de empresa cancelada saem em até 90 dias
+  suspendedAt: timestamp("suspended_at", { withTimezone: true }),
   createdAt: createdAt(),
+});
+
+// prova de que a exclusão foi feita; fica fora da empresa apagada, por isso sem chave estrangeira
+export const tenantDeletions = pgTable("tenant_deletions", {
+  id: id(),
+  tenantId: uuid("tenant_id").notNull(),
+  tenantName: text("tenant_name").notNull(),
+  deletedBy: text("deleted_by").notNull(),
+  counts: jsonb("counts").notNull(),
+  deletedAt: timestamp("deleted_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
 export const users = pgTable(

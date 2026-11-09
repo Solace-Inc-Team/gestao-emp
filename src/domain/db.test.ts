@@ -328,3 +328,39 @@ test("aceite dos termos: só o dono, com versão e data", async () => {
   const log = await db.select().from(auditLog).where(and(eq(auditLog.tenantId, A.t.id), eq(auditLog.action, "termos.aceite")));
   assert.equal(log.length, 1);
 });
+
+test("exclusão de empresa: travas, apaga tudo dela e mais nada", async () => {
+  const { db } = m.db;
+  const { sessions, loginAttempts, tenantDeletions } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const C = await makeTenant("C");
+  await db.insert(sessions).values({ id: "sessao-c", userId: C.owner.id, expiresAt: new Date(Date.now() + 3600e3) });
+  await db.insert(loginAttempts).values({ key: `login:${C.owner.email}` });
+
+  const admin = { ...A.ctx, platformAdmin: true, name: "", email: "admin@teste", tenantName: "", totpEnabled: false, termsVersion: null };
+  const countOf = async (table: string, t: string) =>
+    Number((await m.db.pgClient.unsafe(`select count(*)::int n from ${table} where tenant_id = $1`, [t]))[0].n);
+  const tables = ["audit_log", "customer_payments", "expenses", "stock_movements", "order_items", "orders", "shifts", "customers", "products", "users"];
+  const before = { A: await countOf("orders", A.t.id), B: await countOf("orders", B.t.id) };
+
+  await assert.rejects(m.platform.deleteTenant(admin, C.t.id, "C"), /Suspenda a empresa/);
+  await m.platform.setTenantActive(admin, C.t.id, false);
+  await assert.rejects(m.platform.deleteTenant(admin, C.t.id, "Empresa errada"), /nome exato/);
+  await assert.rejects(m.platform.deleteTenant(admin, A.t.id, "A"), /não pode ser excluída/);
+  await assert.rejects(m.platform.deleteTenant({ ...admin, platformAdmin: false }, C.t.id, "C"), /Sem permissão/);
+
+  const counts = await m.platform.deleteTenant(admin, C.t.id, " C ");
+  assert.equal(counts.pedidos, 1);
+  assert.equal(counts.usuarios, 2);
+  assert.equal(counts.sessoes, 1);
+  assert.equal(counts.tentativas_login, 1);
+  for (const t of tables) assert.equal(await countOf(t, C.t.id), 0, `sobrou dado em ${t}`);
+  assert.equal((await db.select().from(sessions).where(eq(sessions.userId, C.owner.id))).length, 0);
+
+  const [log] = await db.select().from(tenantDeletions).where(eq(tenantDeletions.tenantId, C.t.id));
+  assert.equal(log.tenantName, "C");
+  assert.equal(log.deletedBy, "admin@teste");
+
+  assert.equal(await countOf("orders", A.t.id), before.A);
+  assert.equal(await countOf("orders", B.t.id), before.B);
+});

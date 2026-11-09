@@ -1,7 +1,7 @@
 import { requireAdmin } from "@/lib/auth";
-import { listTenants } from "@/domain/platform";
+import { DELETE_DEADLINE_DAYS, listDeletions, listTenants } from "@/domain/platform";
 import { ActionForm } from "@/components/action-form";
-import { createTenantAction, resetOwnerAccessAction, toggleTenantAction } from "@/app/actions";
+import { createTenantAction, deleteTenantAction, resetOwnerAccessAction, toggleTenantAction } from "@/app/actions";
 import { PopoverForm } from "@/components/popover-form";
 import { Empty, PageHeader, fmtDateTime } from "@/components/ui";
 
@@ -12,7 +12,7 @@ const daysAgo = (d: string | Date | null) => {
 
 export default async function Admin() {
   const admin = await requireAdmin();
-  const list = await listTenants(admin);
+  const [list, deletions] = await Promise.all([listTenants(admin), listDeletions(admin)]);
   const active = list.filter((t) => t.active);
 
   return (
@@ -47,6 +47,12 @@ export default async function Admin() {
                           {t.name}
                           {!t.active && <span className="ml-2 rounded bg-danger-soft px-1.5 py-0.5 text-xs font-semibold text-danger">suspensa</span>}
                         </p>
+                        {!t.active && t.suspendedAt && (
+                          <p className={`text-[13px] ${daysAgo(t.suspendedAt)! > DELETE_DEADLINE_DAYS ? "font-medium text-danger" : "text-muted"}`}>
+                            Suspensa há {daysAgo(t.suspendedAt)} dias
+                            {daysAgo(t.suspendedAt)! > DELETE_DEADLINE_DAYS && `: passou dos ${DELETE_DEADLINE_DAYS} dias da política, exclua os dados`}
+                          </p>
+                        )}
                         <p className="text-sm text-muted">{t.owner ?? "sem dono"}, desde {fmtDateTime(t.createdAt).split(" ")[0].replace(",", "")}</p>
                       </td>
                       <td className="num text-right">{t.people}</td>
@@ -62,6 +68,23 @@ export default async function Admin() {
                             <label className="label mb-0" htmlFor={`o-${t.id}`}>Senha nova do dono</label>
                             <input id={`o-${t.id}`} name="password" type="text" minLength={8} required autoComplete="off" className="input" />
                           </PopoverForm>
+                          {!t.active && (
+                            <PopoverForm
+                              label="Excluir"
+                              action={deleteTenantAction}
+                              submit="Excluir de vez"
+                              danger
+                              confirm={`Apagar todos os dados de ${t.name}? Não tem volta.`}
+                            >
+                              <input type="hidden" name="tenantId" value={t.id} />
+                              <p className="text-[13px] text-muted">
+                                Apaga clientes, pedidos, caixa, estoque, equipe e histórico. Não tem volta.{" "}
+                                <a href={`/admin/exportar?empresa=${t.id}`} className="underline">Exporte antes</a>.
+                              </p>
+                              <label className="label mb-0" htmlFor={`d-${t.id}`}>Digite o nome da empresa</label>
+                              <input id={`d-${t.id}`} name="confirmName" required autoComplete="off" placeholder={t.name} className="input" />
+                            </PopoverForm>
+                          )}
                           <ActionForm
                             action={toggleTenantAction}
                             confirm={t.active ? `Suspender ${t.name}? Ninguém da empresa vai conseguir entrar.` : undefined}
@@ -81,6 +104,25 @@ export default async function Admin() {
             <Empty>Nenhuma empresa ainda. Crie a primeira ao lado.</Empty>
           )}
         </section>
+
+        {deletions.length > 0 && (
+          <section className="panel lg:col-start-1">
+            <h2 className="h2 border-b border-line px-4 py-3">Exclusões feitas</h2>
+            <ul>
+              {deletions.map((d) => (
+                <li key={d.id} className="flex flex-wrap justify-between gap-2 border-b border-line px-4 py-2.5 text-[13px] last:border-0">
+                  <span>
+                    <span className="font-medium">{d.tenantName}</span>
+                    <span className="text-muted">, por {d.deletedBy}</span>
+                  </span>
+                  <span className="text-muted">
+                    {Object.values(d.counts as Record<string, number>).reduce((s, n) => s + n, 0)} registros em {fmtDateTime(d.deletedAt)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
 
         <section className="panel p-4 lg:self-start">
           <h2 className="h2 mb-1">Nova empresa</h2>
