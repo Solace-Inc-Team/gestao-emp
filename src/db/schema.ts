@@ -32,6 +32,7 @@ export const containerStateEnum = pgEnum("container_state", ["cheio", "vazio"]);
 export const tenants = pgTable("tenants", {
   id: id(),
   name: text("name").notNull(),
+  active: boolean("active").notNull().default(true),
   createdAt: createdAt(),
 });
 
@@ -45,6 +46,8 @@ export const users = pgTable(
     passwordHash: text("password_hash").notNull(),
     role: roleEnum("role").notNull(),
     active: boolean("active").notNull().default(true),
+    // equipe da Solace: acessa /admin
+    platformAdmin: boolean("platform_admin").notNull().default(false),
     createdAt: createdAt(),
   },
   (t) => [uniqueIndex("users_email_uq").on(t.email)],

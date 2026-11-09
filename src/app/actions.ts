@@ -5,15 +5,16 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { users } from "@/db/schema";
-import { requireUser, createSession, destroySession } from "@/lib/auth";
-import { verifyPassword } from "@/lib/password";
+import { users, tenants } from "@/db/schema";
+import { requireUser, requireAdmin, createSession, destroySession } from "@/lib/auth";
+import { hashPassword, verifyPassword } from "@/lib/password";
 import { DomainError } from "@/lib/ctx";
 import { parseBRL } from "@/lib/money";
 import type { ActionState } from "@/components/action-form";
 import { createOrder, dispatchOrder, deliverOrder, cancelOrder, newOrderSchema } from "@/domain/orders";
 import { openShift, closeShift } from "@/domain/shifts";
 import { receivePurchase, adjustStock } from "@/domain/stock";
+import { createTenant, newTenantSchema, setTenantActive } from "@/domain/platform";
 import { saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive } from "@/domain/registry";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
@@ -49,12 +50,17 @@ async function run(fn: () => Promise<unknown>, paths: string[], ok?: string): Pr
 export async function login(fd: FormData): Promise<ActionState> {
   const email = str(fd, "email").toLowerCase();
   const password = str(fd, "password");
-  const [u] = await db.select().from(users).where(eq(users.email, email));
+  const [u] = await db
+    .select({ user: users, tenantActive: tenants.active })
+    .from(users)
+    .innerJoin(tenants, eq(tenants.id, users.tenantId))
+    .where(eq(users.email, email));
   // mesma mensagem nos dois casos pra não entregar quais e-mails existem
-  if (!u || !u.active || !(await verifyPassword(password, u.passwordHash)))
+  if (!u || !u.user.active || !(await verifyPassword(password, u.user.passwordHash)))
     return { error: "E-mail ou senha incorretos." };
-  await createSession(u.id);
-  redirect(u.role === "entregador" ? "/entregador" : "/");
+  if (!u.tenantActive) return { error: "O acesso desta empresa está suspenso. Fale com a Solace." };
+  await createSession(u.user.id);
+  redirect(u.user.platformAdmin ? "/admin" : u.user.role === "entregador" ? "/entregador" : "/");
 }
 
 export async function logout() {
@@ -219,4 +225,38 @@ export async function createUserAction(fd: FormData) {
 export async function toggleUserAction(fd: FormData) {
   const user = await requireUser("dono");
   return run(() => setUserActive(user, str(fd, "userId"), str(fd, "active") === "true"), ["/"]);
+}
+
+export async function createTenantAction(fd: FormData) {
+  const admin = await requireAdmin();
+  return run(
+    async () =>
+      createTenant(
+        admin,
+        newTenantSchema.parse({
+          company: str(fd, "company"),
+          ownerName: str(fd, "ownerName"),
+          email: str(fd, "email"),
+          password: str(fd, "password"),
+        }),
+      ),
+    ["/admin"],
+    "Empresa criada. Passe o e-mail e a senha inicial para o dono.",
+  );
+}
+
+export async function toggleTenantAction(fd: FormData) {
+  const admin = await requireAdmin();
+  return run(() => setTenantActive(admin, str(fd, "tenantId"), str(fd, "active") === "true"), ["/admin"]);
+}
+
+export async function changePasswordAction(fd: FormData): Promise<ActionState> {
+  const user = await requireUser();
+  const next = str(fd, "next");
+  if (next.length < 8) return { error: "A nova senha precisa de ao menos 8 caracteres." };
+  if (next !== str(fd, "confirm")) return { error: "A confirmação não bate com a nova senha." };
+  const [u] = await db.select({ hash: users.passwordHash }).from(users).where(eq(users.id, user.userId));
+  if (!u || !(await verifyPassword(str(fd, "current"), u.hash))) return { error: "Senha atual incorreta." };
+  await db.update(users).set({ passwordHash: await hashPassword(next) }).where(eq(users.id, user.userId));
+  return { ok: "Senha alterada." };
 }

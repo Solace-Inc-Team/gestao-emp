@@ -19,6 +19,9 @@ npm run dev
 Com `SEED_DEMO=true` o primeiro start cria uma empresa de exemplo. Logins: `dono@demo.com`,
 `atendente@demo.com`, `joao@demo.com` e `carlos@demo.com`, senha `demo1234`.
 
+Com `ADMIN_EMAIL` e `ADMIN_PASSWORD` definidos, o start também cria o acesso da Solace ao `/admin`,
+onde se cria, suspende e reativa empresas.
+
 Pra zerar o banco local é só apagar `~/.gestao-emp/pg`.
 
 Outros comandos:
@@ -34,7 +37,7 @@ As migrações em `drizzle/` rodam sozinhas quando o servidor sobe (`src/instrum
 
 1. Criar um PostgreSQL no Coolify.
 2. Criar a aplicação apontando pro repositório, build pelo `Dockerfile`.
-3. Definir `DATABASE_URL`. `SEED_DEMO` só em ambiente de demonstração.
+3. Definir `DATABASE_URL`, `ADMIN_EMAIL` e `ADMIN_PASSWORD`. `SEED_DEMO` só em ambiente de demonstração.
 4. Configurar domínio com HTTPS (o PWA do entregador precisa) e backup agendado do Postgres.
 
 ## Organização
@@ -43,6 +46,7 @@ As migrações em `drizzle/` rodam sozinhas quando o servidor sobe (`src/instrum
 - `src/app/actions.ts`: server actions, validam a entrada e o perfil antes de chamar o domínio
 - `src/app/(app)`: telas do dono e do atendente
 - `src/app/entregador`: tela do entregador, pensada pro celular
+- `src/app/admin`: painel da Solace (empresas)
 - `src/db`: schema do Drizzle, conexão e seed
 
 Algumas decisões:

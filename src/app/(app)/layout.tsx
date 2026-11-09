@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth";
 import { logout } from "@/app/actions";
 import { Logo } from "@/components/logo";
@@ -6,6 +8,7 @@ import { roleLabel } from "@/components/ui";
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser("dono", "atendente");
+  if (user.platformAdmin) redirect("/admin");
   const links = [
     { href: "/", label: "Painel" },
     { href: "/pedidos/novo", label: "Novo pedido" },
@@ -35,9 +38,12 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <div className="hidden border-t border-line px-5 py-4 text-sm lg:block">
           <p className="font-semibold">{user.name}</p>
           <p className="text-ink-soft">{roleLabel[user.role]}</p>
-          <form action={logout}>
-            <button className="mt-2 text-water underline-offset-2 hover:underline">Sair</button>
-          </form>
+          <div className="mt-2 flex gap-4">
+            <Link href="/senha" className="text-water underline-offset-2 hover:underline">Trocar senha</Link>
+            <form action={logout}>
+              <button className="text-water underline-offset-2 hover:underline">Sair</button>
+            </form>
+          </div>
         </div>
       </aside>
       <main className="mx-auto w-full max-w-6xl px-4 py-6 lg:px-8 lg:py-8">{children}</main>

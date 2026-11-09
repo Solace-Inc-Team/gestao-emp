@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { getShift, itemsForOrders, listOrders, openShiftFor, getOrder } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
@@ -20,9 +21,12 @@ export default async function Entregador() {
     <div className="mx-auto min-h-screen max-w-lg">
       <header className="flex items-center justify-between bg-ink px-4 py-3 text-white">
         <Logo light />
-        <form action={logout}>
-          <button className="text-sm text-white/80 underline">Sair</button>
-        </form>
+        <div className="flex gap-4 text-sm">
+          <Link href="/senha" className="text-white/80 underline">Senha</Link>
+          <form action={logout}>
+            <button className="text-white/80 underline">Sair</button>
+          </form>
+        </div>
       </header>
 
       <div className="px-4 py-5">

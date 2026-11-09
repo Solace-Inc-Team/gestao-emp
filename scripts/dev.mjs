@@ -1,8 +1,8 @@
 // sobe um postgres local (embedded-postgres) e o next dev apontando pra ele
 import EmbeddedPostgres from "embedded-postgres";
 import { existsSync } from "node:fs";
-import { spawn } from "node:child_process";
-import { homedir } from "node:os";
+import { spawn, spawnSync } from "node:child_process";
+import { homedir, platform, arch } from "node:os";
 import { join } from "node:path";
 
 const PORT = 5433;
@@ -15,6 +15,12 @@ const pg = new EmbeddedPostgres({
   port: PORT,
   persistent: true,
 });
+
+// se o dev anterior foi morto sem desligar o banco, o postgres fica órfão segurando a pasta
+if (existsSync(join(dataDir, "postmaster.pid"))) {
+  const { pg_ctl } = await import(`@embedded-postgres/${platform() === "win32" ? "windows" : platform()}-${arch()}`);
+  spawnSync(pg_ctl, ["stop", "-D", dataDir, "-m", "fast"], { stdio: "ignore" });
+}
 
 const fresh = !existsSync(dataDir);
 if (fresh) await pg.initialise();
