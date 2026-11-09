@@ -56,6 +56,7 @@ Algumas decisões:
 
 - valores sempre em centavos (inteiro);
 - preço vem sempre do banco, nunca do formulário;
+- isolamento entre empresas em duas camadas: todo `where` filtra por empresa e, por baixo, o Postgres aplica RLS (papel `app_tenant` dentro de `withTenant`), então uma consulta que esqueça o filtro continua isolada;
 - saldo de estoque e caixa é calculado a partir das movimentações, não fica num campo editável;
 - turno fechado não é alterado, e diferença no acerto exige observação;
 - o dono baixa todos os dados da empresa em `/exportar` (ZIP com um CSV por assunto, sem senhas nem segredos de 2FA); a Solace faz o mesmo por empresa em `/admin`;

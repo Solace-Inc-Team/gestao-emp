@@ -1,5 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
-import { db } from "@/db";
+import { tenantTransaction } from "@/db";
 import { shifts, users, orders, stockMovements } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { expectedCash, cashDifference } from "@/lib/cash";
@@ -7,7 +7,7 @@ import { audit, move } from "./stock";
 
 export async function openShift(ctx: Ctx, driverId: string, openingCashCents: number) {
   assertRole(ctx, "dono", "atendente");
-  return db.transaction(async (tx) => {
+  return tenantTransaction(ctx, async (tx) => {
     const [driver] = await tx
       .select()
       .from(users)
@@ -29,7 +29,7 @@ export async function openShift(ctx: Ctx, driverId: string, openingCashCents: nu
 
 export async function closeShift(ctx: Ctx, shiftId: string, countedCashCents: number, notes: string) {
   assertRole(ctx, "dono", "atendente");
-  return db.transaction(async (tx) => {
+  return tenantTransaction(ctx, async (tx) => {
     const [shift] = await tx
       .select()
       .from(shifts)

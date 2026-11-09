@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { and, desc, eq, gte, isNull, lte, ne, sql } from "drizzle-orm";
-import { db } from "@/db";
+import { db, scoped, tenantTransaction } from "@/db";
 import { expenses, users } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { audit } from "./stock";
@@ -30,7 +30,7 @@ export const expenseSchema = z.object({
 
 export async function createExpense(ctx: Ctx, input: z.infer<typeof expenseSchema>) {
   assertRole(ctx, "dono", "atendente");
-  return db.transaction(async (tx) => {
+  return tenantTransaction(ctx, async (tx) => {
     const [e] = await tx.insert(expenses).values({ ...input, tenantId: ctx.tenantId, createdBy: ctx.userId }).returning();
     await audit(tx, ctx, "despesa.criar", "expense", e.id, input);
     return e;
@@ -40,7 +40,7 @@ export async function createExpense(ctx: Ctx, input: z.infer<typeof expenseSchem
 export async function voidExpense(ctx: Ctx, expenseId: string, reason: string) {
   assertRole(ctx, "dono");
   if (reason.trim().length < 3) throw new DomainError("Informe o motivo do cancelamento.");
-  await db.transaction(async (tx) => {
+  await tenantTransaction(ctx, async (tx) => {
     const [e] = await tx
       .select()
       .from(expenses)
@@ -58,7 +58,7 @@ export async function voidExpense(ctx: Ctx, expenseId: string, reason: string) {
 }
 
 /** Despesas do período (datas YYYY-MM-DD, inclusivas), canceladas junto para o histórico. */
-export function listExpenses(tenantId: string, fromStr: string, toStr: string) {
+export const listExpenses = scoped(function listExpenses(tenantId: string, fromStr: string, toStr: string) {
   return db
     .select({
       id: expenses.id,
@@ -76,10 +76,10 @@ export function listExpenses(tenantId: string, fromStr: string, toStr: string) {
     .innerJoin(users, eq(users.id, expenses.createdBy))
     .where(and(eq(expenses.tenantId, tenantId), gte(expenses.paidOn, fromStr), lte(expenses.paidOn, toStr)))
     .orderBy(desc(expenses.paidOn), desc(expenses.createdAt));
-}
+});
 
 // excludeRefunds: no resultado do período a venda estornada já saiu das vendas; contar a devolução seria descontar duas vezes
-export async function expensesTotal(tenantId: string, fromStr: string, toStr: string, excludeRefunds = false) {
+export const expensesTotal = scoped(async function expensesTotal(tenantId: string, fromStr: string, toStr: string, excludeRefunds = false) {
   const [r] = await db
     .select({ total: sql<number>`coalesce(sum(${expenses.amountCents}), 0)::int` })
     .from(expenses)
@@ -93,4 +93,4 @@ export async function expensesTotal(tenantId: string, fromStr: string, toStr: st
       ),
     );
   return r.total;
-}
+});

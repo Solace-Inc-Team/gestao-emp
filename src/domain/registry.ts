@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { and, eq } from "drizzle-orm";
-import { db } from "@/db";
+import { tenantTransaction } from "@/db";
 import { customers, products, sessions, users } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { hashPassword } from "@/lib/password";
@@ -16,7 +16,7 @@ export const customerSchema = z.object({
 
 export async function saveCustomer(ctx: Ctx, input: z.infer<typeof customerSchema>, id?: string) {
   assertRole(ctx, "dono", "atendente");
-  return db.transaction(async (tx) => {
+  return tenantTransaction(ctx, async (tx) => {
     if (id) {
       const [c] = await tx
         .update(customers)
@@ -43,7 +43,7 @@ export const productSchema = z.object({
 
 export async function saveProduct(ctx: Ctx, input: z.infer<typeof productSchema>, id?: string) {
   assertRole(ctx, "dono");
-  return db.transaction(async (tx) => {
+  return tenantTransaction(ctx, async (tx) => {
     if (id) {
       const [before] = await tx
         .select()
@@ -70,16 +70,21 @@ export const userSchema = z.object({
 export async function createUser(ctx: Ctx, input: z.infer<typeof userSchema>) {
   assertRole(ctx, "dono");
   const passwordHash = await hashPassword(input.password);
-  return db.transaction(async (tx) => {
-    const [exists] = await tx.select({ id: users.id }).from(users).where(eq(users.email, input.email));
-    if (exists) throw new DomainError("Já existe um usuário com este e-mail.");
-    const [u] = await tx
-      .insert(users)
-      .values({ tenantId: ctx.tenantId, name: input.name, email: input.email, role: input.role, passwordHash })
-      .returning({ id: users.id });
-    await audit(tx, ctx, "usuario.criar", "user", u.id, { email: input.email, role: input.role });
-    return u;
-  });
+  try {
+    return await tenantTransaction(ctx, async (tx) => {
+      const [u] = await tx
+        .insert(users)
+        .values({ tenantId: ctx.tenantId, name: input.name, email: input.email, role: input.role, passwordHash })
+        .returning({ id: users.id });
+      await audit(tx, ctx, "usuario.criar", "user", u.id, { email: input.email, role: input.role });
+      return u;
+    });
+  } catch (e) {
+    // o e-mail pode estar em outra empresa, que o RLS não deixa consultar: quem acusa é o índice único
+    const code = (e as { code?: string; cause?: { code?: string } }).cause?.code ?? (e as { code?: string }).code;
+    if (code === "23505") throw new DomainError("Já existe um usuário com este e-mail.");
+    throw e;
+  }
 }
 
 export async function resetUserPassword(ctx: Ctx, userId: string, password: string) {
@@ -87,7 +92,7 @@ export async function resetUserPassword(ctx: Ctx, userId: string, password: stri
   if (userId === ctx.userId) throw new DomainError("Para trocar a sua própria senha, use a página Senha.");
   if (password.length < 8) throw new DomainError("A senha nova precisa de ao menos 8 caracteres.");
   const passwordHash = await hashPassword(password);
-  await db.transaction(async (tx) => {
+  await tenantTransaction(ctx, async (tx) => {
     const [u] = await tx
       .update(users)
       .set({ passwordHash })
@@ -102,7 +107,7 @@ export async function resetUserPassword(ctx: Ctx, userId: string, password: stri
 /** Aceite eletrônico dos termos pelo dono: guarda a versão e o momento, e registra no histórico. */
 export async function acceptTerms(ctx: Ctx, version: string) {
   assertRole(ctx, "dono");
-  await db.transaction(async (tx) => {
+  await tenantTransaction(ctx, async (tx) => {
     await tx.update(users).set({ termsVersion: version, termsAcceptedAt: new Date() }).where(eq(users.id, ctx.userId));
     await audit(tx, ctx, "termos.aceite", "user", ctx.userId, { version });
   });
@@ -111,7 +116,7 @@ export async function acceptTerms(ctx: Ctx, version: string) {
 export async function setUserActive(ctx: Ctx, userId: string, active: boolean) {
   assertRole(ctx, "dono");
   if (userId === ctx.userId) throw new DomainError("Você não pode desativar o próprio usuário.");
-  await db.transaction(async (tx) => {
+  await tenantTransaction(ctx, async (tx) => {
     const [u] = await tx
       .update(users)
       .set({ active })

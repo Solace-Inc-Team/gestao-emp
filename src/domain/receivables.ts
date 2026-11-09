@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { and, desc, eq, isNull, sql } from "drizzle-orm";
-import { db, type Tx } from "@/db";
+import { db, scoped, tenantTransaction, type Tx } from "@/db";
 import { customerPayments, customers, orders, users } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { audit } from "./stock";
@@ -20,7 +20,7 @@ export async function fiadoBalance(exec: Tx | typeof db, tenantId: string, custo
   return r.owed - r.paid;
 }
 
-export const customerBalance = (tenantId: string, customerId: string) => fiadoBalance(db, tenantId, customerId);
+export const customerBalance = scoped((tenantId: string, customerId: string) => fiadoBalance(db, tenantId, customerId));
 
 export const paymentSchema = z.object({
   customerId: z.uuid(),
@@ -31,7 +31,7 @@ export const paymentSchema = z.object({
 
 export async function receivePayment(ctx: Ctx, input: z.infer<typeof paymentSchema>) {
   assertRole(ctx, "dono", "atendente");
-  return db.transaction(async (tx) => {
+  return tenantTransaction(ctx, async (tx) => {
     // trava o cliente: dois pagamentos ao mesmo tempo não passam juntos pela checagem de saldo
     const [c] = await tx
       .select({ id: customers.id, name: customers.name })
@@ -55,7 +55,7 @@ export async function receivePayment(ctx: Ctx, input: z.infer<typeof paymentSche
 export async function voidPayment(ctx: Ctx, paymentId: string, reason: string) {
   assertRole(ctx, "dono");
   if (reason.trim().length < 3) throw new DomainError("Informe o motivo do estorno.");
-  await db.transaction(async (tx) => {
+  await tenantTransaction(ctx, async (tx) => {
     const [p] = await tx
       .update(customerPayments)
       .set({ voidedAt: new Date(), voidedBy: ctx.userId, voidReason: reason.trim() })
@@ -67,7 +67,7 @@ export async function voidPayment(ctx: Ctx, paymentId: string, reason: string) {
 }
 
 /** Clientes com saldo devedor, da dívida mais antiga para a mais nova. */
-export async function listDebtors(tenantId: string) {
+export const listDebtors = scoped(async function listDebtors(tenantId: string) {
   return db.execute<{ id: string; name: string; phone: string; owed: number; oldest: string | Date; last_payment: string | Date | null }>(sql`
     with fiado as (
       select customer_id, sum(total_cents)::int as total, min(delivered_at) as oldest
@@ -86,10 +86,10 @@ export async function listDebtors(tenantId: string) {
     where f.total - coalesce(p.total, 0) > 0
     order by f.oldest
   `);
-}
+});
 
 /** Extrato do cliente: compras fiado e pagamentos, do mais recente para o mais antigo. */
-export async function customerStatement(tenantId: string, customerId: string) {
+export const customerStatement = scoped(async function customerStatement(tenantId: string, customerId: string) {
   const bought = await db
     .select({ id: orders.id, number: orders.number, at: orders.deliveredAt, amount: orders.totalCents })
     .from(orders)
@@ -122,14 +122,14 @@ export async function customerStatement(tenantId: string, customerId: string) {
   ].sort((a, b) => new Date(b.at ?? 0).getTime() - new Date(a.at ?? 0).getTime());
   const owed = bought.reduce((s, b) => s + b.amount, 0) - paid.filter((p) => !p.voidedAt).reduce((s, p) => s + p.amount, 0);
   return { owed, entries };
-}
+});
 
 /** Fiado recebido por dia no período (para relatórios). */
-export async function paymentsByDay(tenantId: string, from: Date, to: Date) {
+export const paymentsByDay = scoped(async function paymentsByDay(tenantId: string, from: Date, to: Date) {
   return db.execute<{ day: string; total: number }>(sql`
     select to_char(created_at at time zone 'America/Sao_Paulo', 'YYYY-MM-DD') as day, sum(amount_cents)::int as total
     from customer_payments
     where tenant_id = ${tenantId} and voided_at is null and created_at >= ${from.toISOString()} and created_at < ${to.toISOString()}
     group by 1 order by 1
   `);
-}
+});

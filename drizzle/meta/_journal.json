@@ -57,6 +57,13 @@
       "when": 1794252811189,
       "tag": "0007_exclusao_de_empresa",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794254137984,
+      "tag": "0008_rls_por_empresa",
+      "breakpoints": true
     }
   ]
 }

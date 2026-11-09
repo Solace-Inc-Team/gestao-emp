@@ -1,5 +1,5 @@
 import { and, eq, inArray, isNull, sql } from "drizzle-orm";
-import { db, type Tx } from "@/db";
+import { tenantTransaction, type Tx } from "@/db";
 import { products, stockMovements, auditLog } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 
@@ -61,7 +61,7 @@ export async function receivePurchase(
 ) {
   assertRole(ctx, "dono", "atendente");
   if (input.full < 1) throw new DomainError("Informe a quantidade recebida.");
-  await db.transaction(async (tx) => {
+  await tenantTransaction(ctx, async (tx) => {
     const [p] = await lockProducts(tx, ctx, [input.productId]);
     if (!p) throw new DomainError("Produto não encontrado.");
     const reason = `compra${input.note ? `: ${input.note}` : ""}`;
@@ -76,7 +76,7 @@ export async function adjustStock(ctx: Ctx, input: { productId: string; state: S
   assertRole(ctx, "dono");
   if (input.counted < 0) throw new DomainError("A contagem não pode ser negativa.");
   if (input.reason.trim().length < 3) throw new DomainError("Informe o motivo do ajuste.");
-  await db.transaction(async (tx) => {
+  await tenantTransaction(ctx, async (tx) => {
     const [p] = await lockProducts(tx, ctx, [input.productId]);
     if (!p) throw new DomainError("Produto não encontrado.");
     const have = await balanceOf(tx, ctx, p.id, input.state, null);

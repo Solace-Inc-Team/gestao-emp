@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { and, eq, sql } from "drizzle-orm";
-import { db, type Tx } from "@/db";
+import { tenantTransaction, type Tx } from "@/db";
 import { orders, orderItems, customers, shifts, expenses } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { orderTotal } from "@/lib/cash";
@@ -42,7 +42,7 @@ async function loadOrder(tx: Tx, ctx: Ctx, orderId: string) {
 
 export async function createOrder(ctx: Ctx, input: NewOrder) {
   assertRole(ctx, "dono", "atendente");
-  return db.transaction(async (tx) => {
+  return tenantTransaction(ctx, async (tx) => {
     // preço sempre do banco, nunca do form
     const prods = await lockProducts(tx, ctx, [...new Set(input.items.map((i) => i.productId))]);
     const items = input.items.map((i) => {
@@ -134,11 +134,11 @@ async function dispatchInTx(tx: Tx, ctx: Ctx, orderId: string, driverId: string)
 
 export async function dispatchOrder(ctx: Ctx, orderId: string, driverId: string) {
   assertRole(ctx, "dono", "atendente");
-  await db.transaction((tx) => dispatchInTx(tx, ctx, orderId, driverId));
+  await tenantTransaction(ctx, (tx) => dispatchInTx(tx, ctx, orderId, driverId));
 }
 
 export async function deliverOrder(ctx: Ctx, orderId: string) {
-  await db.transaction(async (tx) => {
+  await tenantTransaction(ctx, async (tx) => {
     const { o, items, name } = await loadOrder(tx, ctx, orderId);
     if (ctx.role === "entregador" && o.driverId !== ctx.userId) throw new DomainError("Pedido de outro entregador.");
     if (o.status !== "em_rota" || !o.driverId) throw new DomainError("Pedido não está em rota.");
@@ -156,7 +156,7 @@ export async function deliverOrder(ctx: Ctx, orderId: string) {
 export async function cancelOrder(ctx: Ctx, orderId: string, reason: string) {
   assertRole(ctx, "dono", "atendente");
   if (reason.trim().length < 3) throw new DomainError("Informe o motivo do cancelamento.");
-  await db.transaction(async (tx) => {
+  await tenantTransaction(ctx, async (tx) => {
     const { o, items, name } = await loadOrder(tx, ctx, orderId);
     if (o.status === "entregue") throw new DomainError("Pedido entregue não pode ser cancelado (estorno ainda não disponível).");
     if (o.status === "cancelado") throw new DomainError("Pedido já cancelado.");
@@ -180,7 +180,7 @@ export async function cancelOrder(ctx: Ctx, orderId: string, reason: string) {
 export async function refundOrder(ctx: Ctx, input: { orderId: string; reason: string; restock: boolean }) {
   assertRole(ctx, "dono");
   if (input.reason.trim().length < 3) throw new DomainError("Informe o motivo do estorno.");
-  await db.transaction(async (tx) => {
+  await tenantTransaction(ctx, async (tx) => {
     const { o, items, name } = await loadOrder(tx, ctx, input.orderId);
     if (o.status !== "entregue") throw new DomainError("Só pedidos entregues podem ser estornados.");
 

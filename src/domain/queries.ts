@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, desc, eq, gte, lt, inArray, sql, ilike, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { db } from "@/db";
+import { db, scoped } from "@/db";
 import { customers, orderItems, orders, products, shifts, stockMovements, users, auditLog } from "@/db/schema";
 import { expectedCash, paymentSummary } from "@/lib/cash";
 import { todayISO } from "@/lib/period";
@@ -9,28 +9,28 @@ import { todayISO } from "@/lib/period";
 // meia-noite de Brasília, não a do servidor (o container roda em UTC)
 export const startOfToday = () => new Date(`${todayISO()}T00:00:00-03:00`);
 
-export const listProducts = (tenantId: string, onlyActive = false) =>
+export const listProducts = scoped((tenantId: string, onlyActive: boolean = false) =>
   db
     .select()
     .from(products)
     .where(and(eq(products.tenantId, tenantId), onlyActive ? eq(products.active, true) : undefined))
-    .orderBy(asc(products.name));
+    .orderBy(asc(products.name)));
 
-export const listDrivers = (tenantId: string) =>
+export const listDrivers = scoped((tenantId: string) =>
   db
     .select({ id: users.id, name: users.name })
     .from(users)
     .where(and(eq(users.tenantId, tenantId), eq(users.role, "entregador"), eq(users.active, true)))
-    .orderBy(asc(users.name));
+    .orderBy(asc(users.name)));
 
-export const listUsers = (tenantId: string) =>
+export const listUsers = scoped((tenantId: string) =>
   db
     .select({ id: users.id, name: users.name, email: users.email, role: users.role, active: users.active })
     .from(users)
     .where(eq(users.tenantId, tenantId))
-    .orderBy(asc(users.role), asc(users.name));
+    .orderBy(asc(users.role), asc(users.name)));
 
-export function listCustomers(tenantId: string, q = "") {
+export const listCustomers = scoped(function listCustomers(tenantId: string, q: string = "") {
   const term = `%${q.trim()}%`;
   return db
     .select()
@@ -43,15 +43,15 @@ export function listCustomers(tenantId: string, q = "") {
     )
     .orderBy(asc(customers.name))
     .limit(200);
-}
+});
 
-export async function getCustomer(tenantId: string, id: string) {
+export const getCustomer = scoped(async function getCustomer(tenantId: string, id: string) {
   const [c] = await db
     .select()
     .from(customers)
     .where(and(eq(customers.tenantId, tenantId), eq(customers.id, id)));
   return c ?? null;
-}
+});
 
 const driver = alias(users, "driver");
 
@@ -69,7 +69,7 @@ const orderCols = {
   driverId: orders.driverId,
 };
 
-export function listOrders(
+export const listOrders = scoped(function listOrders(
   tenantId: string,
   f: { status?: (typeof orders.status.enumValues)[number]; since?: Date; driverId?: string; customerId?: string; q?: string } = {},
 ) {
@@ -94,9 +94,9 @@ export function listOrders(
     )
     .orderBy(desc(orders.createdAt))
     .limit(300);
-}
+});
 
-export async function countOrdersByStatus(tenantId: string) {
+export const countOrdersByStatus = scoped(async function countOrdersByStatus(tenantId: string) {
   const rows = await db
     .select({ status: orders.status, n: sql<number>`count(*)::int` })
     .from(orders)
@@ -104,9 +104,9 @@ export async function countOrdersByStatus(tenantId: string) {
     .groupBy(orders.status);
   const by = Object.fromEntries(rows.map((r) => [r.status, r.n])) as Partial<Record<(typeof orders.status.enumValues)[number], number>>;
   return { ...by, total: rows.reduce((s, r) => s + r.n, 0) };
-}
+});
 
-export async function getOrder(tenantId: string, id: string) {
+export const getOrder = scoped(async function getOrder(tenantId: string, id: string) {
   const [o] = await db
     .select({
       ...orderCols,
@@ -144,18 +144,18 @@ export async function getOrder(tenantId: string, id: string) {
     .where(and(eq(auditLog.tenantId, tenantId), eq(auditLog.entity, "order"), eq(auditLog.entityId, id)))
     .orderBy(asc(auditLog.createdAt));
   return { ...o, items, history };
-}
+});
 
-export async function itemsForOrders(tenantId: string, orderIds: string[]) {
+export const itemsForOrders = scoped(async function itemsForOrders(tenantId: string, orderIds: string[]) {
   if (!orderIds.length) return [];
   return db
     .select({ orderId: orderItems.orderId, name: products.name, quantity: orderItems.quantity, returnsEmpty: orderItems.returnsEmpty })
     .from(orderItems)
     .innerJoin(products, eq(products.id, orderItems.productId))
     .where(and(eq(orderItems.tenantId, tenantId), inArray(orderItems.orderId, orderIds)));
-}
+});
 
-export async function stockOverview(tenantId: string) {
+export const stockOverview = scoped(async function stockOverview(tenantId: string) {
   const prods = await listProducts(tenantId);
   const rows = await db
     .select({
@@ -181,9 +181,9 @@ export async function stockOverview(tenantId: string) {
       low: p.active && fullStore <= p.minStock,
     };
   });
-}
+});
 
-export const recentMovements = (tenantId: string, limit = 40) =>
+export const recentMovements = scoped((tenantId: string, limit: number = 40) =>
   db
     .select({
       id: stockMovements.id,
@@ -201,9 +201,9 @@ export const recentMovements = (tenantId: string, limit = 40) =>
     .leftJoin(driver, eq(driver.id, stockMovements.driverId))
     .where(eq(stockMovements.tenantId, tenantId))
     .orderBy(desc(stockMovements.createdAt))
-    .limit(limit);
+    .limit(limit));
 
-export async function getShift(tenantId: string, id: string) {
+export const getShift = scoped(async function getShift(tenantId: string, id: string) {
   const [s] = await db
     .select({ shift: shifts, driverName: driver.name })
     .from(shifts)
@@ -225,7 +225,7 @@ export async function getShift(tenantId: string, id: string) {
     summary: paymentSummary(shiftOrders),
     held: held.filter((h) => h.qty !== 0),
   };
-}
+});
 
 const listShiftOrders = (tenantId: string, shiftId: string) =>
   db
@@ -242,7 +242,7 @@ const listShiftOrders = (tenantId: string, shiftId: string) =>
     .where(and(eq(orders.tenantId, tenantId), eq(orders.shiftId, shiftId)))
     .orderBy(asc(orders.number));
 
-export async function listShifts(tenantId: string, status?: "aberto" | "fechado") {
+export const listShifts = scoped(async function listShifts(tenantId: string, status?: "aberto" | "fechado") {
   const rows = await db
     .select({ shift: shifts, driverName: driver.name })
     .from(shifts)
@@ -262,17 +262,17 @@ export async function listShifts(tenantId: string, status?: "aberto" | "fechado"
       };
     }),
   );
-}
+});
 
-export async function openShiftFor(tenantId: string, driverId: string) {
+export const openShiftFor = scoped(async function openShiftFor(tenantId: string, driverId: string) {
   const [s] = await db
     .select()
     .from(shifts)
     .where(and(eq(shifts.tenantId, tenantId), eq(shifts.driverId, driverId), eq(shifts.status, "aberto")));
   return s ?? null;
-}
+});
 
-export async function dashboard(tenantId: string) {
+export const dashboard = scoped(async function dashboard(tenantId: string) {
   const since = startOfToday();
   const today = await listOrders(tenantId, { since });
   const delivered = today.filter((o) => o.status === "entregue");
@@ -304,9 +304,9 @@ export async function dashboard(tenantId: string) {
     sold,
     recent: today.slice(0, 8),
   };
-}
+});
 
-export async function periodReport(tenantId: string, from: Date, to: Date) {
+export const periodReport = scoped(async function periodReport(tenantId: string, from: Date, to: Date) {
   const days = await db
     .select({
       day: sql<string>`to_char(${orders.deliveredAt} at time zone 'America/Sao_Paulo', 'YYYY-MM-DD')`,
@@ -328,4 +328,4 @@ export async function periodReport(tenantId: string, from: Date, to: Date) {
     .where(and(eq(shifts.tenantId, tenantId), eq(shifts.status, "fechado"), gte(shifts.closedAt, from), lt(shifts.closedAt, to)))
     .orderBy(desc(shifts.closedAt));
   return { days, closed };
-}
+});

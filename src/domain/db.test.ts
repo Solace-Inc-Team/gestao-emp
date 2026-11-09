@@ -364,3 +364,41 @@ test("exclusão de empresa: travas, apaga tudo dela e mais nada", async () => {
   assert.equal(await countOf("orders", A.t.id), before.A);
   assert.equal(await countOf("orders", B.t.id), before.B);
 });
+
+test("RLS: dentro do escopo de A, consulta sem filtro só enxerga A", async () => {
+  const { db, withTenant } = m.db;
+  const { orders, customers, users, tenants } = m.schema;
+  const { eq, sql } = await import("drizzle-orm");
+
+  await withTenant(A.t.id, async () => {
+    const [{ role }] = await db.execute<{ role: string }>(sql`select current_user as role`);
+    assert.equal(role, "app_tenant");
+
+    // nenhum "where tenant_id": quem filtra é o Postgres
+    const allOrders = await db.select({ t: orders.tenantId }).from(orders);
+    assert.ok(allOrders.length > 0 && allOrders.every((o) => o.t === A.t.id));
+    const allTenants = await db.select({ id: tenants.id }).from(tenants);
+    assert.deepEqual(allTenants.map((t) => t.id), [A.t.id]);
+
+    // alterar linha de B não acha nada; inserir com tenant de B é recusado
+    const changed = await db.update(customers).set({ name: "invasor" }).where(eq(customers.id, B.customer.id)).returning();
+    assert.equal(changed.length, 0);
+    const gone = await db.delete(users).where(eq(users.id, B.owner.id)).returning();
+    assert.equal(gone.length, 0);
+    await assert.rejects(
+      db.transaction((tx) => tx.insert(customers).values({ tenantId: B.t.id, name: "plantado em B" })),
+      (e: Error & { cause?: Error }) => /row-level security/.test(e.cause?.message ?? e.message),
+    );
+  });
+
+  await assert.rejects(withTenant(A.t.id, () => withTenant(B.t.id, async () => 1)), /outra empresa/);
+  const [b] = await db.select().from(customers).where(eq(customers.id, B.customer.id));
+  assert.equal(b.name, B.customer.name);
+});
+
+test("RLS: e-mail usado em outra empresa vira mensagem, não erro 500", async () => {
+  await assert.rejects(
+    m.registry.createUser(A.ctx, { name: "Copia", email: B.owner.email, password: "senha-qualquer-1", role: "atendente" }),
+    /Já existe um usuário com este e-mail/,
+  );
+});
