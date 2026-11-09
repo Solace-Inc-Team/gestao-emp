@@ -56,6 +56,7 @@ export default async function Admin() {
                       </td>
                       <td className="text-right">
                         <div className="flex items-center justify-end gap-3">
+                          <a href={`/admin/exportar?empresa=${t.id}`} className="text-[13px] text-muted hover:text-fg">Exportar</a>
                           <PopoverForm label="Redefinir acesso" action={resetOwnerAccessAction} submit="Redefinir" confirm="A senha do dono será trocada e o 2FA dele desligado. Continuar?">
                             <input type="hidden" name="tenantId" value={t.id} />
                             <label className="label mb-0" htmlFor={`o-${t.id}`}>Senha nova do dono</label>

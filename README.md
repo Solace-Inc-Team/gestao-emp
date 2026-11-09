@@ -58,6 +58,7 @@ Algumas decisões:
 - preço vem sempre do banco, nunca do formulário;
 - saldo de estoque e caixa é calculado a partir das movimentações, não fica num campo editável;
 - turno fechado não é alterado, e diferença no acerto exige observação;
+- o dono baixa todos os dados da empresa em `/exportar` (ZIP com um CSV por assunto, sem senhas nem segredos de 2FA); a Solace faz o mesmo por empresa em `/admin`;
 - login bloqueia o e-mail por 15 minutos após 5 senhas erradas; 2FA (app autenticador) opcional em `/senha`.
 
 ## Pendências

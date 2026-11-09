@@ -11,10 +11,15 @@ function connect() {
   // no `next build` não há banco; o cliente postgres só conecta na primeira consulta
   if (!url && process.env.NEXT_PHASE !== "phase-production-build")
     throw new Error("DATABASE_URL não definido. Em desenvolvimento, use `npm run dev` (sobe o Postgres local).");
-  return drizzle(postgres(url ?? "", { max: 10, onnotice: () => {} }), { schema });
+  const client = postgres(url ?? "", { max: 10, onnotice: () => {} });
+  return { client, db: drizzle(client, { schema }) };
 }
 
-const g = globalThis as unknown as { __db?: DB };
-export const db = (g.__db ??= connect());
+const g = globalThis as unknown as { __conn?: ReturnType<typeof connect> };
+const conn = (g.__conn ??= connect());
+
+export const db = conn.db;
+/** cliente postgres direto, para quando o drizzle atrapalha (ex.: linhas como listas na exportação) */
+export const pgClient = conn.client;
 
 export const runMigrations = () => migrate(db, { migrationsFolder: "drizzle" });

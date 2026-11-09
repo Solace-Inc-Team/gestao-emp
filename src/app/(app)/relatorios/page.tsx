@@ -25,6 +25,10 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
     <>
       <PageHeader title="Relatórios">
         <Link href={`/relatorios/csv?de=${fromStr}&ate=${toStr}`} className="btn">Baixar vendas em CSV</Link>
+        {user.role === "dono" && (
+          // <a> e não <Link>: é download de arquivo, não navegação
+          <a href="/exportar" className="btn" title="Todos os dados da empresa em planilhas, num ZIP">Exportar todos os dados</a>
+        )}
       </PageHeader>
       <form className="panel mb-6 flex flex-wrap items-end gap-3 p-4">
         <div>

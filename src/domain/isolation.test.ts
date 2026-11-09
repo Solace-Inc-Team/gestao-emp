@@ -21,6 +21,7 @@ let m: {
   rec: typeof import("@/domain/receivables");
   exp: typeof import("@/domain/expenses");
   platform: typeof import("@/domain/platform");
+  exportTenant: typeof import("@/domain/export");
 };
 
 type World = Awaited<ReturnType<typeof makeTenant>>;
@@ -70,6 +71,7 @@ before(async () => {
     rec: await import("@/domain/receivables"),
     exp: await import("@/domain/expenses"),
     platform: await import("@/domain/platform"),
+    exportTenant: await import("@/domain/export"),
   };
   await m.db.runMigrations();
   A = await makeTenant("A");
@@ -253,4 +255,28 @@ test("redefinir senha: só dentro da empresa, derruba sessões e desliga 2FA do 
   const [o] = await db.select().from(users).where(eq(users.id, A.owner.id));
   assert.equal(o.totpEnabled, false);
   assert.equal(o.totpSecret, null);
+});
+
+test("exportação leva só os dados da empresa e nada sensível", async () => {
+  const { unzipSync, strFromU8 } = await import("fflate");
+  const { db } = m.db;
+  const { users } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  await db.update(users).set({ totpSecret: "SEGREDOTOTPTESTE" }).where(eq(users.id, B.owner.id));
+
+  const { zip, counts } = await m.exportTenant.exportTenant({ tenantId: B.t.id, userId: B.owner.id });
+  const files = unzipSync(zip);
+  assert.ok(files["pedidos.csv"] && files["LEIA-ME.txt"]);
+  assert.equal(counts["pedidos.csv"], 1);
+
+  const forbidden = [A.t.id, A.customer.name, A.product.name, A.owner.email, "scrypt$", "SEGREDOTOTPTESTE"];
+  for (const [name, bytes] of Object.entries(files)) {
+    const text = strFromU8(bytes);
+    for (const f of forbidden) assert.ok(!text.includes(f), `${name} contém "${f}"`);
+    if (!name.endsWith(".csv")) continue;
+    // toda linha com o mesmo número de colunas do cabeçalho (campos aqui não têm ";" nem aspas)
+    const [head, ...lines] = text.replace(/^﻿/, "").split("\r\n");
+    for (const l of lines) assert.equal(l.split(";").length, head.split(";").length, `${name}: ${l}`);
+  }
+  assert.ok(strFromU8(files["clientes.csv"]).includes(B.customer.name));
 });
