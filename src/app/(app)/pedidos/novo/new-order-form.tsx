@@ -1,0 +1,254 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import { ActionForm } from "@/components/action-form";
+import { createOrderAction } from "@/app/actions";
+import { formatBRL, parseBRL } from "@/lib/money";
+
+type Product = { id: string; name: string; priceCents: number; returnable: boolean; available: number };
+type Customer = { id: string; name: string; phone: string; address: string };
+type Driver = { id: string; name: string; onShift: boolean };
+
+const payments = [
+  ["dinheiro", "Dinheiro"],
+  ["pix", "Pix"],
+  ["cartao", "Cartão"],
+  ["fiado", "Fiado"],
+] as const;
+
+export function NewOrderForm({
+  products,
+  customers,
+  drivers,
+  initialCustomerId,
+}: {
+  products: Product[];
+  customers: Customer[];
+  drivers: Driver[];
+  initialCustomerId?: string;
+}) {
+  const [mode, setMode] = useState<"entrega" | "balcao">("entrega");
+  const [qty, setQty] = useState<Record<string, number>>({});
+  const [keepsBottle, setKeepsBottle] = useState<Record<string, boolean>>({}); // true = cliente compra o vasilhame
+  const [customerId, setCustomerId] = useState(initialCustomerId ?? "");
+  const [search, setSearch] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [payment, setPayment] = useState<(typeof payments)[number][0]>("dinheiro");
+  const [fee, setFee] = useState("");
+
+  const customer = customers.find((c) => c.id === customerId);
+  const matches = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return [];
+    return customers
+      .filter((c) => c.name.toLowerCase().includes(q) || c.phone.replace(/\D/g, "").includes(q.replace(/\D/g, "") || "§") || c.address.toLowerCase().includes(q))
+      .slice(0, 6);
+  }, [search, customers]);
+
+  const items = products
+    .filter((p) => qty[p.id] > 0)
+    .map((p) => ({ productId: p.id, quantity: qty[p.id], returnsEmpty: p.returnable && !keepsBottle[p.id] }));
+  const feeCents = mode === "entrega" ? (parseBRL(fee) ?? 0) : 0;
+  // só pra exibir, o total que vale é calculado no servidor
+  const total = products.reduce((s, p) => s + (qty[p.id] ?? 0) * p.priceCents, feeCents);
+  const step = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, Math.min(99, (q[id] ?? 0) + d)) }));
+
+  return (
+    <ActionForm action={createOrderAction} className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+      <input type="hidden" name="mode" value={mode} />
+      <input type="hidden" name="items" value={JSON.stringify(items)} />
+      <input type="hidden" name="customerId" value={creating ? "" : customerId} />
+      <input type="hidden" name="paymentMethod" value={payment} />
+
+      <div className="space-y-6">
+        <div role="tablist" aria-label="Tipo de venda" className="inline-flex rounded-md border border-line bg-white p-1">
+          {(["entrega", "balcao"] as const).map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={mode === m}
+              onClick={() => setMode(m)}
+              className={`rounded px-4 py-1.5 font-semibold ${mode === m ? "bg-ink text-white" : "text-ink-soft"}`}
+            >
+              {m === "entrega" ? "Entrega" : "Venda no balcão"}
+            </button>
+          ))}
+        </div>
+
+        <section className="panel p-4">
+          <h2 className="h2 mb-3">Cliente{mode === "balcao" && <span className="text-base font-normal text-ink-soft"> (opcional)</span>}</h2>
+          {customer && !creating ? (
+            <div className="flex items-start justify-between gap-3 rounded-md bg-water-soft p-3">
+              <div>
+                <p className="font-semibold">{customer.name}</p>
+                <p className="text-sm text-ink-soft">{customer.address || "Sem endereço"}</p>
+                <p className="text-sm text-ink-soft">{customer.phone}</p>
+              </div>
+              <button type="button" className="text-sm text-water underline" onClick={() => setCustomerId("")}>Trocar</button>
+            </div>
+          ) : creating ? (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="nc-name">Nome</label>
+                <input id="nc-name" name="newCustomerName" required className="input" autoFocus />
+              </div>
+              <div>
+                <label className="label" htmlFor="nc-phone">Telefone</label>
+                <input id="nc-phone" name="newCustomerPhone" inputMode="tel" className="input" />
+              </div>
+              <div>
+                <label className="label" htmlFor="nc-ref">Referência</label>
+                <input id="nc-ref" name="newCustomerReference" className="input" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="nc-addr">Endereço</label>
+                <input id="nc-addr" name="newCustomerAddress" className="input" />
+              </div>
+              <button type="button" className="text-left text-sm text-water underline" onClick={() => setCreating(false)}>
+                Buscar cliente cadastrado
+              </button>
+            </div>
+          ) : (
+            <div>
+              <label className="label" htmlFor="busca">Buscar por nome, telefone ou endereço</label>
+              <input id="busca" value={search} onChange={(e) => setSearch(e.target.value)} className="input" autoComplete="off" />
+              {matches.length > 0 && (
+                <ul className="mt-2 divide-y divide-line rounded-md border border-line">
+                  {matches.map((c) => (
+                    <li key={c.id}>
+                      <button
+                        type="button"
+                        onClick={() => { setCustomerId(c.id); setSearch(""); }}
+                        className="block w-full px-3 py-2 text-left hover:bg-paper"
+                      >
+                        <span className="font-medium">{c.name}</span>
+                        <span className="block text-sm text-ink-soft">{c.address} {c.phone && `(${c.phone})`}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <button type="button" className="mt-3 text-sm font-semibold text-water" onClick={() => setCreating(true)}>
+                + Cadastrar cliente novo
+              </button>
+            </div>
+          )}
+        </section>
+
+        <section className="panel">
+          <h2 className="h2 border-b border-line px-4 py-3">Produtos</h2>
+          <ul>
+            {products.map((p) => {
+              const n = qty[p.id] ?? 0;
+              return (
+                <li key={p.id} className={`border-b border-line px-4 py-3 last:border-0 ${n ? "bg-water-soft/40" : ""}`}>
+                  <div className="flex items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold">{p.name}</p>
+                      <p className="text-sm text-ink-soft">
+                        <span className="num">{formatBRL(p.priceCents)}</span>, {p.available} cheios na loja
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1" role="group" aria-label={`Quantidade de ${p.name}`}>
+                      <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, -1)} aria-label="Diminuir">−</button>
+                      <span className="num w-10 text-center text-2xl font-semibold" aria-live="polite">{n}</span>
+                      <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, 1)} aria-label="Aumentar">+</button>
+                    </div>
+                  </div>
+                  {n > 0 && p.returnable && (
+                    <label className="mt-2 flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={!!keepsBottle[p.id]}
+                        onChange={(e) => setKeepsBottle((k) => ({ ...k, [p.id]: e.target.checked }))}
+                      />
+                      Cliente não tem vasilhame para trocar
+                    </label>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+
+        <section className="panel grid gap-3 p-4 sm:grid-cols-2">
+          <div className="sm:col-span-2">
+            <label className="label" htmlFor="notes">Observações</label>
+            <input id="notes" name="notes" maxLength={500} className="input" placeholder="Ex.: deixar na portaria, tocar o interfone 12" />
+          </div>
+          {mode === "entrega" && (
+            <>
+              <div>
+                <label className="label" htmlFor="fee">Taxa de entrega</label>
+                <input id="fee" name="deliveryFee" value={fee} onChange={(e) => setFee(e.target.value)} inputMode="decimal" className="input" placeholder="0,00" />
+              </div>
+              <div>
+                <label className="label" htmlFor="driver">Entregador</label>
+                <select id="driver" name="driverId" className="input" defaultValue="">
+                  <option value="">Deixar aguardando</option>
+                  {drivers.map((d) => (
+                    <option key={d.id} value={d.id} disabled={!d.onShift}>
+                      {d.name}{d.onShift ? "" : " (sem turno aberto)"}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
+          )}
+        </section>
+      </div>
+
+      <aside className="lg:sticky lg:top-6 lg:self-start">
+        <div className="panel p-4">
+          <h2 className="h2 mb-3">Pagamento</h2>
+          <div className="grid grid-cols-2 gap-2">
+            {payments.map(([v, l]) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={payment === v}
+                onClick={() => setPayment(v)}
+                className={`btn ${payment === v ? "border-ink bg-ink text-white hover:border-ink" : ""}`}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+          {payment === "dinheiro" && (
+            <div className="mt-3">
+              <label className="label" htmlFor="change">Troco para (opcional)</label>
+              <input id="change" name="changeFor" inputMode="decimal" className="input" placeholder="100,00" />
+            </div>
+          )}
+          {payment === "fiado" && <p className="mt-3 text-sm text-ink-soft">Fiado exige cliente identificado.</p>}
+          <div className="mt-5 border-t border-line pt-4">
+            {items.length > 0 && (
+              <ul className="mb-3 space-y-1 text-sm">
+                {items.map((i) => {
+                  const p = products.find((x) => x.id === i.productId)!;
+                  return (
+                    <li key={i.productId} className="flex justify-between gap-2">
+                      <span>{i.quantity}× {p.name}</span>
+                      <span className="num">{formatBRL(i.quantity * p.priceCents)}</span>
+                    </li>
+                  );
+                })}
+                {feeCents > 0 && (
+                  <li className="flex justify-between"><span>Entrega</span><span className="num">{formatBRL(feeCents)}</span></li>
+                )}
+              </ul>
+            )}
+            <p className="flex items-baseline justify-between">
+              <span className="font-semibold">Total</span>
+              <span className="num text-4xl font-semibold">{formatBRL(total)}</span>
+            </p>
+            <button className="btn btn-primary mt-4 h-12 w-full text-lg" disabled={!items.length}>
+              {mode === "balcao" ? "Registrar venda" : "Lançar pedido"}
+            </button>
+          </div>
+        </div>
+      </aside>
+    </ActionForm>
+  );
+}
