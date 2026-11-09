@@ -178,6 +178,26 @@ export const orderItems = pgTable("order_items", {
   returnsEmpty: boolean("returns_empty").notNull().default(true),
 });
 
+// baixa de fiado: o saldo do cliente é fiado entregue menos estes pagamentos
+export const customerPayments = pgTable(
+  "customer_payments",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    customerId: uuid("customer_id")
+      .notNull()
+      .references(() => customers.id),
+    amountCents: integer("amount_cents").notNull(),
+    method: paymentMethodEnum("method").notNull(),
+    note: text("note").notNull().default(""),
+    receivedBy: uuid("received_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("customer_payments_tenant_customer_idx").on(t.tenantId, t.customerId)],
+);
+
 // saldo = soma das movimentações; driver_id null = loja
 export const stockMovements = pgTable(
   "stock_movements",

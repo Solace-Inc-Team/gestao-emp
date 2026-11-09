@@ -18,6 +18,7 @@ let m: {
   registry: typeof import("@/domain/registry");
   stock: typeof import("@/domain/stock");
   q: typeof import("@/domain/queries");
+  rec: typeof import("@/domain/receivables");
 };
 
 type World = Awaited<ReturnType<typeof makeTenant>>;
@@ -64,6 +65,7 @@ before(async () => {
     registry: await import("@/domain/registry"),
     stock: await import("@/domain/stock"),
     q: await import("@/domain/queries"),
+    rec: await import("@/domain/receivables"),
   };
   await m.db.runMigrations();
   A = await makeTenant("A");
@@ -126,4 +128,39 @@ test("A continua intacto depois das tentativas de B", async () => {
   assert.ok(owner.active);
   const [p] = await m.q.stockOverview(A.t.id);
   assert.equal(p.fullStore, 10);
+});
+
+test("fiado: saldo, pagamento parcial, teto e isolamento", async () => {
+  // venda fiado no balcão já nasce entregue, então vira dívida na hora
+  await m.orders.createOrder(A.ctx, {
+    mode: "balcao",
+    customerId: A.customer.id,
+    items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
+    paymentMethod: "fiado",
+    deliveryFeeCents: 0,
+    changeForCents: null,
+    notes: "",
+    driverId: null,
+  });
+  assert.equal(await m.rec.customerBalance(A.t.id, A.customer.id), 11000);
+
+  const pay = (ctx: typeof A.ctx, customerId: string, amountCents: number) =>
+    m.rec.receivePayment(ctx, { customerId, amountCents, method: "pix", note: "" });
+
+  await assert.rejects(pay(A.ctx, A.customer.id, 11001), /passa do saldo/);
+  await pay(A.ctx, A.customer.id, 5000);
+  assert.equal(await m.rec.customerBalance(A.t.id, A.customer.id), 6000);
+
+  await assert.rejects(pay(B.ctx, A.customer.id, 100), /Cliente não encontrado/);
+  assert.equal((await m.rec.listDebtors(B.t.id)).length, 0);
+  const debtorsA = await m.rec.listDebtors(A.t.id);
+  assert.deepEqual(debtorsA.map((d) => [d.id, d.owed]), [[A.customer.id, 6000]]);
+
+  await pay(A.ctx, A.customer.id, 6000);
+  assert.equal((await m.rec.listDebtors(A.t.id)).length, 0);
+  await assert.rejects(pay(A.ctx, A.customer.id, 100), /não tem fiado em aberto/);
+
+  const st = await m.rec.customerStatement(A.t.id, A.customer.id);
+  assert.equal(st.owed, 0);
+  assert.deepEqual(st.entries.map((e) => e.kind).sort(), ["compra", "pagamento", "pagamento"]);
 });

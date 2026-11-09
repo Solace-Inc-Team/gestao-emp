@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { periodReport } from "@/domain/queries";
 import { parsePeriod } from "@/lib/period";
+import { paymentsByDay } from "@/domain/receivables";
 import { Difference, Empty, Money, PageHeader, fmtDateTime } from "@/components/ui";
 
 export const metadata = { title: "Relatórios" };
@@ -9,7 +10,8 @@ export const metadata = { title: "Relatórios" };
 export default async function Relatorios({ searchParams }: PageProps<"/relatorios">) {
   const user = await requireUser("dono", "atendente");
   const { fromStr, toStr, from, to } = parsePeriod(await searchParams);
-  const { days, closed } = await periodReport(user.tenantId, from, to);
+  const [{ days, closed }, fiadoPaid] = await Promise.all([periodReport(user.tenantId, from, to), paymentsByDay(user.tenantId, from, to)]);
+  const fiadoTotal = fiadoPaid.reduce((s, d) => s + d.total, 0);
   const sum = (k: "total" | "cash" | "pix" | "card" | "credit" | "count") => days.reduce((s, d) => s + d[k], 0);
   const diffTotal = closed.reduce((s, c) => s + (c.shift.differenceCents ?? 0), 0);
   const fmtDay = (d: string) => d.split("-").reverse().join("/");
@@ -67,6 +69,14 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
         ) : (
           <Empty>Nenhuma venda entregue neste período.</Empty>
         )}
+      </section>
+
+      <section className="panel mb-6 flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
+        <div>
+          <h2 className="h2">Fiado recebido no período</h2>
+          <p className="text-[13px] text-muted">Pagamentos de dívidas antigas; não entram nas vendas acima.</p>
+        </div>
+        <Money cents={fiadoTotal} className="text-xl font-semibold tracking-[-0.02em]" />
       </section>
 
       <section className="panel overflow-x-auto">

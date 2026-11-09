@@ -4,7 +4,9 @@ import { requireUser } from "@/lib/auth";
 import { getCustomer, listOrders } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
 import { CustomerFields } from "@/components/customer-fields";
-import { saveCustomerAction } from "@/app/actions";
+import { receivePaymentAction, saveCustomerAction } from "@/app/actions";
+import { customerStatement } from "@/domain/receivables";
+import { centsToInput } from "@/lib/money";
 import { Empty, Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
 
 export const metadata = { title: "Cliente" };
@@ -14,8 +16,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
   const { id } = await params;
   const c = await getCustomer(user.tenantId, id);
   if (!c) notFound();
-  const orders = await listOrders(user.tenantId, { customerId: id });
-  const owed = orders.filter((o) => o.paymentMethod === "fiado" && o.status === "entregue").reduce((s, o) => s + o.totalCents, 0);
+  const [orders, st] = await Promise.all([listOrders(user.tenantId, { customerId: id }), customerStatement(user.tenantId, id)]);
 
   return (
     <>
@@ -28,18 +29,71 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
         <Link href={`/pedidos/novo?cliente=${c.id}`} className="btn btn-primary">Novo pedido</Link>
       </div>
       <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
-        <section className="panel p-4">
-          <h2 className="h2 mb-3">Dados</h2>
-          <ActionForm action={saveCustomerAction} className="grid gap-3 sm:grid-cols-2">
-            <input type="hidden" name="id" value={c.id} />
-            <CustomerFields c={c} />
-            <button className="btn btn-primary sm:col-span-2 sm:justify-self-start">Salvar alterações</button>
-          </ActionForm>
-        </section>
+        <div className="space-y-6">
+          {st.entries.length > 0 && (
+            <section id="receber" className="panel scroll-mt-6">
+              <div className="flex items-end justify-between gap-3 border-b border-line p-4">
+                <div>
+                  <h2 className="h2">Fiado</h2>
+                  <p className="mt-0.5 text-[13px] text-muted">{st.owed > 0 ? "Saldo devedor" : "Tudo pago"}</p>
+                </div>
+                <Money cents={st.owed} className={`text-2xl font-semibold tracking-[-0.03em] ${st.owed > 0 ? "text-danger" : ""}`} />
+              </div>
+              {st.owed > 0 && (
+                <ActionForm key={st.owed} action={receivePaymentAction} className="grid gap-3 border-b border-line p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                  <input type="hidden" name="customerId" value={c.id} />
+                  <div>
+                    <label className="label" htmlFor="amount">Valor recebido</label>
+                    <input id="amount" name="amount" inputMode="decimal" required defaultValue={centsToInput(st.owed)} className="input num" />
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="method">Forma</label>
+                    <select id="method" name="method" className="input" defaultValue="dinheiro">
+                      <option value="dinheiro">Dinheiro</option>
+                      <option value="pix">Pix</option>
+                      <option value="cartao">Cartão</option>
+                    </select>
+                  </div>
+                  <button className="btn btn-primary">Registrar</button>
+                  <div className="sm:col-span-3">
+                    <label className="label" htmlFor="pay-note">Observação (opcional)</label>
+                    <input id="pay-note" name="note" maxLength={200} className="input" />
+                  </div>
+                </ActionForm>
+              )}
+              <ul>
+                {st.entries.map((e) => (
+                  <li key={e.id} className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5 text-[13px] last:border-0">
+                    <div>
+                      {e.kind === "compra" ? (
+                        <Link href={`/pedidos/${e.id}`} className="font-medium hover:underline">Compra #{e.number}</Link>
+                      ) : (
+                        <span className="font-medium">Pagamento em {paymentLabel[e.method!].toLowerCase()}</span>
+                      )}
+                      <p className="text-muted">
+                        {fmtDateTime(e.at)}
+                        {e.by && `, recebido por ${e.by}`}
+                        {e.note && `. ${e.note}`}
+                      </p>
+                    </div>
+                    <Money cents={e.kind === "compra" ? e.amount : -e.amount} className={e.kind === "pagamento" ? "text-ok" : ""} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+          <section className="panel p-4">
+            <h2 className="h2 mb-3">Dados</h2>
+            <ActionForm action={saveCustomerAction} className="grid gap-3 sm:grid-cols-2">
+              <input type="hidden" name="id" value={c.id} />
+              <CustomerFields c={c} />
+              <button className="btn btn-primary sm:col-span-2 sm:justify-self-start">Salvar alterações</button>
+            </ActionForm>
+          </section>
+        </div>
         <section className="panel">
           <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-4 py-3">
             <h2 className="h2">Pedidos</h2>
-            {owed > 0 && <p>Total em fiado: <Money cents={owed} className="font-semibold text-danger" /></p>}
           </div>
           {orders.length ? (
             <table className="table">

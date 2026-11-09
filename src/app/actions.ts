@@ -16,6 +16,7 @@ import type { ActionState } from "@/components/action-form";
 import { createOrder, dispatchOrder, deliverOrder, cancelOrder, newOrderSchema } from "@/domain/orders";
 import { openShift, closeShift } from "@/domain/shifts";
 import { receivePurchase, adjustStock } from "@/domain/stock";
+import { receivePayment, paymentSchema } from "@/domain/receivables";
 import { createTenant, newTenantSchema, setTenantActive } from "@/domain/platform";
 import { saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive } from "@/domain/registry";
 
@@ -313,4 +314,17 @@ export async function disableTotpAction(fd: FormData): Promise<ActionState> {
   await db.update(users).set({ totpEnabled: false, totpSecret: null }).where(eq(users.id, user.userId));
   revalidatePath("/", "layout");
   return { ok: "Verificação em duas etapas desativada." };
+}
+
+export async function receivePaymentAction(fd: FormData) {
+  const user = await requireUser("dono", "atendente");
+  return run(
+    async () =>
+      receivePayment(
+        user,
+        paymentSchema.parse({ customerId: str(fd, "customerId"), amountCents: money(fd, "amount"), method: str(fd, "method"), note: str(fd, "note") }),
+      ),
+    ["/"],
+    "Pagamento registrado.",
+  );
 }

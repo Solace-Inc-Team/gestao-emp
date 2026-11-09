@@ -12,6 +12,7 @@ import {
   BarChart3,
   Tag,
   UserCog,
+  HandCoins,
   type LucideIcon,
 } from "lucide-react";
 
@@ -22,6 +23,7 @@ const icons: Record<string, LucideIcon> = {
   "/caixa": Wallet,
   "/estoque": Package,
   "/clientes": Users,
+  "/fiado": HandCoins,
   "/relatorios": BarChart3,
   "/produtos": Tag,
   "/equipe": UserCog,
