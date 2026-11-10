@@ -1,3 +1,5 @@
+"use client";
+
 import type { ReactNode } from "react";
 import { ActionForm, type ActionState } from "./action-form";
 
@@ -20,7 +22,12 @@ export function PopoverForm({
   children: ReactNode;
 }) {
   return (
-    <details className="relative inline-block text-left">
+    <details
+      className="relative inline-block text-left"
+      onKeyDown={(e) => {
+        if (e.key === "Escape") e.currentTarget.open = false;
+      }}
+    >
       <summary className="tap cursor-pointer list-none text-[13px] text-muted hover:text-fg">{label}</summary>
       <ActionForm
         action={action}

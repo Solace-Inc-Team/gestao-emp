@@ -4,12 +4,13 @@ import { withTenant } from "@/db";
 import { getSettings, listDrivers, listOrders, listShifts } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
 import { dispatchAction } from "@/app/actions";
-import { Empty, Money, PageHeader, paymentLabel } from "@/components/ui";
+import { Empty, Money, PageHeader, SiteBadge, paymentLabel } from "@/components/ui";
 
 export const metadata = { title: "Entregas" };
 
 const minutesSince = (d: Date | null) => (d ? Math.floor((Date.now() - d.getTime()) / 60000) : 0);
-const waited = (min: number) => (min < 60 ? `${min} min` : `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}`);
+const waited = (min: number) =>
+  min < 60 ? `${min} min` : min % 60 ? `${Math.floor(min / 60)} h ${String(min % 60).padStart(2, "0")}` : `${min / 60} h`;
 
 export default async function Entregas() {
   const user = await requireUser("dono", "atendente", "caixa");
@@ -51,6 +52,7 @@ export default async function Entregas() {
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                     <Link href={`/pedidos/${o.id}`} className="font-semibold hover:text-accent">
                       <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
+                      {o.origin === "portal" && <SiteBadge />}
                     </Link>
                     <span className={`text-[13px] ${late(o) ? "font-semibold text-danger" : "text-muted"}`}>
                       {late(o) ? "Atrasado, " : ""}há {waited(minutesSince(o.createdAt))}
@@ -68,7 +70,7 @@ export default async function Entregas() {
                         <option value="" disabled>Entregador</option>
                         {onShift.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                       </select>
-                      <button className="btn btn-primary">Saiu</button>
+                      <button className="btn btn-primary">Saiu para entrega</button>
                     </ActionForm>
                   )}
                 </li>

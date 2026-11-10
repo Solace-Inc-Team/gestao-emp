@@ -43,7 +43,17 @@ export function ActionForm({
         const form = e.currentTarget;
         const fd = new FormData(form);
         start(async () => {
-          const r = await action(fd);
+          let r: ActionState;
+          try {
+            r = await action(fd);
+          } catch (e) {
+            // sem sinal o fetch da ação falha: mantém a tela e o que foi digitado em vez de cair na página de erro
+            if (e instanceof TypeError || !navigator.onLine) {
+              setError("Sem internet. Tente de novo quando o sinal voltar.");
+              return;
+            }
+            throw e;
+          }
           setError(r?.error);
           if (r?.error) return;
           // o aviso fica fora do form: muitas ações trocam a tela e o form some junto

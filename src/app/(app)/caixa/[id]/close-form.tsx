@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ActionForm } from "@/components/action-form";
 import { closeShiftAction } from "@/app/actions";
-import { parseBRL } from "@/lib/money";
+import { formatBRL, parseBRL } from "@/lib/money";
 import { Difference } from "@/components/ui";
 
 export function CloseShiftForm({ shiftId, expectedCents }: { shiftId: string; expectedCents: number }) {
@@ -11,7 +11,11 @@ export function CloseShiftForm({ shiftId, expectedCents }: { shiftId: string; ex
   const c = parseBRL(counted);
   const diff = c === null ? null : c - expectedCents;
   return (
-    <ActionForm action={closeShiftAction} className="space-y-3" confirm="Fechar o acerto? Depois de fechado, o resultado não pode ser alterado.">
+    <ActionForm action={closeShiftAction} className="space-y-3" confirm={
+        c === null
+          ? undefined
+          : `Contado ${formatBRL(c)}, esperado ${formatBRL(expectedCents)}: ${diff === 0 ? "bateu" : diff! < 0 ? `falta ${formatBRL(-diff!)}` : `sobra ${formatBRL(diff!)}`}. Fechar o acerto? Depois não dá para mudar.`
+      }>
       <input type="hidden" name="shiftId" value={shiftId} />
       <div>
         <label className="label" htmlFor="counted">Dinheiro contado</label>

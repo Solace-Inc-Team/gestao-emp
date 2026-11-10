@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Plus, Search, ReceiptText } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { countOrdersByStatus, listOrders } from "@/domain/queries";
-import { Money, PageHeader, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
+import { Money, PageHeader, SiteBadge, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
 
 export const metadata = { title: "Pedidos" };
 
@@ -99,7 +99,7 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
                   <td>{o.driverName ?? <span className="text-muted">-</span>}</td>
                   <td className="whitespace-nowrap text-muted">{fmtDateTime(o.createdAt)}</td>
                   <td>{paymentLabel[o.paymentMethod]}</td>
-                  <td><StatusBadge status={o.status} /></td>
+                  <td><StatusBadge status={o.status} />{o.origin === "portal" && <SiteBadge />}</td>
                   <td className="text-right font-medium"><Money cents={o.totalCents} /></td>
                 </tr>
               ))}

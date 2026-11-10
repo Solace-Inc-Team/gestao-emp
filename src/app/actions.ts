@@ -4,7 +4,6 @@ import { z } from "zod";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { headers } from "next/headers";
 import { db, tenantTransaction } from "@/db";
 import { users, tenants, sessions } from "@/db/schema";
 import { getUser, pendingTerms, requireUser, requireAdmin, createSession, destroySession, getPendingMfa, completeMfa } from "@/lib/auth";
@@ -12,7 +11,8 @@ import { isBlocked, recordFailure, clearFailures, BLOCKED_MESSAGE, IP_MAX_FAILUR
 import { newTotpSecret, verifyTotp } from "@/lib/totp";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { DomainError } from "@/lib/ctx";
-import { parseBRL } from "@/lib/money";
+import { formatBRL, parseBRL } from "@/lib/money";
+import { clientIp } from "@/lib/request";
 import type { ActionState } from "@/components/action-form";
 import { createOrder, dispatchOrder, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder, confirmPix } from "@/domain/orders";
 import { orderPix, placePortalOrder, portalOrderSchema, portalTenant } from "@/domain/portal";
@@ -79,7 +79,7 @@ export async function login(fd: FormData): Promise<ActionState> {
   const email = str(fd, "email").toLowerCase();
   const password = str(fd, "password");
   // por e-mail + IP: errar de propósito em outro lugar não tranca o dono para fora
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0].trim() || "local";
+  const ip = await clientIp();
   const key = `login:${email}:${ip}`;
   const ipKey = `ip:${ip}`;
   if ((await isBlocked(key)) || (await isBlocked(ipKey, IP_MAX_FAILURES))) return { error: BLOCKED_MESSAGE };
@@ -187,18 +187,19 @@ export async function deliverAction(fd: FormData) {
   return run(() => deliverOrder(user, str(fd, "orderId")), ["/"], "Entrega confirmada.");
 }
 
-export async function partialDeliveryAction(fd: FormData) {
+export async function partialDeliveryAction(fd: FormData): Promise<ActionState> {
   const user = await requireUser();
-  return run(
+  let total = 0;
+  const r = await run(
     async () => {
       // campos qty:<id do item> = quantidade que chegou ao cliente
       const delivered: Record<string, number> = {};
       for (const k of fd.keys()) if (k.startsWith("qty:")) delivered[k.slice(4)] = int(fd, k);
-      await deliverOrder(user, str(fd, "orderId"), { delivered, note: str(fd, "note") });
+      total = await deliverOrder(user, str(fd, "orderId"), { delivered, note: str(fd, "note") });
     },
     ["/"],
-    "Entrega parcial registrada. O total do pedido foi refeito.",
   );
+  return r?.error ? r : { ok: `Entrega parcial registrada. Novo total: ${formatBRL(total)}.` };
 }
 
 export async function occurrenceAction(fd: FormData) {
@@ -226,9 +227,10 @@ export async function portalOrderAction(slug: string, fd: FormData): Promise<Por
   if (!t) return { error: "Esta loja não está recebendo pedidos pelo site agora." };
   // campo escondido que só robô preenche
   if (str(fd, "site")) return { error: "Não foi possível enviar o pedido." };
-  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0].trim() || "local";
-  const key = `portal:${ip}`;
+  const key = `portal:${await clientIp()}`;
   if (await isBlocked(key, 5)) return { error: "Muitos pedidos seguidos deste aparelho. Ligue para a loja ou tente em 15 minutos." };
+  // conta antes de gravar: envios simultâneos e tentativas com erro também gastam o limite
+  await recordFailure(key);
   try {
     const order = await placePortalOrder(
       t.id,
@@ -243,7 +245,6 @@ export async function portalOrderAction(slug: string, fd: FormData): Promise<Por
         notes: str(fd, "notes"),
       }),
     );
-    await recordFailure(key);
     revalidatePath("/", "layout");
     return { number: order.number, totalCents: order.totalCents, pix: order.paymentMethod === "pix" ? orderPix(t, order) : null };
   } catch (e) {
@@ -271,21 +272,21 @@ export async function removeAddressAction(fd: FormData) {
 
 export async function saveSettingsAction(fd: FormData) {
   const user = await requireUser("dono");
+  const section = str(fd, "section");
   return run(
     async () =>
       saveSettings(
         user,
-        settingsSchema.parse({
-          staffDiscountPct: int(fd, "staffDiscountPct"),
-          lateAfterMinutes: int(fd, "lateAfterMinutes"),
-          pixKey: str(fd, "pixKey"),
-          pixName: str(fd, "pixName"),
-          pixCity: str(fd, "pixCity"),
-          portalEnabled: fd.get("portalEnabled") === "on",
-        }),
+        settingsSchema.parse(
+          section === "regras"
+            ? { staffDiscountPct: int(fd, "staffDiscountPct"), lateAfterMinutes: int(fd, "lateAfterMinutes") }
+            : section === "pix"
+              ? { pixKey: str(fd, "pixKey"), pixName: str(fd, "pixName"), pixCity: str(fd, "pixCity") }
+              : { portalEnabled: fd.get("portalEnabled") === "on" },
+        ),
       ),
     ["/"],
-    "Regras salvas.",
+    section === "pix" ? "Dados do Pix salvos." : section === "portal" ? "Portal atualizado." : "Regras salvas.",
   );
 }
 

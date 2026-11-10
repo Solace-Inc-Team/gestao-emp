@@ -22,14 +22,14 @@ function Fields({ p = {} }: { p?: P }) {
         <input id={`p-${k}`} name="price" required inputMode="decimal" defaultValue={p.priceCents !== undefined ? centsToInput(p.priceCents) : ""} className="input" />
       </div>
       <div className="w-32">
-        <label className="label" htmlFor={`c-${k}`}>Vasilhame</label>
+        <label className="label" htmlFor={`c-${k}`}>Preço do vasilhame</label>
         <input id={`c-${k}`} name="containerPrice" inputMode="decimal" maxLength={12} defaultValue={p.containerPriceCents ? centsToInput(p.containerPriceCents) : ""} className="input" placeholder="0,00" />
       </div>
       <div className="w-28">
-        <label className="label" htmlFor={`m-${k}`}>Mínimo</label>
+        <label className="label" htmlFor={`m-${k}`}>Estoque mínimo</label>
         <input id={`m-${k}`} name="minStock" type="number" min={0} defaultValue={p.minStock ?? 0} className="input" />
       </div>
-      <label className="flex min-h-10 items-center gap-2">
+      <label className="flex min-h-11 items-center gap-2">
         <input type="checkbox" name="returnable" defaultChecked={p.returnable ?? true} /> Retornável
       </label>
     </>

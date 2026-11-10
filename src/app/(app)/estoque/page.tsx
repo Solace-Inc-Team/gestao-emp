@@ -11,7 +11,7 @@ export default async function Estoque() {
   const user = await requireUser("dono", "atendente", "caixa");
   const [stock, moves, products, suppliers] = await Promise.all([
     stockOverview(user.tenantId),
-    recentMovements(user.tenantId),
+    recentMovements(user.tenantId, 20),
     listProducts(user.tenantId, true),
     listSuppliers(user.tenantId, true),
   ]);
@@ -59,6 +59,7 @@ export default async function Estoque() {
             ))}
           </tbody>
         </table>
+        <p className="border-t border-line px-4 py-2 text-[13px] text-muted sm:hidden">Arraste a tabela para o lado para ver todas as colunas.</p>
         <p className="border-t border-line px-4 py-3 text-sm text-muted">
           O total de vasilhames deve ficar estável: cada venda com troca tira um cheio e devolve um vazio. Se ele cair, há botijão ou galão sem retorno.
         </p>

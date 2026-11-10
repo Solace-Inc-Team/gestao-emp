@@ -26,7 +26,7 @@ export default async function Pedir({ params }: PageProps<"/pedir/[slug]">) {
       ) : (
         <p className="panel p-4 text-muted">Nenhum produto disponível agora. Ligue para a loja.</p>
       )}
-      <p className="mt-8 text-[12px] text-muted">
+      <p className="mt-8 text-[13px] text-muted">
         Usamos seu nome, telefone e endereço só para entregar o pedido e falar com você sobre ele. Veja a{" "}
         <Link href="/privacidade" className="underline">política de privacidade</Link>.
       </p>

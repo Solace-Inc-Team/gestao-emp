@@ -97,6 +97,7 @@ export async function removeAddress(ctx: Ctx, addressId: string) {
   });
 }
 
+// cada bloco de Configurações salva só os próprios campos
 export const settingsSchema = z
   .object({
     staffDiscountPct: z.int().min(0, "O limite vai de 0 a 100%.").max(100, "O limite vai de 0 a 100%."),
@@ -106,12 +107,15 @@ export const settingsSchema = z
     pixCity: z.string().trim().max(40, "Cidade muito longa."),
     portalEnabled: z.boolean(),
   })
-  .refine((s) => !s.pixKey || (s.pixName.length >= 2 && s.pixCity.length >= 2), {
+  .partial()
+  .refine((s) => !s.pixKey || ((s.pixName?.length ?? 0) >= 2 && (s.pixCity?.length ?? 0) >= 2), {
     message: "Com chave Pix, informe também o nome do recebedor e a cidade.",
   });
 
-export async function saveSettings(ctx: Ctx, input: z.infer<typeof settingsSchema>) {
+export async function saveSettings(ctx: Ctx, raw: z.input<typeof settingsSchema>) {
   assertRole(ctx, "dono");
+  const input = settingsSchema.parse(raw);
+  if (!Object.keys(input).length) throw new DomainError("Nada para salvar.");
   await tenantTransaction(ctx, async (tx) => {
     await tx.update(tenants).set(input).where(eq(tenants.id, ctx.tenantId));
     await audit(tx, ctx, "empresa.regras", "tenant", ctx.tenantId, input);

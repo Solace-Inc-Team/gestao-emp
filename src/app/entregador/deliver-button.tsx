@@ -63,6 +63,14 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
     };
   }, [waitingNetwork, send]);
 
+  // fechar a tela no meio da contagem perderia a confirmação
+  useEffect(() => {
+    if (!left) return;
+    const warn = (e: BeforeUnloadEvent) => e.preventDefault();
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [left]);
+
   useEffect(() => {
     if (left === null) return;
     if (left === 0) {

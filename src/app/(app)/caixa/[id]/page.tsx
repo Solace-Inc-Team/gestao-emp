@@ -20,8 +20,10 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
   if (!isUuid(id)) notFound();
   const s = await getShift(user.tenantId, id);
   if (!s) notFound();
-  const cashSales = s.summary.dinheiro;
   const isOpen = s.status === "aberto";
+  // turno fechado mostra a conta como estava no acerto; estorno feito depois aparece à parte
+  const cashSales = isOpen ? s.summary.dinheiro : s.expected - s.openingCashCents + s.handedOver + s.spent;
+  const refundedAfter = isOpen ? 0 : cashSales - s.summary.dinheiro;
   const inRoute = s.orders.filter((o) => o.status === "em_rota").length;
   const canSettle = user.role === "dono" || user.role === "caixa";
   const pending = !isOpen && !!s.differenceCents && !s.resolvedAt;
@@ -69,6 +71,11 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
               <Difference cents={s.differenceCents ?? 0} className="text-5xl" />
             </div>
           </div>
+        )}
+        {refundedAfter > 0 && (
+          <p className="mt-5 text-sm text-warn-fg">
+            Depois do acerto, {formatBRL(refundedAfter)} em vendas em dinheiro deste turno foram estornados. O acerto continua valendo como foi feito.
+          </p>
         )}
         <p className="mt-5 text-sm text-muted">
           Pix {formatBRL(s.summary.pix)}, cartão {formatBRL(s.summary.cartao)} e fiado {formatBRL(s.summary.fiado)} não passam pela mão do entregador.
@@ -118,7 +125,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
       )}
 
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
-        <div className="space-y-6">
+        <div className="min-w-0 space-y-6">
         <section className="panel overflow-x-auto">
           <h2 className="h2 border-b border-line px-4 py-3">Pedidos do turno</h2>
           <table className="table">

@@ -10,7 +10,11 @@ export function CopyButton({ text, label = "Copiar código" }: { text: string; l
       type="button"
       className="btn"
       onClick={async () => {
-        await navigator.clipboard.writeText(text).catch(() => {});
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          return; // sem permissão de copiar: o código continua na tela para copiar à mão
+        }
         setDone(true);
         setTimeout(() => setDone(false), 2000);
       }}

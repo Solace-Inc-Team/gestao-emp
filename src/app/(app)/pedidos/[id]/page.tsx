@@ -35,6 +35,9 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
   const pixOpen = o.paymentMethod === "pix" && !o.pixConfirmedAt && ["aberto", "em_rota", "entregue"].includes(o.status);
   const pixCode = pixOpen ? orderPix(settings, { number: o.number, totalCents: o.totalCents - o.cashPartCents }) : null;
   const onShift = drivers.filter((d) => open.some((s) => s.driverId === d.id));
+  const driverName = (id?: string) => drivers.find((d) => d.id === id)?.name ?? "outro entregador";
+  // estorno de venda em dinheiro precisa do acerto do turno feito antes
+  const refundBlocked = (o.paymentMethod === "dinheiro" || o.cashPartCents > 0) && open.some((s) => s.id === o.shiftId);
 
   return (
     <>
@@ -113,7 +116,21 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
             <ol className="space-y-2">
               {o.history.map((h, i) => (
                 <li key={i} className="flex flex-wrap justify-between gap-2">
-                  <span>{actionLabel[h.action] ?? h.action}{h.userName && <span className="text-muted">, por {h.userName}</span>}</span>
+                  <span>
+                    {h.action === "pedido.criar" && o.origin === "portal" ? (
+                      "Pedido feito pelo cliente no site"
+                    ) : h.action === "pedido.trocar_entregador" ? (
+                      <>
+                        Trocou de entregador: de {driverName((h.data as { from?: string })?.from)} para {driverName((h.data as { to?: string })?.to)}
+                        {h.userName && <span className="text-muted">, por {h.userName}</span>}
+                      </>
+                    ) : (
+                      <>
+                        {actionLabel[h.action] ?? h.action}
+                        {h.userName && <span className="text-muted">, por {h.userName}</span>}
+                      </>
+                    )}
+                  </span>
                   <span className="text-sm text-muted">{fmtDateTime(h.createdAt)}</span>
                 </li>
               ))}
@@ -187,7 +204,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                 <button className="btn btn-primary w-full">Confirmar entrega</button>
               </ActionForm>
               <div className="mt-3">
-                <DeliveryExceptions orderId={o.id} items={o.items} />
+                <DeliveryExceptions order={o} items={o.items} />
               </div>
             </section>
           )}
@@ -216,6 +233,11 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                   ? "A venda sai dos números e a dívida do cliente diminui."
                   : "A venda sai dos números e a devolução do dinheiro entra nas despesas de hoje."}
               </p>
+              {refundBlocked ? (
+                <p className="rounded-md bg-warn-soft p-3 text-sm text-warn-fg">
+                  O turno do entregador deste pedido ainda está aberto. <Link href={`/caixa/${o.shiftId}`} className="underline">Faça o acerto</Link> antes de estornar.
+                </p>
+              ) : (
               <ActionForm action={refundOrderAction} className="space-y-3" confirm="Estornar este pedido? Não dá para desfazer.">
                 <input type="hidden" name="orderId" value={o.id} />
                 <div>
@@ -232,6 +254,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                 </div>
                 <button className="btn btn-danger">Estornar pedido</button>
               </ActionForm>
+              )}
             </section>
           )}
 

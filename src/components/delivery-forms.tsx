@@ -1,42 +1,18 @@
 import { ActionForm } from "./action-form";
-import { occurrenceAction, partialDeliveryAction } from "@/app/actions";
+import { occurrenceAction } from "@/app/actions";
 import { occurrenceKinds } from "@/domain/orders";
+import { PartialDeliveryForm, type PartialOrder } from "./partial-delivery-form";
 
-type Item = { id: string; name: string; quantity: number };
+type Item = { id: string; name: string; quantity: number; unitPriceCents: number };
 
 /** Os dois desvios da entrega: chegou só parte do pedido, ou não deu para entregar. Usados no celular do entregador e na tela do pedido. */
-export function DeliveryExceptions({ orderId, items }: { orderId: string; items: Item[] }) {
+export function DeliveryExceptions({ order, items, forDriver = false }: { order: PartialOrder; items: Item[]; forDriver?: boolean }) {
+  const orderId = order.id;
   return (
     <div className="space-y-1">
       <details>
         <summary className="tap cursor-pointer text-[13px] text-muted hover:text-fg">Entreguei só uma parte</summary>
-        <ActionForm action={partialDeliveryAction} className="mt-2 space-y-3 rounded-lg bg-subtle p-3">
-          <input type="hidden" name="orderId" value={orderId} />
-          <p className="text-[13px] text-muted">Informe quanto o cliente recebeu de cada item. O total é refeito e o resto volta com você.</p>
-          {items.map((i) => (
-            <div key={i.id} className="flex items-center justify-between gap-3">
-              <label htmlFor={`qty-${i.id}`} className="min-w-0 flex-1">
-                {i.name} <span className="text-muted">(pedido: {i.quantity})</span>
-              </label>
-              <input
-                id={`qty-${i.id}`}
-                name={`qty:${i.id}`}
-                type="number"
-                inputMode="numeric"
-                min={0}
-                max={i.quantity}
-                defaultValue={i.quantity}
-                required
-                className="input num w-20 text-center"
-              />
-            </div>
-          ))}
-          <div>
-            <label className="label" htmlFor={`pnote-${orderId}`}>Por quê</label>
-            <input id={`pnote-${orderId}`} name="note" required minLength={3} maxLength={160} className="input" placeholder="Ex.: cliente só quis 1 galão" />
-          </div>
-          <button className="btn w-full">Registrar entrega parcial</button>
-        </ActionForm>
+        <PartialDeliveryForm order={order} items={items} forDriver={forDriver} />
       </details>
       <details>
         <summary className="tap cursor-pointer text-[13px] text-muted hover:text-fg">Não consegui entregar</summary>
@@ -55,7 +31,9 @@ export function DeliveryExceptions({ orderId, items }: { orderId: string; items:
             <label className="label" htmlFor={`onote-${orderId}`}>Detalhe (opcional)</label>
             <input id={`onote-${orderId}`} name="note" maxLength={160} className="input" />
           </div>
-          <p className="text-[13px] text-muted">O pedido volta para a fila da loja e os produtos saem da sua conta.</p>
+          <p className="text-[13px] text-muted">
+            O pedido volta para a fila da loja e os produtos saem da conta {forDriver ? "sua" : "do entregador"}.
+          </p>
           <button className="btn btn-danger w-full">Registrar e devolver à fila</button>
         </ActionForm>
       </details>

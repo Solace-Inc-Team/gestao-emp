@@ -62,6 +62,8 @@
 body {
   background: var(--bg);
   color: var(--fg);
+  /* texto digitado sem espaço (observação, endereço) quebra em vez de empurrar a tela para o lado */
+  overflow-wrap: break-word;
   font-family: var(--font-sans);
   font-size: 14px;
   line-height: 1.5;

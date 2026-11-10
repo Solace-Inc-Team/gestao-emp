@@ -153,10 +153,11 @@ export function PortalForm({
             <span className="font-semibold">Total</span>
             <span className="num text-3xl font-semibold">{formatBRL(total)}</span>
           </p>
-          <p className="mt-1 text-[13px] text-muted">Taxa de entrega, se houver, é combinada pela loja.</p>
+          <p className="mt-1 text-[13px] text-muted">Taxa de entrega, se houver, é combinada pela loja. Até 20 unidades de cada produto pelo site.</p>
           <button className="btn btn-primary mt-4 h-12 w-full text-lg" disabled={!items.length || pending}>
             {pending ? "Enviando…" : "Fazer pedido"}
           </button>
+          {!items.length && <p className="mt-2 text-center text-[13px] text-muted">Escolha ao menos um produto acima.</p>}
         </div>
       </fieldset>
     </form>
@@ -184,7 +185,7 @@ function Done({ number, totalCents, pix }: { number: number; totalCents: number;
           {qr && <div className="w-fit rounded-md bg-white p-2" dangerouslySetInnerHTML={{ __html: qr }} />}
           <p className="num rounded-md bg-subtle p-2 text-[12px] break-all">{pix}</p>
           <CopyButton text={pix} />
-          <p className="text-[13px] text-muted">O pedido sai normalmente; a loja confere o Pix no extrato.</p>
+          <p className="text-[13px] text-muted">Copie o código e cole no app do seu banco, na opção Pix copia e cola. O pedido sai normalmente; a loja confere o Pix no extrato.</p>
         </div>
       )}
     </section>

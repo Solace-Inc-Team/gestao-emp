@@ -515,7 +515,8 @@ test("pedido: desconto com limite, pagamento misto, entrega parcial, ocorrência
   const [item] = (await m.q.getOrder(A.t.id, o.id))!.items;
   await assert.rejects(m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 0 }, note: "nada" }), /Não consegui entregar/);
   await assert.rejects(m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 4 }, note: "a mais" }), /inválida/);
-  await m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 1 }, note: "só quis um" });
+  await assert.rejects(m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 3 }, note: "tudo" }), /Use "Entreguei"/);
+  assert.equal(await m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 1 }, note: "só quis um" }), 11000 - 3000);
   const after = (await m.q.getOrder(A.t.id, o.id))!;
   assert.equal(after.totalCents, 11000 - 3000);
   assert.equal(after.cashPartCents, 8000);
@@ -586,7 +587,8 @@ test("portal: só com portal ligado, reconhece o cliente pelo telefone e não us
   const { eq } = await import("drizzle-orm");
   const [t] = await db.select({ slug: tenants.slug }).from(tenants).where(eq(tenants.id, A.t.id));
   assert.equal(await m.portal.portalTenant(t.slug), null);
-  await m.registry.saveSettings(A.ctx, { staffDiscountPct: 10, lateAfterMinutes: 60, pixKey: "", pixName: "", pixCity: "", portalEnabled: true });
+  await m.registry.saveSettings(A.ctx, { portalEnabled: true });
+  await assert.rejects(m.registry.saveSettings(A.ctx, { pixKey: "chave@x.com", pixName: "", pixCity: "" }), /nome do recebedor/);
   assert.equal((await m.portal.portalTenant(t.slug))?.id, A.t.id);
   assert.ok((await m.portal.portalProducts(A.t.id)).every((p) => p.name !== B.product.name));
 
@@ -605,7 +607,8 @@ test("portal: só com portal ligado, reconhece o cliente pelo telefone e não us
   // pedido recusado não deixa cliente novo para trás
   await assert.rejects(m.portal.placePortalOrder(A.t.id, { ...input, phone: "21 99999-0000", items: [{ productId: B.product.id, quantity: 1, returnsEmpty: true }] }), /indisponível/);
   assert.equal((await db.select().from(customers).where(eq(customers.phone, "21 99999-0000"))).length, 0);
-  await m.registry.saveSettings(A.ctx, { staffDiscountPct: 10, lateAfterMinutes: 60, pixKey: "", pixName: "", pixCity: "", portalEnabled: false });
+  await m.registry.saveSettings(A.ctx, { portalEnabled: false });
+  assert.equal((await m.q.getSettings(A.t.id)).staffDiscountPct, 10);
 });
 
 test("Pix: só conta como recebido depois de conferido pelo dono ou caixa", async () => {

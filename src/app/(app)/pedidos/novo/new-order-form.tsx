@@ -39,6 +39,8 @@ export function NewOrderForm({
   const [fee, setFee] = useState("");
   const [discount, setDiscount] = useState("");
   const searchRef = useRef<HTMLInputElement>(null);
+  // campo que existe sempre: a busca some quando o cliente já está escolhido
+  const modeRef = useRef<HTMLInputElement>(null);
 
   // atalhos de quem atende no teclado: "/" vai para a busca de cliente, Ctrl+Enter lança
   useEffect(() => {
@@ -50,7 +52,7 @@ export function NewOrderForm({
       }
       if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        searchRef.current?.form?.requestSubmit();
+        modeRef.current?.form?.requestSubmit();
       }
     };
     window.addEventListener("keydown", onKey);
@@ -95,7 +97,7 @@ export function NewOrderForm({
 
   return (
     <ActionForm action={createOrderAction} className="grid gap-6 lg:grid-cols-[1fr_20rem]">
-      <input type="hidden" name="mode" value={mode} />
+      <input type="hidden" name="mode" value={mode} ref={modeRef} />
       <input type="hidden" name="items" value={JSON.stringify(items)} />
       <input type="hidden" name="customerId" value={creating ? "" : (customer?.id ?? "")} />
       <input type="hidden" name="paymentMethod" value={payment} />
@@ -306,6 +308,9 @@ export function NewOrderForm({
                 <label className="label" htmlFor="discountReason">Motivo</label>
                 <input id="discountReason" name="discountReason" maxLength={160} required={discountCents > 0} className="input" placeholder="Ex.: cliente antigo, 10 galões" />
               </div>
+              {parsedDiscount > subtotal && subtotal > 0 && (
+                <p className="text-[13px] font-medium text-danger">O desconto é maior que o valor dos produtos ({formatBRL(subtotal)}).</p>
+              )}
               {overLimit && (
                 <p className="text-[13px] font-medium text-warn-fg">Acima do seu limite de {discountLimitPct}%. Só o dono consegue lançar este desconto.</p>
               )}

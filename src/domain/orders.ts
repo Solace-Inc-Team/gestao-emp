@@ -272,11 +272,11 @@ export async function dispatchOrder(ctx: Ctx, orderId: string, driverId: string)
  * o total do pedido é refeito e o que sobrou continua com o entregador até o acerto.
  */
 export async function deliverOrder(ctx: Ctx, orderId: string, partial?: { delivered: Record<string, number>; note: string }) {
-  await tenantTransaction(ctx, async (tx) => {
+  return tenantTransaction(ctx, async (tx) => {
     const { o, items, name } = await loadOrder(tx, ctx, orderId);
     if (ctx.role === "entregador" && o.driverId !== ctx.userId) throw new DomainError("Pedido de outro entregador.");
     // confirmação repetida (celular sem rede reenviando): já está entregue, não faz nada de novo
-    if (o.status === "entregue" && !partial) return;
+    if (o.status === "entregue" && !partial) return o.totalCents;
     if (o.status !== "em_rota" || !o.driverId) throw new DomainError("Pedido não está em rota.");
 
     const got = items.map((i) => {
@@ -285,6 +285,7 @@ export async function deliverOrder(ctx: Ctx, orderId: string, partial?: { delive
       return { ...i, got: q };
     });
     const isPartial = got.some((i) => i.got < i.quantity);
+    if (partial && !isPartial) throw new DomainError('Você marcou tudo como entregue. Use "Entreguei".');
     if (isPartial) {
       if (got.every((i) => i.got === 0)) throw new DomainError("Nada foi entregue: use \"Não consegui entregar\".");
       if ((partial?.note.trim().length ?? 0) < 3) throw new DomainError("Explique por que a entrega foi parcial.");
@@ -314,6 +315,7 @@ export async function deliverOrder(ctx: Ctx, orderId: string, partial?: { delive
     }
     await tx.update(orders).set(changes).where(eq(orders.id, o.id));
     await audit(tx, ctx, isPartial ? "pedido.entrega_parcial" : "pedido.entregue", "order", o.id, isPartial ? { before: o.totalCents, after: changes.totalCents, note: partial!.note } : undefined);
+    return changes.totalCents ?? o.totalCents;
   });
 }
 

@@ -104,8 +104,8 @@ export default async function Entregador() {
                         <span>
                           Cobrar em {paymentLabel[o.paymentMethod].toLowerCase()}
                           {o.cashPartCents > 0 && (
-                            <span className="block text-[13px] text-muted">
-                              <Money cents={o.cashPartCents} /> em dinheiro, o resto no {paymentLabel[o.paymentMethod].toLowerCase()}
+                            <span className="mt-1 block text-[15px] font-semibold">
+                              <Money cents={o.cashPartCents} /> em dinheiro + <Money cents={o.totalCents - o.cashPartCents} /> no {paymentLabel[o.paymentMethod].toLowerCase()}
                             </span>
                           )}
                         </span>
@@ -129,7 +129,7 @@ export default async function Entregador() {
                     <div className="border-t border-line p-3">
                       <DeliverButton orderId={o.id} label={o.paymentMethod === "fiado" ? "Entreguei (fiado)" : "Entreguei e recebi"} />
                       <div className="mt-2">
-                        <DeliveryExceptions orderId={o.id} items={items.filter((i) => i.orderId === o.id)} />
+                        <DeliveryExceptions order={o} items={items.filter((i) => i.orderId === o.id)} forDriver />
                       </div>
                     </div>
                   </li>

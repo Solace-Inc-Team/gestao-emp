@@ -164,7 +164,7 @@ export const getOrder = scoped(async function getOrder(tenantId: string, id: str
     .innerJoin(products, eq(products.id, orderItems.productId))
     .where(and(eq(orderItems.tenantId, tenantId), eq(orderItems.orderId, id)));
   const history = await db
-    .select({ action: auditLog.action, createdAt: auditLog.createdAt, userName: users.name })
+    .select({ action: auditLog.action, data: auditLog.data, createdAt: auditLog.createdAt, userName: users.name })
     .from(auditLog)
     .leftJoin(users, eq(users.id, auditLog.userId))
     .where(and(eq(auditLog.tenantId, tenantId), eq(auditLog.entity, "order"), eq(auditLog.entityId, id)))
@@ -200,7 +200,7 @@ export const getSettings = scoped(async function getSettings(tenantId: string) {
 export const itemsForOrders = scoped(async function itemsForOrders(tenantId: string, orderIds: string[]) {
   if (!orderIds.length) return [];
   return db
-    .select({ id: orderItems.id, orderId: orderItems.orderId, name: products.name, quantity: orderItems.quantity, returnsEmpty: orderItems.returnsEmpty })
+    .select({ id: orderItems.id, orderId: orderItems.orderId, name: products.name, quantity: orderItems.quantity, unitPriceCents: orderItems.unitPriceCents, returnsEmpty: orderItems.returnsEmpty })
     .from(orderItems)
     .innerJoin(products, eq(products.id, orderItems.productId))
     .where(and(eq(orderItems.tenantId, tenantId), inArray(orderItems.orderId, orderIds)));

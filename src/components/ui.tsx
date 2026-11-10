@@ -36,6 +36,9 @@ export function Difference({ cents, className = "" }: { cents: number; className
   );
 }
 
+/** Pedido feito pelo próprio cliente no portal. */
+export const SiteBadge = () => <span className="ml-2 rounded bg-accent-soft px-1.5 py-0.5 text-xs font-semibold text-accent">Site</span>;
+
 export function PageHeader({ title, description, children }: { title: string; description?: ReactNode; children?: ReactNode }) {
   return (
     <div className="mb-8 flex flex-wrap items-end justify-between gap-4">

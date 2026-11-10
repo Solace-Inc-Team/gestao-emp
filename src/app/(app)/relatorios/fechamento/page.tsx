@@ -119,7 +119,7 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
 
       <Block title="Resumo">
         <Row label="Vendas entregues" cents={d.total} />
-        <Row label="Despesas" cents={-spent} />
+        <Row label="Despesas" cents={spent ? -spent : 0} />
         <Row label="Resultado do dia" cents={d.total - spent} strong />
         <Row label="Fiado recebido hoje (venda de outro dia)" cents={fiadoIn} muted />
         <p className="pt-2 text-[13px] text-muted">
