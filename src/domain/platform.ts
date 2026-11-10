@@ -107,7 +107,7 @@ export async function deleteTenant(admin: SessionUser, tenantId: string, confirm
       "tentativas_login",
       sql`delete from login_attempts
         where key like any (select 'login:' || email || ':%' from users where tenant_id = ${t.id})
-           or key in (select 'totp:' || id::text from users where tenant_id = ${t.id})`,
+           or key in (select p || id::text from users cross join (values ('totp:'), ('senha:')) as k(p) where tenant_id = ${t.id})`,
     );
     await del("usuarios", sql`delete from users where tenant_id = ${t.id}`);
     await tx.delete(tenants).where(eq(tenants.id, t.id));

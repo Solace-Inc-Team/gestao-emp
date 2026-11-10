@@ -163,6 +163,10 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                   </p>
                   <ActionForm action={anonymizeCustomerAction} confirm={`Apagar os dados pessoais de ${c.name}? Não tem volta.`}>
                     <input type="hidden" name="customerId" value={c.id} />
+                    <div className="mb-3 max-w-xs">
+                      <label className="label" htmlFor="anon-pw">Sua senha, para confirmar</label>
+                      <input id="anon-pw" name="confirmPassword" type="password" autoComplete="current-password" required className="input" />
+                    </div>
                     <button className="btn btn-danger">Apagar dados do cliente</button>
                   </ActionForm>
                 </section>

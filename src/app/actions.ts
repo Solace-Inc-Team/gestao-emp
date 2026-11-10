@@ -44,6 +44,21 @@ function money(fd: FormData, k: string, required = true): number | null {
   return c;
 }
 
+/**
+ * Ações que não têm volta (estorno, apagar dados, mexer no estoque na mão) pedem a senha de novo:
+ * um computador esquecido aberto no balcão não basta para fazê-las.
+ */
+async function confirmPassword(user: { userId: string }, fd: FormData) {
+  const key = `senha:${user.userId}`;
+  if (await isBlocked(key)) throw new DomainError(BLOCKED_MESSAGE);
+  const [u] = await db.select({ hash: users.passwordHash }).from(users).where(eq(users.id, user.userId));
+  if (!u || !(await verifyPassword(str(fd, "confirmPassword"), u.hash))) {
+    await recordFailure(key);
+    throw new DomainError("Senha incorreta. A ação não foi feita.");
+  }
+  await clearFailures(key);
+}
+
 async function run(fn: () => Promise<unknown>, paths: string[], ok?: string): Promise<ActionState> {
   try {
     await fn();
@@ -290,7 +305,10 @@ export async function adjustAction(fd: FormData) {
   const user = await requireUser("dono");
   const state = z.enum(["cheio", "vazio", "avariado"]).catch("cheio").parse(str(fd, "state"));
   return run(
-    async () => adjustStock(user, { productId: str(fd, "productId"), state, counted: int(fd, "counted"), reason: str(fd, "reason") }),
+    async () => {
+      await confirmPassword(user, fd);
+      await adjustStock(user, { productId: str(fd, "productId"), state, counted: int(fd, "counted"), reason: str(fd, "reason") });
+    },
     ["/"],
     "Estoque ajustado.",
   );
@@ -310,6 +328,7 @@ export async function inventoryAction(fd: FormData): Promise<ActionState> {
   const user = await requireUser("dono");
   let changed = 0;
   const r = await run(async () => {
+    await confirmPassword(user, fd);
     // campos c:<estado>:<id do produto>; em branco = não contado
     const counts = [...fd.keys()]
       .filter((k) => k.startsWith("c:") && str(fd, k) !== "")
@@ -357,7 +376,14 @@ export async function saveCustomerAction(fd: FormData) {
 
 export async function anonymizeCustomerAction(fd: FormData) {
   const user = await requireUser("dono");
-  return run(() => anonymizeCustomer(user, str(fd, "customerId")), ["/"], "Dados pessoais do cliente apagados.");
+  return run(
+    async () => {
+      await confirmPassword(user, fd);
+      await anonymizeCustomer(user, str(fd, "customerId"));
+    },
+    ["/"],
+    "Dados pessoais do cliente apagados.",
+  );
 }
 
 export async function saveProductAction(fd: FormData) {
@@ -481,7 +507,10 @@ export async function receivePaymentAction(fd: FormData) {
 export async function refundOrderAction(fd: FormData) {
   const user = await requireUser("dono");
   return run(
-    () => refundOrder(user, { orderId: str(fd, "orderId"), reason: str(fd, "reason"), restock: fd.get("restock") === "on" }),
+    async () => {
+      await confirmPassword(user, fd);
+      await refundOrder(user, { orderId: str(fd, "orderId"), reason: str(fd, "reason"), restock: fd.get("restock") === "on" });
+    },
     ["/"],
     "Pedido estornado.",
   );

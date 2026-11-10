@@ -253,6 +253,8 @@ export async function deliverOrder(ctx: Ctx, orderId: string, partial?: { delive
   await tenantTransaction(ctx, async (tx) => {
     const { o, items, name } = await loadOrder(tx, ctx, orderId);
     if (ctx.role === "entregador" && o.driverId !== ctx.userId) throw new DomainError("Pedido de outro entregador.");
+    // confirmação repetida (celular sem rede reenviando): já está entregue, não faz nada de novo
+    if (o.status === "entregue" && !partial) return;
     if (o.status !== "em_rota" || !o.driverId) throw new DomainError("Pedido não está em rota.");
 
     const got = items.map((i) => {

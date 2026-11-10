@@ -168,6 +168,10 @@ export default async function Estoque() {
                 <label className="label" htmlFor="a-reason">Motivo</label>
                 <input id="a-reason" name="reason" required minLength={3} className="input" />
               </div>
+              <div className="sm:col-span-2">
+                <label className="label" htmlFor="a-pw">Sua senha, para confirmar</label>
+                <input id="a-pw" name="confirmPassword" type="password" autoComplete="current-password" required className="input sm:max-w-xs" />
+              </div>
               <button className="btn sm:col-span-2 sm:justify-self-start">Registrar ajuste</button>
             </ActionForm>
           </section>

@@ -54,6 +54,10 @@ export default async function Inventario() {
           <label className="label" htmlFor="inv-note">Observação (opcional)</label>
           <input id="inv-note" name="note" maxLength={120} className="input" placeholder="Ex.: inventário de abertura, contado por Marina e Rita" />
         </div>
+        <div className="max-w-xs">
+          <label className="label" htmlFor="inv-pw">Sua senha, para confirmar</label>
+          <input id="inv-pw" name="confirmPassword" type="password" autoComplete="current-password" required className="input" />
+        </div>
         <button className="btn btn-primary">Registrar inventário</button>
       </ActionForm>
     </>

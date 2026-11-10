@@ -433,6 +433,8 @@ test("caixa: repasse e gasto diminuem o esperado; diferença fica pendente até 
     paymentMethod: "dinheiro", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: driver.id,
   });
   await m.orders.deliverOrder({ tenantId: A.t.id, userId: driver.id, role: "entregador" }, order.id);
+  // o celular sem rede reenvia a confirmação: nada é contado duas vezes
+  await m.orders.deliverOrder({ tenantId: A.t.id, userId: driver.id, role: "entregador" }, order.id);
   // em mãos: 50 de troco + 220 da entrega
   const entry = (kind: "repasse" | "saida", amountCents: number) => ({ shiftId: shift.id, kind, amountCents, note: "gasolina", category: "combustivel" });
   await assert.rejects(m.shifts.addCashEntry(atendente, entry("repasse", 1000)), /Sem permissão/);

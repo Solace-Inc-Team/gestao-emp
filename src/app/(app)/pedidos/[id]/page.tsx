@@ -202,6 +202,10 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                   <input type="checkbox" name="restock" defaultChecked />
                   Os produtos voltaram para a loja
                 </label>
+                <div>
+                  <label className="label" htmlFor="refund-pw">Sua senha, para confirmar</label>
+                  <input id="refund-pw" name="confirmPassword" type="password" autoComplete="current-password" required className="input" />
+                </div>
                 <button className="btn btn-danger">Estornar pedido</button>
               </ActionForm>
             </section>
