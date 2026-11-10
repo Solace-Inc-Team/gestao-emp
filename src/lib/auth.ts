@@ -7,6 +7,7 @@ import { and, eq, gt } from "drizzle-orm";
 import { db } from "@/db";
 import { sessions, users, tenants } from "@/db/schema";
 import type { Ctx, Role } from "./ctx";
+import { TERMS_VERSION } from "./legal";
 
 const COOKIE = "sessao";
 const TTL_MS = 1000 * 60 * 60 * 12;
@@ -91,9 +92,13 @@ export async function completeMfa(sessionId: string, userId: string) {
   await createSession(userId);
 }
 
+/** Dono que ainda não aceitou a versão atual dos termos: só pode ver o aceite e sair. */
+export const pendingTerms = (u: SessionUser) => u.role === "dono" && !u.platformAdmin && u.termsVersion !== TERMS_VERSION;
+
 export async function requireUser(...roles: Role[]): Promise<SessionUser> {
   const user = await getUser();
   if (!user) redirect("/login");
+  if (pendingTerms(user)) redirect("/aceite");
   if (roles.length && !roles.includes(user.role)) redirect(user.role === "entregador" ? "/entregador" : "/");
   return user;
 }

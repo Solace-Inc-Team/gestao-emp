@@ -187,7 +187,7 @@ export const stockOverview = scoped(async function stockOverview(tenantId: strin
       emptyStore: sum("vazio", true),
       fullTransit: sum("cheio", false),
       emptyTransit: sum("vazio", false),
-      low: p.active && fullStore <= p.minStock,
+      low: p.active && p.minStock > 0 && fullStore <= p.minStock,
     };
   });
 });

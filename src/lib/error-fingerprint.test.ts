@@ -32,3 +32,10 @@ test("alerta não leva e-mail nem telefone", () => {
   const msg = 'duplicate key (email)=(maria.silva@gmail.com) telefone (11) 98811-2034 pedido 42';
   assert.equal(redact(msg), "duplicate key (email)=([e-mail]) telefone [número] pedido 42");
 });
+
+test("erro de consulta não guarda os valores", () => {
+  const err = new Error('Failed query: update "users" set "password_hash" = $1 where "id" = $2\nparams: scrypt$16384$abc,ana@x.com');
+  const { message, stack } = describeError(err);
+  assert.equal(message, 'Failed query: update "users" set "password_hash" = $1 where "id" = $2\nparams: [omitidos]');
+  assert.ok(!stack.includes("scrypt$") && !stack.includes("ana@x.com"));
+});

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
 import { getCustomer, listOrders } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
@@ -15,6 +16,7 @@ export const metadata = { title: "Cliente" };
 export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
   const user = await requireUser("dono", "atendente");
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const c = await getCustomer(user.tenantId, id);
   if (!c) notFound();
   const [orders, st] = await Promise.all([listOrders(user.tenantId, { customerId: id }), customerStatement(user.tenantId, id)]);
@@ -41,7 +43,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                 <Money cents={st.owed} className={`text-2xl font-semibold tracking-[-0.03em] ${st.owed > 0 ? "text-danger" : ""}`} />
               </div>
               {st.owed > 0 && (
-                <ActionForm key={st.owed} action={receivePaymentAction} className="grid gap-3 border-b border-line p-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+                <ActionForm key={st.owed} action={receivePaymentAction} className="grid gap-3 border-b border-line p-4 sm:grid-cols-2 sm:items-end">
                   <input type="hidden" name="customerId" value={c.id} />
                   <div>
                     <label className="label" htmlFor="amount">Valor recebido</label>
@@ -55,11 +57,11 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                       <option value="cartao">Cartão</option>
                     </select>
                   </div>
-                  <button className="btn btn-primary">Registrar</button>
-                  <div className="sm:col-span-3">
+                  <div className="sm:col-span-2">
                     <label className="label" htmlFor="pay-note">Observação (opcional)</label>
                     <input id="pay-note" name="note" maxLength={200} className="input" />
                   </div>
+                  <button className="btn btn-primary">Registrar</button>
                 </ActionForm>
               )}
               <ul>

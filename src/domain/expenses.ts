@@ -22,8 +22,8 @@ export const expenseSchema = z.object({
   category: z.enum(["combustivel", "fornecedor", "salarios", "manutencao", "aluguel", "impostos", "outros"], {
     message: "Escolha a categoria.",
   }),
-  description: z.string().trim().min(2, "Descreva a despesa.").max(160),
-  amountCents: z.int().min(1, "Informe o valor."),
+  description: z.string().trim().min(2, "Descreva a despesa.").max(160, "A descrição pode ter até 160 letras."),
+  amountCents: z.int().min(1, "Informe o valor.").max(10_000_000_00, "Valor muito alto."),
   method: z.enum(["dinheiro", "pix", "cartao", "boleto"]),
   paidOn: z.iso.date("Data inválida."),
 });

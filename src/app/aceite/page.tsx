@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { requireUser } from "@/lib/auth";
-import { TERMS_VERSION, company, termsDate } from "@/lib/legal";
+import { getUser, pendingTerms } from "@/lib/auth";
+import { company, termsDate } from "@/lib/legal";
 import { acceptTermsAction, logout } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
 import { Logo } from "@/components/logo";
@@ -9,8 +9,9 @@ import { Logo } from "@/components/logo";
 export const metadata = { title: "Termos de uso" };
 
 export default async function Aceite() {
-  const user = await requireUser("dono");
-  if (user.termsVersion === TERMS_VERSION) redirect("/");
+  const user = await getUser();
+  if (!user) redirect("/login");
+  if (!pendingTerms(user)) redirect("/");
   const update = user.termsVersion !== null;
 
   return (

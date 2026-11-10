@@ -5,7 +5,7 @@ const brDateTime = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short", timeSt
 export function csvCell(v: unknown) {
   const s = v === null || v === undefined ? "" : v instanceof Date ? brDateTime.format(v) : String(v);
   // prefixo ' evita que o Excel interprete como fórmula; número negativo puro passa direto
-  const safe = /^[=+\-@]/.test(s) && !/^-\d+(,\d+)?$/.test(s) ? `'${s}` : s;
+  const safe = /^[=+\-@\t\r]/.test(s) && !/^-\d+(,\d+)?$/.test(s) ? `'${s}` : s;
   return /[;"\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe;
 }
 

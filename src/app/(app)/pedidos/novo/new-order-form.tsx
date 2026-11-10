@@ -30,7 +30,7 @@ export function NewOrderForm({
   const [keepsBottle, setKeepsBottle] = useState<Record<string, boolean>>({}); // true = cliente compra o vasilhame
   const [customer, setCustomer] = useState<Customer | undefined>(initialCustomer);
   const [search, setSearch] = useState("");
-  const [matches, setMatches] = useState<Customer[]>([]);
+  const [matches, setMatches] = useState<{ q: string; list: Customer[] }>({ q: "", list: [] });
   const [creating, setCreating] = useState(false);
   const [payment, setPayment] = useState<(typeof payments)[number][0]>("dinheiro");
   const [fee, setFee] = useState("");
@@ -43,7 +43,7 @@ export function NewOrderForm({
     const t = setTimeout(() => {
       fetch(`/clientes/busca?q=${encodeURIComponent(q)}`, { signal: ctrl.signal })
         .then((r) => (r.ok ? r.json() : []))
-        .then(setMatches)
+        .then((list: Customer[]) => setMatches({ q, list }))
         .catch(() => {});
     }, 200);
     return () => {
@@ -51,12 +51,16 @@ export function NewOrderForm({
       ctrl.abort();
     };
   }, [search]);
-  const shown = search.trim().length >= 2 ? matches : [];
+  const q = search.trim();
+  const shown = q.length >= 2 ? matches.list : [];
+  const nothingFound = q.length >= 2 && matches.q === q && matches.list.length === 0;
 
   const items = products
     .filter((p) => qty[p.id] > 0)
     .map((p) => ({ productId: p.id, quantity: qty[p.id], returnsEmpty: p.returnable && !keepsBottle[p.id] }));
-  const feeCents = mode === "entrega" ? (parseBRL(fee) ?? 0) : 0;
+  const parsedFee = parseBRL(fee) ?? 0;
+  // taxa fora do limite não entra no total mostrado; o servidor recusa com a mensagem
+  const feeCents = mode === "entrega" && parsedFee >= 0 && parsedFee <= 100_00 ? parsedFee : 0;
   // só pra exibir, o total que vale é calculado no servidor
   const total = products.reduce((s, p) => s + (qty[p.id] ?? 0) * p.priceCents, feeCents);
   const step = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, Math.min(99, (q[id] ?? 0) + d)) }));
@@ -77,7 +81,7 @@ export function NewOrderForm({
               role="tab"
               aria-selected={mode === m}
               onClick={() => setMode(m)}
-              className={`rounded-md px-3.5 py-1.5 text-[13px] font-medium transition-colors ${mode === m ? "bg-surface text-fg shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1 ring-line" : "text-muted hover:text-fg"}`}
+              className={`min-h-11 rounded-md px-3.5 py-1.5 text-[13px] sm:min-h-0 font-medium transition-colors ${mode === m ? "bg-surface text-fg shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1 ring-line" : "text-muted hover:text-fg"}`}
             >
               {m === "entrega" ? "Entrega" : "Venda no balcão"}
             </button>
@@ -93,27 +97,27 @@ export function NewOrderForm({
                 <p className="text-sm text-muted">{customer.address || "Sem endereço"}</p>
                 <p className="text-sm text-muted">{customer.phone}</p>
               </div>
-              <button type="button" className="text-sm text-accent underline" onClick={() => setCustomer(undefined)}>Trocar</button>
+              <button type="button" className="tap text-sm text-accent underline" onClick={() => setCustomer(undefined)}>Trocar</button>
             </div>
           ) : creating ? (
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="nc-name">Nome</label>
-                <input id="nc-name" name="newCustomerName" required className="input" autoFocus />
+                <input id="nc-name" name="newCustomerName" required maxLength={120} defaultValue={q} className="input" autoFocus />
               </div>
               <div>
                 <label className="label" htmlFor="nc-phone">Telefone</label>
-                <input id="nc-phone" name="newCustomerPhone" inputMode="tel" className="input" />
+                <input id="nc-phone" name="newCustomerPhone" inputMode="tel" maxLength={30} className="input" />
               </div>
               <div>
                 <label className="label" htmlFor="nc-ref">Referência</label>
-                <input id="nc-ref" name="newCustomerReference" className="input" />
+                <input id="nc-ref" name="newCustomerReference" maxLength={200} className="input" />
               </div>
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="nc-addr">Endereço</label>
-                <input id="nc-addr" name="newCustomerAddress" className="input" />
+                <input id="nc-addr" name="newCustomerAddress" maxLength={200} className="input" />
               </div>
-              <button type="button" className="text-left text-sm text-accent underline" onClick={() => setCreating(false)}>
+              <button type="button" className="tap text-left text-sm text-accent underline" onClick={() => setCreating(false)}>
                 Buscar cliente cadastrado
               </button>
             </div>
@@ -137,8 +141,9 @@ export function NewOrderForm({
                   ))}
                 </ul>
               )}
-              <button type="button" className="mt-3 text-sm font-semibold text-accent" onClick={() => setCreating(true)}>
-                + Cadastrar cliente novo
+              {nothingFound && <p className="mt-2 text-sm text-muted">Nenhum cliente encontrado.</p>}
+              <button type="button" className="tap mt-2 text-sm font-semibold text-accent" onClick={() => setCreating(true)}>
+                {nothingFound ? `+ Cadastrar "${q}" como cliente novo` : "+ Cadastrar cliente novo"}
               </button>
             </div>
           )}
@@ -189,7 +194,7 @@ export function NewOrderForm({
             <>
               <div>
                 <label className="label" htmlFor="fee">Taxa de entrega</label>
-                <input id="fee" name="deliveryFee" value={fee} onChange={(e) => setFee(e.target.value)} inputMode="decimal" className="input" placeholder="0,00" />
+                <input id="fee" name="deliveryFee" maxLength={12} value={fee} onChange={(e) => setFee(e.target.value)} inputMode="decimal" className="input" placeholder="0,00" />
               </div>
               <div>
                 <label className="label" htmlFor="driver">Entregador</label>
@@ -226,7 +231,7 @@ export function NewOrderForm({
           {payment === "dinheiro" && (
             <div className="mt-3">
               <label className="label" htmlFor="change">Troco para (opcional)</label>
-              <input id="change" name="changeFor" inputMode="decimal" className="input" placeholder="100,00" />
+              <input id="change" name="changeFor" maxLength={12} inputMode="decimal" className="input" placeholder="100,00" />
             </div>
           )}
           {payment === "fiado" && <p className="mt-3 text-sm text-muted">Fiado exige cliente identificado.</p>}

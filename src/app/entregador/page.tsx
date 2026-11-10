@@ -23,11 +23,11 @@ export default async function Entregador() {
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg/85 px-4 py-3 backdrop-blur">
         <Logo />
         <div className="flex gap-1">
-          <Link href="/senha" aria-label="Trocar senha" className="grid size-9 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+          <Link href="/senha" aria-label="Trocar senha" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
             <KeyRound size={17} strokeWidth={1.75} />
           </Link>
           <form action={logout}>
-            <button aria-label="Sair" className="grid size-9 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+            <button aria-label="Sair" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
               <LogOut size={17} strokeWidth={1.75} />
             </button>
           </form>
@@ -67,18 +67,18 @@ export default async function Entregador() {
                       </div>
                       {o.customerAddress && (
                         <a
-                          className="mt-2 flex items-start gap-2 text-accent"
+                          className="mt-1 flex min-h-11 items-center gap-2 text-accent"
                           href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(o.customerAddress)}`}
                           target="_blank"
                           rel="noreferrer"
                         >
-                          <MapPin size={16} strokeWidth={1.75} className="mt-0.5 shrink-0" aria-hidden="true" />
+                          <MapPin size={16} strokeWidth={1.75} className="shrink-0" aria-hidden="true" />
                           {o.customerAddress}
                         </a>
                       )}
                       {o.customerReference && <p className="mt-0.5 pl-6 text-[13px] text-muted">{o.customerReference}</p>}
                       {o.customerPhone && (
-                        <a href={`tel:${o.customerPhone.replace(/[^\d+]/g, "")}`} className="mt-1.5 flex items-center gap-2 text-accent">
+                        <a href={`tel:${o.customerPhone.replace(/[^\d+]/g, "")}`} className="flex min-h-11 items-center gap-2 text-accent">
                           <Phone size={16} strokeWidth={1.75} aria-hidden="true" />
                           {o.customerPhone}
                         </a>

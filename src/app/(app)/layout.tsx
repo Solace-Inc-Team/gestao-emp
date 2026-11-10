@@ -2,7 +2,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { KeyRound, LogOut } from "lucide-react";
 import { requireUser } from "@/lib/auth";
-import { TERMS_VERSION } from "@/lib/legal";
 import { logout } from "@/app/actions";
 import { Logo } from "@/components/logo";
 import { NavLinks, type NavGroup } from "@/components/nav-links";
@@ -19,7 +18,6 @@ const initials = (name: string) =>
 export default async function AppLayout({ children }: LayoutProps<"/">) {
   const user = await requireUser("dono", "atendente");
   if (user.platformAdmin) redirect("/admin");
-  if (user.role === "dono" && user.termsVersion !== TERMS_VERSION) redirect("/aceite");
 
   const groups: NavGroup[] = [
     {
@@ -59,7 +57,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
         <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3 lg:pt-5">
           <Logo />
           <form action={logout} className="lg:hidden">
-            <button className="text-[13px] text-muted hover:text-fg">Sair</button>
+            <button className="tap px-2 text-[13px] text-muted hover:text-fg">Sair</button>
           </form>
         </div>
         <p className="hidden truncate px-5 pb-5 text-[13px] text-muted lg:block">{user.tenantName}</p>
@@ -72,11 +70,11 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             <p className="truncate text-[13px] font-medium">{user.name}</p>
             <p className="text-xs text-muted">{roleLabel[user.role]}</p>
           </div>
-          <Link href="/senha" title="Trocar senha" aria-label="Trocar senha" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+          <Link href="/senha" title="Trocar senha" aria-label="Trocar senha" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg lg:size-8">
             <KeyRound size={15} strokeWidth={1.75} />
           </Link>
           <form action={logout}>
-            <button title="Sair" aria-label="Sair" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+            <button title="Sair" aria-label="Sair" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg lg:size-8">
               <LogOut size={15} strokeWidth={1.75} />
             </button>
           </form>

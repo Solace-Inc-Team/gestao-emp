@@ -26,7 +26,7 @@ export const paymentSchema = z.object({
   customerId: z.uuid(),
   amountCents: z.int().min(1, "Informe o valor recebido."),
   method: z.enum(["dinheiro", "pix", "cartao"], { message: "Escolha como o cliente pagou." }),
-  note: z.string().trim().max(200),
+  note: z.string().trim().max(200, "A observação pode ter até 200 letras."),
 });
 
 export async function receivePayment(ctx: Ctx, input: z.infer<typeof paymentSchema>) {

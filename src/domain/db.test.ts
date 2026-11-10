@@ -365,6 +365,28 @@ test("exclusão de empresa: travas, apaga tudo dela e mais nada", async () => {
   assert.equal(await countOf("orders", B.t.id), before.B);
 });
 
+test("cliente novo e pedido na mesma transação: pedido recusado não deixa cliente", async () => {
+  const customers = async () => (await m.q.listCustomers(A.t.id)).length;
+  const before = await customers();
+  await assert.rejects(
+    m.db.tenantTransaction(A.ctx, async () => {
+      const c = await m.registry.saveCustomer(A.ctx, { name: "Cliente de passagem", phone: "", address: "", reference: "", notes: "" });
+      await m.orders.createOrder(A.ctx, {
+        mode: "entrega",
+        customerId: c.id,
+        items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
+        paymentMethod: "dinheiro",
+        deliveryFeeCents: 0,
+        changeForCents: 1, // menor que o total
+        notes: "",
+        driverId: null,
+      });
+    }),
+    /troco é menor/,
+  );
+  assert.equal(await customers(), before);
+});
+
 test("RLS: dentro do escopo de A, consulta sem filtro só enxerga A", async () => {
   const { db, withTenant } = m.db;
   const { orders, customers, users, tenants } = m.schema;

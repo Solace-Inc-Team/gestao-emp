@@ -13,12 +13,12 @@ export const newOrderSchema = z
     mode: z.enum(["entrega", "balcao"]),
     customerId: z.uuid().nullable(),
     items: z
-      .array(z.object({ productId: z.uuid(), quantity: z.int().min(1).max(99), returnsEmpty: z.boolean() }))
+      .array(z.object({ productId: z.uuid(), quantity: z.int().min(1, "Quantidade mínima é 1.").max(99, "No máximo 99 unidades por item."), returnsEmpty: z.boolean() }))
       .min(1, "Adicione ao menos um item."),
     paymentMethod: z.enum(["dinheiro", "pix", "cartao", "fiado"]),
-    deliveryFeeCents: z.int().min(0).max(100_00),
-    changeForCents: z.int().min(0).nullable(),
-    notes: z.string().max(500),
+    deliveryFeeCents: z.int().min(0, "Taxa de entrega inválida.").max(100_00, "A taxa de entrega vai até R$ 100,00."),
+    changeForCents: z.int().min(0).max(100_000_00, "Valor para troco muito alto.").nullable(),
+    notes: z.string().max(500, "A observação pode ter até 500 letras."),
     driverId: z.uuid().nullable(),
   })
   .refine((o) => o.mode === "balcao" || o.customerId, { message: "Entrega precisa de cliente." })

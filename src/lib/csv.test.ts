@@ -14,6 +14,7 @@ test("neutraliza fórmula de planilha", () => {
   assert.equal(csvCell("-1+2"), "'-1+2");
   // valor negativo continua número no Excel
   assert.equal(csvCell("-20,00"), "-20,00");
+  assert.equal(csvCell("\tcmd"), "'\tcmd");
 });
 
 test("datas saem no horário de Brasília", () => {

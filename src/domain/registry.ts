@@ -7,11 +7,11 @@ import { hashPassword } from "@/lib/password";
 import { audit } from "./stock";
 
 export const customerSchema = z.object({
-  name: z.string().trim().min(2, "Nome muito curto.").max(120),
-  phone: z.string().trim().max(30),
-  address: z.string().trim().max(200),
-  reference: z.string().trim().max(200),
-  notes: z.string().trim().max(500),
+  name: z.string().trim().min(2, "Nome muito curto.").max(120, "O nome pode ter até 120 letras."),
+  phone: z.string().trim().max(30, "Telefone muito longo."),
+  address: z.string().trim().max(200, "O endereço pode ter até 200 letras."),
+  reference: z.string().trim().max(200, "A referência pode ter até 200 letras."),
+  notes: z.string().trim().max(500, "A observação pode ter até 500 letras."),
 });
 
 export async function saveCustomer(ctx: Ctx, input: z.infer<typeof customerSchema>, id?: string) {
@@ -34,10 +34,10 @@ export async function saveCustomer(ctx: Ctx, input: z.infer<typeof customerSchem
 }
 
 export const productSchema = z.object({
-  name: z.string().trim().min(2).max(80),
-  priceCents: z.int().min(0).max(100_000_00),
+  name: z.string().trim().min(2, "Nome muito curto.").max(80, "O nome pode ter até 80 letras."),
+  priceCents: z.int().min(0).max(100_000_00, "Preço muito alto."),
   returnable: z.boolean(),
-  minStock: z.int().min(0).max(100_000),
+  minStock: z.int().min(0, "Estoque mínimo inválido.").max(100_000, "Estoque mínimo muito alto."),
   active: z.boolean(),
 });
 
@@ -61,10 +61,10 @@ export async function saveProduct(ctx: Ctx, input: z.infer<typeof productSchema>
 }
 
 export const userSchema = z.object({
-  name: z.string().trim().min(2).max(80),
+  name: z.string().trim().min(2, "Nome muito curto.").max(80, "O nome pode ter até 80 letras."),
   email: z.email("E-mail inválido.").transform((e) => e.toLowerCase()),
   password: z.string().min(8, "Senha precisa de ao menos 8 caracteres."),
-  role: z.enum(["dono", "atendente", "entregador"]),
+  role: z.enum(["dono", "atendente", "entregador"], { message: "Escolha a função." }),
 });
 
 export async function createUser(ctx: Ctx, input: z.infer<typeof userSchema>) {

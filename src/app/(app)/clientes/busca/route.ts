@@ -1,10 +1,10 @@
-import { getUser } from "@/lib/auth";
+import { getUser, pendingTerms } from "@/lib/auth";
 import { listCustomers } from "@/domain/queries";
 
 // busca do "Novo pedido": no servidor, para achar qualquer cliente e não só os primeiros da lista
 export async function GET(req: Request) {
   const user = await getUser();
-  if (!user || user.role === "entregador") return new Response("Não autorizado", { status: 401 });
+  if (!user || user.role === "entregador" || pendingTerms(user)) return new Response("Não autorizado", { status: 401 });
   const q = (new URL(req.url).searchParams.get("q") ?? "").trim().slice(0, 80);
   if (q.length < 2) return Response.json([]);
   const found = await listCustomers(user.tenantId, q);

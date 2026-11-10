@@ -51,7 +51,7 @@ export function NavLinks({ groups }: { groups: NavGroup[] }) {
                 key={l.href}
                 href={l.href}
                 aria-current={on ? "page" : undefined}
-                className={`flex h-8 shrink-0 items-center gap-2.5 rounded-md px-2 text-[13px] font-medium transition-colors ${
+                className={`flex h-11 shrink-0 items-center gap-2.5 lg:h-8 rounded-md px-2 text-[13px] font-medium transition-colors ${
                   on ? "bg-subtle text-fg" : "text-muted hover:bg-subtle/70 hover:text-fg"
                 }`}
               >

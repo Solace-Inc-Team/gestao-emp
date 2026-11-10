@@ -49,7 +49,7 @@ export async function closeShift(ctx: Ctx, shiftId: string, countedCashCents: nu
     const expected = expectedCash(shift.openingCashCents, shiftOrders);
     const diff = cashDifference(expected, countedCashCents);
     if (diff !== 0 && notes.trim().length < 3)
-      throw new DomainError("Há diferença no caixa: registre uma observação explicando.");
+      throw new DomainError("Há diferença no caixa: explique na observação (ao menos 3 letras).");
 
     // o que ficou com o entregador volta pra loja
     const held = await tx

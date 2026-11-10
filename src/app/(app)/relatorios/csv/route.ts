@@ -1,13 +1,13 @@
 import { and, asc, eq, gte, lt } from "drizzle-orm";
 import { db } from "@/db";
 import { customers, orders, users } from "@/db/schema";
-import { getUser } from "@/lib/auth";
+import { getUser, pendingTerms } from "@/lib/auth";
 import { parsePeriod } from "@/lib/period";
 import { reais, toCsv } from "@/lib/csv";
 
 export async function GET(req: Request) {
   const user = await getUser();
-  if (!user || user.role === "entregador") return new Response("Não autorizado", { status: 401 });
+  if (!user || user.role === "entregador" || pendingTerms(user)) return new Response("Não autorizado", { status: 401 });
   const { fromStr, toStr, from, to } = parsePeriod(Object.fromEntries(new URL(req.url).searchParams));
   const rows = await db
     .select({

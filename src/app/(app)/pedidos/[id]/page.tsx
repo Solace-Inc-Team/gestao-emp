@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
 import { getOrder, listDrivers, listShifts } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
@@ -19,6 +20,7 @@ const actionLabel: Record<string, string> = {
 export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
   const user = await requireUser("dono", "atendente");
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const o = await getOrder(user.tenantId, id);
   if (!o) notFound();
   const [drivers, open] = await Promise.all([listDrivers(user.tenantId), listShifts(user.tenantId, "aberto")]);

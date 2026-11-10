@@ -122,7 +122,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
           <ActionForm action={createExpenseAction} className="mt-4 space-y-3" reset>
             <div>
               <label className="label" htmlFor="description">Descrição</label>
-              <input id="description" name="description" required className="input" placeholder="Ex.: Diesel da Strada" />
+              <input id="description" name="description" required maxLength={160} className="input" placeholder="Ex.: Diesel da Strada" />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

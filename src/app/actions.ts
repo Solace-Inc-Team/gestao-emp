@@ -5,9 +5,9 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { db } from "@/db";
+import { db, tenantTransaction } from "@/db";
 import { users, tenants, sessions } from "@/db/schema";
-import { requireUser, requireAdmin, createSession, destroySession, getPendingMfa, completeMfa } from "@/lib/auth";
+import { getUser, pendingTerms, requireUser, requireAdmin, createSession, destroySession, getPendingMfa, completeMfa } from "@/lib/auth";
 import { isBlocked, recordFailure, clearFailures, BLOCKED_MESSAGE, IP_MAX_FAILURES } from "@/lib/rate-limit";
 import { newTotpSecret, verifyTotp } from "@/lib/totp";
 import { hashPassword, verifyPassword } from "@/lib/password";
@@ -29,6 +29,7 @@ const optId = (fd: FormData, k: string) => str(fd, k) || null;
 const int = (fd: FormData, k: string) => {
   const n = Number(str(fd, k) || "0");
   if (!Number.isInteger(n)) throw new DomainError("Quantidade inválida.");
+  if (Math.abs(n) > 100_000) throw new DomainError("Quantidade muito grande (até 100.000).");
   return n;
 };
 function money(fd: FormData, k: string, required = true): number | null {
@@ -48,6 +49,9 @@ async function run(fn: () => Promise<unknown>, paths: string[], ok?: string): Pr
   } catch (e) {
     if (e instanceof DomainError) return { error: e.message };
     if (e instanceof z.ZodError) return { error: e.issues[0]?.message ?? "Dados inválidos." };
+    // id mal formado vindo do formulário: o Postgres recusa o uuid
+    const code = (e as { cause?: { code?: string } }).cause?.code;
+    if (code === "22P02") return { error: "Registro não encontrado. Recarregue a página." };
     throw e;
   }
   paths.forEach((p) => revalidatePath(p, "layout"));
@@ -113,11 +117,11 @@ export async function logout() {
 export async function createOrderAction(fd: FormData): Promise<ActionState> {
   const user = await requireUser("dono", "atendente");
   let id = "";
-  const r = await run(async () => {
+  // cliente novo e pedido na mesma transação: se o pedido falhar, o cliente não fica duplicado
+  const r = await run(() => tenantTransaction(user, async () => {
     let customerId = optId(fd, "customerId");
     const newName = str(fd, "newCustomerName");
     if (!customerId && newName) {
-      // TODO: criar o cliente dentro da mesma transação do pedido
       const c = await saveCustomer(
         user,
         customerSchema.parse({
@@ -144,7 +148,7 @@ export async function createOrderAction(fd: FormData): Promise<ActionState> {
       }),
     );
     id = order.id;
-  }, ["/"]);
+  }), ["/"]);
   if (r?.error) return r;
   redirect(`/pedidos/${id}`);
 }
@@ -266,7 +270,8 @@ export async function createUserAction(fd: FormData) {
 
 export async function toggleUserAction(fd: FormData) {
   const user = await requireUser("dono");
-  return run(() => setUserActive(user, str(fd, "userId"), str(fd, "active") === "true"), ["/"]);
+  const active = str(fd, "active") === "true";
+  return run(() => setUserActive(user, str(fd, "userId"), active), ["/"], active ? "Acesso reativado." : "Acesso desativado.");
 }
 
 export async function createTenantAction(fd: FormData) {
@@ -289,7 +294,8 @@ export async function createTenantAction(fd: FormData) {
 
 export async function toggleTenantAction(fd: FormData) {
   const admin = await requireAdmin();
-  return run(() => setTenantActive(admin, str(fd, "tenantId"), str(fd, "active") === "true"), ["/admin"]);
+  const active = str(fd, "active") === "true";
+  return run(() => setTenantActive(admin, str(fd, "tenantId"), active), ["/admin"], active ? "Empresa reativada." : "Empresa suspensa.");
 }
 
 export async function changePasswordAction(fd: FormData): Promise<ActionState> {
@@ -408,7 +414,9 @@ export async function testAlertAction(): Promise<ActionState> {
 }
 
 export async function acceptTermsAction(fd: FormData): Promise<ActionState> {
-  const user = await requireUser("dono");
+  const user = await getUser();
+  if (!user) redirect("/login");
+  if (!pendingTerms(user)) redirect("/");
   if (fd.get("agree") !== "on") return { error: "Para continuar, marque que leu e aceita os termos." };
   await acceptTerms(user, TERMS_VERSION);
   redirect("/");

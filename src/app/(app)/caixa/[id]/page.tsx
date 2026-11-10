@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
 import { getShift } from "@/domain/queries";
 import { Difference, Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
@@ -11,6 +12,7 @@ export const metadata = { title: "Acerto" };
 export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
   const user = await requireUser("dono", "atendente");
   const { id } = await params;
+  if (!isUuid(id)) notFound();
   const s = await getShift(user.tenantId, id);
   if (!s) notFound();
   const cashSales = s.summary.dinheiro;

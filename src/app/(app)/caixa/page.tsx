@@ -63,12 +63,17 @@ export default async function Caixa() {
               </div>
               <div>
                 <label className="label" htmlFor="openingCash">Troco inicial</label>
-                <input id="openingCash" name="openingCash" inputMode="decimal" className="input" placeholder="50,00" />
+                <input id="openingCash" name="openingCash" inputMode="decimal" maxLength={12} className="input" placeholder="50,00" />
               </div>
               <button className="btn btn-primary">Abrir turno</button>
             </ActionForm>
-          ) : (
+          ) : drivers.length ? (
             <p className="text-muted">Todos os entregadores ativos já estão em turno.</p>
+          ) : (
+            <p className="text-muted">
+              Nenhum entregador cadastrado.{" "}
+              {user.role === "dono" ? <Link href="/equipe" className="text-accent underline">Cadastre em Equipe.</Link> : "Peça ao dono para cadastrar em Equipe."}
+            </p>
           )}
         </section>
       </div>

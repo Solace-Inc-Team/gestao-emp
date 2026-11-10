@@ -141,6 +141,23 @@ body {
     font-size: 0.875rem;
     transition: border-color 120ms, box-shadow 120ms;
   }
+  /* no celular, todo botão, campo e link de ação com pelo menos 44 px de altura para o dedo */
+  @media (max-width: 639px) {
+    .btn,
+    .input {
+      height: 2.75rem;
+    }
+  }
+  .tap {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+  @media (min-width: 640px) {
+    .tap {
+      min-height: 0;
+    }
+  }
   textarea.input {
     height: auto;
     padding: 0.5rem 0.75rem;

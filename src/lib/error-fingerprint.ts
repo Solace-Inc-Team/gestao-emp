@@ -8,10 +8,13 @@ export const cleanPath = (path: string) => path.split("?")[0].replace(UUID, ":id
 export function describeError(err: unknown) {
   if (err instanceof Error) {
     const digest = (err as Error & { digest?: string }).digest;
-    return { message: err.message || err.name, stack: (err.stack ?? "").slice(0, 2000), digest };
+    return { message: scrub(err.message || err.name), stack: scrub(err.stack ?? "").slice(0, 2000), digest };
   }
-  return { message: String(err), stack: "", digest: undefined };
+  return { message: scrub(String(err)), stack: "", digest: undefined };
 }
+
+// o Drizzle põe os valores da consulta depois de "params:" (hash de senha, nome, telefone): nada disso é guardado
+const scrub = (text: string) => redact(text.replace(/params:.*$/gm, "params: [omitidos]").replace(/scrypt\$\S+/g, "[hash]"));
 
 /**
  * Mesma falha = mesma assinatura, mesmo que mude o id do pedido ou um número na mensagem:

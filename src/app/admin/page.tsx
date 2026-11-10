@@ -27,14 +27,13 @@ export default async function Admin() {
       <div className="grid gap-6 lg:grid-cols-[1.6fr_1fr]">
         <section className="panel overflow-x-auto">
           {list.length ? (
-            <table className="table min-w-[40rem]">
+            <table className="table min-w-[34rem]">
               <thead>
                 <tr>
                   <th>Empresa</th>
                   <th className="text-right">Pessoas</th>
                   <th className="text-right">Pedidos 30d</th>
                   <th>Último pedido</th>
-                  <th></th>
                 </tr>
               </thead>
               <tbody>
@@ -49,27 +48,21 @@ export default async function Admin() {
                         </p>
                         {!t.active && t.suspendedAt && (
                           <p className={`text-[13px] ${daysAgo(t.suspendedAt)! > DELETE_DEADLINE_DAYS ? "font-medium text-danger" : "text-muted"}`}>
-                            Suspensa há {daysAgo(t.suspendedAt)} dias
+                            Suspensa {daysAgo(t.suspendedAt) === 0 ? "hoje" : `há ${daysAgo(t.suspendedAt)} ${daysAgo(t.suspendedAt) === 1 ? "dia" : "dias"}`}
                             {daysAgo(t.suspendedAt)! > DELETE_DEADLINE_DAYS && `: passou dos ${DELETE_DEADLINE_DAYS} dias da política, exclua os dados`}
                           </p>
                         )}
                         <p className="text-sm text-muted">{t.owner ?? "sem dono"}, desde {fmtDateTime(t.createdAt).split(" ")[0].replace(",", "")}</p>
-                      </td>
-                      <td className="num text-right">{t.people}</td>
-                      <td className="num text-right">{t.orders30}</td>
-                      <td className={idle !== null && idle > 7 && t.active ? "font-medium text-warn-fg" : ""}>
-                        {idle === null ? "nunca" : idle === 0 ? "hoje" : `há ${idle} ${idle === 1 ? "dia" : "dias"}`}
-                      </td>
-                      <td className="text-right">
-                        <div className="flex items-center justify-end gap-3">
+                        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
                           <a href={`/admin/exportar?empresa=${t.id}`} className="text-[13px] text-muted hover:text-fg">Exportar</a>
-                          <PopoverForm label="Redefinir acesso" action={resetOwnerAccessAction} submit="Redefinir" confirm="A senha do dono será trocada e o 2FA dele desligado. Continuar?">
+                          <PopoverForm align="left" label="Redefinir acesso" action={resetOwnerAccessAction} submit="Redefinir" confirm="A senha do dono será trocada e o 2FA dele desligado. Continuar?">
                             <input type="hidden" name="tenantId" value={t.id} />
                             <label className="label mb-0" htmlFor={`o-${t.id}`}>Senha nova do dono</label>
                             <input id={`o-${t.id}`} name="password" type="text" minLength={8} required autoComplete="off" className="input" />
                           </PopoverForm>
                           {!t.active && (
                             <PopoverForm
+                              align="left"
                               label="Excluir"
                               action={deleteTenantAction}
                               submit="Excluir de vez"
@@ -91,9 +84,14 @@ export default async function Admin() {
                           >
                             <input type="hidden" name="tenantId" value={t.id} />
                             <input type="hidden" name="active" value={String(!t.active)} />
-                            <button className={`btn ${t.active ? "btn-danger" : ""}`}>{t.active ? "Suspender" : "Reativar"}</button>
+                            <button className={`btn sm:h-8 ${t.active ? "btn-danger" : ""}`}>{t.active ? "Suspender" : "Reativar"}</button>
                           </ActionForm>
                         </div>
+                      </td>
+                      <td className="num text-right">{t.people}</td>
+                      <td className="num text-right">{t.orders30}</td>
+                      <td className={idle !== null && idle > 7 && t.active ? "font-medium text-warn-fg" : ""}>
+                        {idle === null ? "nunca" : idle === 0 ? "hoje" : `há ${idle} ${idle === 1 ? "dia" : "dias"}`}
                       </td>
                     </tr>
                   );

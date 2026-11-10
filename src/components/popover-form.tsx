@@ -7,6 +7,7 @@ export function PopoverForm({
   action,
   submit,
   danger = false,
+  align = "right",
   confirm,
   children,
 }: {
@@ -14,16 +15,17 @@ export function PopoverForm({
   action: (fd: FormData) => Promise<ActionState>;
   submit: string;
   danger?: boolean;
+  align?: "left" | "right";
   confirm?: string;
   children: ReactNode;
 }) {
   return (
     <details className="relative inline-block text-left">
-      <summary className="cursor-pointer list-none text-[13px] text-muted hover:text-fg">{label}</summary>
+      <summary className="tap cursor-pointer list-none text-[13px] text-muted hover:text-fg">{label}</summary>
       <ActionForm
         action={action}
         confirm={confirm}
-        className="absolute right-0 z-10 mt-2 flex w-64 flex-col gap-2 rounded-lg border border-line bg-surface p-3 text-left shadow-[0_8px_30px_rgb(0_0_0/0.12)]"
+        className={`absolute ${align === "left" ? "left-0" : "right-0"} z-10 mt-2 flex w-64 flex-col gap-2 rounded-lg border border-line bg-surface p-3 text-left shadow-[0_8px_30px_rgb(0_0_0/0.12)]`}
       >
         {children}
         <button className={`btn ${danger ? "btn-danger" : "btn-primary"}`}>{submit}</button>
