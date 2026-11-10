@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { expectedCash, paymentSummary, cashDifference, orderTotal } from "./cash.ts";
+import { expectedCash, paymentSummary, cashDifference, orderTotal, partialDiscount } from "./cash.ts";
 import { parseBRL } from "./money.ts";
 
 const orders = [
@@ -34,6 +34,13 @@ test("parseBRL aceita formatos brasileiros e rejeita lixo", () => {
   assert.equal(parseBRL("110"), 11000);
   assert.equal(parseBRL("abc"), null);
   assert.equal(parseBRL("1,234"), null);
+});
+
+test("desconto proporcional na entrega parcial", () => {
+  assert.equal(partialDiscount(3000, 33000, 11000), 1000);
+  assert.equal(partialDiscount(1000, 3000, 1000), 334);
+  assert.equal(partialDiscount(500, 0, 0), 0);
+  assert.equal(partialDiscount(0, 33000, 11000), 0);
 });
 
 test("pagamento misto: só a parte em dinheiro passa pela mão do entregador", () => {

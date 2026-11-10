@@ -80,7 +80,7 @@ export async function placePortalOrder(tenantId: string, input: z.infer<typeof p
         customerId = c.id;
         await audit(tx, ctx, "cliente.criar", "customer", c.id, { origin: "portal" });
       }
-      // endereço digitado agora vale para esta entrega, mesmo que o cadastro tenha outro
+      // o que o cliente digitou vale para esta entrega; se o telefone já era de alguém, a loja confere antes de sair
       const order = await createOrder(ctx, {
         mode: "entrega",
         customerId,
@@ -88,7 +88,9 @@ export async function placePortalOrder(tenantId: string, input: z.infer<typeof p
         paymentMethod: input.paymentMethod,
         deliveryFeeCents: 0,
         changeForCents: input.paymentMethod === "dinheiro" ? input.changeForCents : null,
-        notes: [input.notes, known ? `Entregar em: ${input.address}${input.reference ? ` (${input.reference})` : ""}` : ""].filter(Boolean).join(" | "),
+        address: input.address,
+        reference: input.reference,
+        notes: [input.notes, known ? `Confirmar com o cliente: pedido do site em nome de "${input.name}"` : ""].filter(Boolean).join(" | "),
         driverId: null,
         origin: "portal",
       });

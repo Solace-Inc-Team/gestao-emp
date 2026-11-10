@@ -59,7 +59,7 @@ export async function anonymizeCustomer(ctx: Ctx, customerId: string) {
       .set({ name: "Cliente removido", phone: "", address: "", reference: "", notes: "", anonymizedAt: new Date() })
       .where(eq(customers.id, c.id));
     await tx.delete(customerAddresses).where(eq(customerAddresses.customerId, c.id));
-    await tx.update(orders).set({ address: null, reference: null }).where(eq(orders.customerId, c.id));
+    await tx.update(orders).set({ address: null, reference: null, notes: "" }).where(eq(orders.customerId, c.id));
     await tx.update(auditLog).set({ data: null }).where(and(eq(auditLog.entity, "customer"), eq(auditLog.entityId, c.id)));
     await audit(tx, ctx, "cliente.anonimizar", "customer", c.id);
   });

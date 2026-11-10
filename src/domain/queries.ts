@@ -422,6 +422,10 @@ export const periodBreakdown = scoped(async function periodBreakdown(tenantId: s
       count: sql<number>`count(*)::int`,
       total: sql<number>`sum(${orders.totalCents})::int`,
       cash: sql<number>`sum(case when ${orders.paymentMethod} = 'dinheiro' then ${orders.totalCents} else ${orders.cashPartCents} end)::int`,
+      pix: sql<number>`sum(case when ${orders.paymentMethod} = 'pix' then ${orders.totalCents} - ${orders.cashPartCents} else 0 end)::int`,
+      card: sql<number>`sum(case when ${orders.paymentMethod} = 'cartao' then ${orders.totalCents} - ${orders.cashPartCents} else 0 end)::int`,
+      credit: sql<number>`sum(case when ${orders.paymentMethod} = 'fiado' then ${orders.totalCents} else 0 end)::int`,
+      units: sql<number>`(select coalesce(sum(coalesce(i.delivered_quantity, i.quantity)), 0) from order_items i where i.order_id = any(array_agg(${orders.id})))::int`,
     })
     .from(orders)
     .leftJoin(driver, eq(driver.id, orders.driverId))

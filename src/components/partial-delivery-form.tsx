@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ActionForm } from "./action-form";
 import { partialDeliveryAction } from "@/app/actions";
 import { formatBRL } from "@/lib/money";
+import { partialDiscount } from "@/lib/cash";
 
 type Item = { id: string; name: string; quantity: number; unitPriceCents: number };
 export type PartialOrder = { id: string; deliveryFeeCents: number; discountCents: number; changeForCents: number | null };
@@ -18,8 +19,9 @@ export function PartialDeliveryForm({ order, items, forDriver }: { order: Partia
   };
   const filled = items.every((i) => qty(i) !== null);
   const subtotal = items.reduce((s, i) => s + (qty(i) ?? 0) * i.unitPriceCents, 0);
-  // mesma regra do servidor: o desconto não passa do valor dos produtos entregues
-  const total = subtotal + order.deliveryFeeCents - Math.min(order.discountCents, subtotal);
+  const ordered = items.reduce((s, i) => s + i.quantity * i.unitPriceCents, 0);
+  // mesma regra do servidor: desconto proporcional ao que foi entregue
+  const total = subtotal + order.deliveryFeeCents - partialDiscount(order.discountCents, ordered, subtotal);
   const change = order.changeForCents && order.changeForCents > total ? order.changeForCents - total : 0;
 
   return (

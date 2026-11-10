@@ -105,18 +105,27 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
         </p>
       </section>
 
-      <div className="mb-6 grid gap-6 lg:grid-cols-2">
+      <div className="mb-6 grid gap-6">
         <section className="panel overflow-x-auto">
           <h2 className="h2 border-b border-line px-4 py-3">Por entregador</h2>
           {breakdown.byDriver.length ? (
             <table className="table">
-              <thead><tr><th>Quem entregou</th><th className="text-right">Pedidos</th><th className="text-right">Em dinheiro</th><th className="text-right">Total</th></tr></thead>
+              <thead>
+                <tr>
+                  <th>Quem entregou</th><th className="text-right">Pedidos</th><th className="text-right">Itens</th><th className="text-right">Dinheiro</th>
+                  <th className="text-right">Pix</th><th className="text-right">Cartão</th><th className="text-right">Fiado</th><th className="text-right">Total</th>
+                </tr>
+              </thead>
               <tbody>
                 {breakdown.byDriver.map((r) => (
                   <tr key={r.name}>
                     <td>{r.name}</td>
                     <td className="num text-right">{r.count}</td>
+                    <td className="num text-right">{r.units}</td>
                     <td className="text-right"><Money cents={r.cash} /></td>
+                    <td className="text-right"><Money cents={r.pix} /></td>
+                    <td className="text-right"><Money cents={r.card} /></td>
+                    <td className="text-right"><Money cents={r.credit} /></td>
                     <td className="text-right font-semibold"><Money cents={r.total} /></td>
                   </tr>
                 ))}
@@ -130,7 +139,7 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
           <h2 className="h2 border-b border-line px-4 py-3">Por produto</h2>
           {breakdown.byProduct.length ? (
             <table className="table">
-              <thead><tr><th>Produto</th><th className="text-right">Qtd.</th><th className="text-right">Sem troca</th><th className="text-right">Total</th></tr></thead>
+              <thead><tr><th>Produto</th><th className="text-right">Qtd.</th><th className="text-right">Sem troca de vasilhame</th><th className="text-right">Total</th></tr></thead>
               <tbody>
                 {breakdown.byProduct.map((r) => (
                   <tr key={r.name}>

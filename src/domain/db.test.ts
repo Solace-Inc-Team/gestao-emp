@@ -408,7 +408,7 @@ test("anonimizar cliente: exige fiado quitado, apaga dados e some da busca", asy
   await m.registry.saveCustomer(A.ctx, { name: "Maria Sigilo", phone: "11999990000", address: "Rua Y", reference: "", notes: "" }, c.id);
   const fiado = await m.orders.createOrder(A.ctx, {
     mode: "balcao", customerId: c.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
-    paymentMethod: "fiado", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null,
+    paymentMethod: "fiado", deliveryFeeCents: 0, changeForCents: null, notes: "tocar na casa da Maria, portão azul", driverId: null,
   });
   await assert.rejects(m.registry.anonymizeCustomer(A.ctx, c.id), /fiado em aberto/);
   await m.rec.receivePayment(A.ctx, { customerId: c.id, amountCents: fiado.totalCents, method: "pix", note: "" });
@@ -420,6 +420,7 @@ test("anonimizar cliente: exige fiado quitado, apaga dados e some da busca", asy
   assert.equal(after, undefined);
   const logs = await db.select().from(auditLog).where(and(eq(auditLog.entity, "customer"), eq(auditLog.entityId, c.id)));
   assert.ok(!JSON.stringify(logs).includes("Rua"));
+  assert.equal((await m.q.getOrder(A.t.id, fiado.id))!.notes, "");
   await assert.rejects(m.registry.anonymizeCustomer(A.ctx, c.id), /já foram apagados/);
 });
 
@@ -516,14 +517,16 @@ test("pedido: desconto com limite, pagamento misto, entrega parcial, ocorrência
   await assert.rejects(m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 0 }, note: "nada" }), /Não consegui entregar/);
   await assert.rejects(m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 4 }, note: "a mais" }), /inválida/);
   await assert.rejects(m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 3 }, note: "tudo" }), /Use "Entreguei"/);
-  assert.equal(await m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 1 }, note: "só quis um" }), 11000 - 3000);
+  // 1 de 3 entregue: um terço do desconto de 30,00
+  assert.equal(await m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 1 }, note: "só quis um" }), 11000 - 1000);
   const after = (await m.q.getOrder(A.t.id, o.id))!;
-  assert.equal(after.totalCents, 11000 - 3000);
-  assert.equal(after.cashPartCents, 8000);
+  assert.equal(after.totalCents, 10000);
+  assert.equal(after.discountCents, 1000);
+  assert.equal(after.cashPartCents, 10000);
   assert.equal(after.items[0].deliveredQuantity, 1);
   assert.equal(await held(d1.id), 2);
   // no acerto, só a parte em dinheiro é cobrada do entregador
-  assert.equal((await m.q.getShift(A.t.id, s1.id))!.expected, 8000);
+  assert.equal((await m.q.getShift(A.t.id, s1.id))!.expected, 10000);
 });
 
 test("cliente: endereço extra vai para o pedido e some na anonimização", async () => {
@@ -601,7 +604,8 @@ test("portal: só com portal ligado, reconhece o cliente pelo telefone e não us
   assert.equal(first.origin, "portal");
   assert.equal(first.status, "aberto");
   assert.equal(second.customerId, first.customerId);
-  assert.match(second.notes, /Entregar em: Outro lugar, 5/);
+  assert.equal((await m.q.getOrder(A.t.id, second.id))!.customerAddress, "Outro lugar, 5");
+  assert.match(second.notes, /Confirmar com o cliente/);
   assert.equal((await db.select().from(customers).where(eq(customers.phone, "(11) 97777-1234"))).length, 1);
   await assert.rejects(m.portal.placePortalOrder(A.t.id, { ...input, items: [{ productId: B.product.id, quantity: 1, returnsEmpty: true }] }), /indisponível/);
   // pedido recusado não deixa cliente novo para trás

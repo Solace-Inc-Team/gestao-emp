@@ -34,6 +34,10 @@ export const cashDifference = (expectedCents: number, countedCents: number) => c
 export const itemsSubtotal = (items: { quantity: number; unitPriceCents: number }[]) =>
   items.reduce((s, i) => s + i.quantity * i.unitPriceCents, 0);
 
+/** Na entrega parcial o desconto acompanha o que foi entregue: metade dos produtos, metade do desconto (arredonda a favor do cliente). */
+export const partialDiscount = (discountCents: number, orderedSubtotal: number, deliveredSubtotal: number) =>
+  orderedSubtotal > 0 ? Math.ceil((discountCents * deliveredSubtotal) / orderedSubtotal) : 0;
+
 export function orderTotal(items: { quantity: number; unitPriceCents: number }[], deliveryFeeCents: number, discountCents = 0) {
   return itemsSubtotal(items) + deliveryFeeCents - discountCents;
 }

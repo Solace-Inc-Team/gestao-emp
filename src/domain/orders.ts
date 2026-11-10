@@ -3,7 +3,7 @@ import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { tenantTransaction, type Tx } from "@/db";
 import { orders, orderItems, customers, customerAddresses, shifts, expenses, tenants } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
-import { itemsSubtotal, orderTotal } from "@/lib/cash";
+import { itemsSubtotal, orderTotal, partialDiscount } from "@/lib/cash";
 import { formatBRL } from "@/lib/money";
 import { todayISO } from "@/lib/period";
 import { audit, lockProducts, move } from "./stock";
@@ -20,6 +20,9 @@ export const newOrderSchema = z
     cashPartCents: z.int().min(0).max(100_000_00, "Valor em dinheiro muito alto.").default(0),
     origin: z.enum(["whatsapp", "telefone", "balcao", "portal"]).default("telefone"),
     addressId: z.uuid().nullable().default(null),
+    // endereço digitado na hora (portal); vale só para este pedido
+    address: z.string().trim().max(200).optional(),
+    reference: z.string().trim().max(200).default(""),
     discountCents: z.int().min(0, "Desconto inválido.").max(100_000_00, "Desconto muito alto.").default(0),
     discountReason: z.string().trim().max(160, "O motivo do desconto pode ter até 160 letras.").default(""),
     deliveryFeeCents: z.int().min(0, "Taxa de entrega inválida.").max(100_00, "A taxa de entrega vai até R$ 100,00."),
@@ -82,8 +85,8 @@ export async function createOrder(ctx: Ctx, raw: NewOrder) {
         .where(and(eq(customers.id, input.customerId), eq(customers.tenantId, ctx.tenantId), isNull(customers.anonymizedAt)));
       if (!c) throw new DomainError("Cliente não encontrado.");
     }
-    let place: { address: string; reference: string } | null = null;
-    if (input.mode === "entrega" && input.addressId && input.customerId) {
+    let place: { address: string; reference: string } | null = input.address ? { address: input.address, reference: input.reference } : null;
+    if (input.mode === "entrega" && input.addressId && input.customerId && !place) {
       [place] = await tx
         .select({ address: customerAddresses.address, reference: customerAddresses.reference })
         .from(customerAddresses)
@@ -302,7 +305,7 @@ export async function deliverOrder(ctx: Ctx, orderId: string, partial?: { delive
     if (isPartial) {
       for (const i of got) await tx.update(orderItems).set({ deliveredQuantity: i.got }).where(eq(orderItems.id, i.id));
       const delivered = got.map((i) => ({ quantity: i.got, unitPriceCents: i.unitPriceCents }));
-      const discount = Math.min(o.discountCents, itemsSubtotal(delivered));
+      const discount = partialDiscount(o.discountCents, itemsSubtotal(items), itemsSubtotal(delivered));
       const total = orderTotal(delivered, o.deliveryFeeCents, discount);
       Object.assign(changes, {
         totalCents: total,

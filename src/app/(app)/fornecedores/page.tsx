@@ -29,9 +29,12 @@ function Fields({ s = {} }: { s?: S }) {
   );
 }
 
-export default async function Fornecedores() {
+export default async function Fornecedores({ searchParams }: PageProps<"/fornecedores">) {
   const user = await requireUser("dono", "atendente", "caixa");
-  const suppliers = await listSuppliers(user.tenantId);
+  const all = (await searchParams).todos === "1";
+  const list = await listSuppliers(user.tenantId);
+  const suppliers = all ? list : list.filter((s) => s.active);
+  const inactive = list.length - list.filter((s) => s.active).length;
   return (
     <>
       <div className="mb-2 flex flex-wrap items-center gap-3">
@@ -39,7 +42,18 @@ export default async function Fornecedores() {
         <span className="text-muted">/</span>
         <h1 className="h1">Fornecedores</h1>
       </div>
-      <p className="mb-6 max-w-2xl text-muted">De quem a empresa compra gás, água e acessórios. O fornecedor aparece na entrada de compra do estoque.</p>
+      <p className="mb-4 max-w-2xl text-muted">De quem a empresa compra gás, água e acessórios. O fornecedor aparece na entrada de compra do estoque.</p>
+      {inactive > 0 && (
+        <p className="mb-4 text-sm">
+          {all ? (
+            <Link href="/fornecedores" className="text-accent underline">Mostrar só os ativos</Link>
+          ) : (
+            <Link href="/fornecedores?todos=1" className="text-accent underline">
+              Mostrar {inactive} {inactive === 1 ? "desativado" : "desativados"}
+            </Link>
+          )}
+        </p>
+      )}
       <section className="panel mb-6">
         {suppliers.length ? (
           suppliers.map((s) => (
