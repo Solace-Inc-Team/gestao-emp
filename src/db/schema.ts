@@ -43,6 +43,13 @@ export const tenants = pgTable("tenants", {
   // regras da casa, ajustadas pelo dono em Configurações
   staffDiscountPct: integer("staff_discount_pct").notNull().default(10),
   lateAfterMinutes: integer("late_after_minutes").notNull().default(60),
+  // recebimento por Pix na chave da própria empresa
+  pixKey: text("pix_key").notNull().default(""),
+  pixName: text("pix_name").notNull().default(""),
+  pixCity: text("pix_city").notNull().default(""),
+  // portal de pedidos: endereço público /pedir/<slug>
+  slug: text("slug").notNull().unique(),
+  portalEnabled: boolean("portal_enabled").notNull().default(false),
   createdAt: createdAt(),
 });
 
@@ -215,6 +222,9 @@ export const orders = pgTable(
     // última tentativa de entrega que não deu certo
     occurrence: text("occurrence"),
     occurrenceAt: timestamp("occurrence_at", { withTimezone: true }),
+    // Pix só conta como recebido depois que alguém confere no extrato do banco
+    pixConfirmedAt: timestamp("pix_confirmed_at", { withTimezone: true }),
+    pixConfirmedBy: uuid("pix_confirmed_by").references(() => users.id),
     changeForCents: integer("change_for_cents"),
     notes: text("notes").notNull().default(""),
     cancelReason: text("cancel_reason"),

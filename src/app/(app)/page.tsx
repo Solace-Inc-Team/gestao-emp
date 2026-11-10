@@ -53,7 +53,7 @@ export default async function Painel() {
         </div>
       )}
 
-      {(d.pendingDifferences > 0 || d.lowStock.length > 0 || d.late > 0 || d.returned > 0) && (
+      {(d.pendingDifferences > 0 || d.lowStock.length > 0 || d.late > 0 || d.returned > 0 || d.pixToCheck > 0) && (
         <section aria-label="Alertas" className="mb-6 space-y-2">
           {d.late > 0 && (
             <Link href="/entregas" className="flex items-center justify-between gap-3 rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-danger">
@@ -61,6 +61,14 @@ export default async function Painel() {
                 {d.late} {d.late === 1 ? "pedido atrasado" : "pedidos atrasados"}
               </span>
               <span className="text-sm underline">Ver entregas</span>
+            </Link>
+          )}
+          {d.pixToCheck > 0 && (
+            <Link href="/pedidos?status=entregue" className="flex items-center justify-between gap-3 rounded-md border border-warn/40 bg-warn-soft px-4 py-3 text-warn-fg">
+              <span className="font-semibold">
+                {d.pixToCheck} {d.pixToCheck === 1 ? "Pix entregue ainda não conferido" : "Pix entregues ainda não conferidos"} no extrato
+              </span>
+              <span className="text-sm underline">Conferir</span>
             </Link>
           )}
           {d.returned > 0 && (

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, eq, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { tenantTransaction, type Tx } from "@/db";
 import { orders, orderItems, customers, customerAddresses, shifts, expenses, tenants } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
@@ -18,7 +18,7 @@ export const newOrderSchema = z
       .min(1, "Adicione ao menos um item."),
     paymentMethod: z.enum(["dinheiro", "pix", "cartao", "fiado"]),
     cashPartCents: z.int().min(0).max(100_000_00, "Valor em dinheiro muito alto.").default(0),
-    origin: z.enum(["whatsapp", "telefone", "balcao"]).default("telefone"),
+    origin: z.enum(["whatsapp", "telefone", "balcao", "portal"]).default("telefone"),
     addressId: z.uuid().nullable().default(null),
     discountCents: z.int().min(0, "Desconto inválido.").max(100_000_00, "Desconto muito alto.").default(0),
     discountReason: z.string().trim().max(160, "O motivo do desconto pode ter até 160 letras.").default(""),
@@ -214,6 +214,28 @@ export async function reportOccurrence(ctx: Ctx, orderId: string, kind: string, 
       .set({ status: "aberto", driverId: null, shiftId: null, dispatchedAt: null, occurrence: text, occurrenceAt: new Date() })
       .where(eq(orders.id, o.id));
     await audit(tx, ctx, "pedido.ocorrencia", "order", o.id, { kind, note: note.trim(), driverId: o.driverId });
+  });
+}
+
+/** Quem confere o extrato marca o Pix como recebido. Antes disso o pedido aparece como "Pix a conferir". */
+export async function confirmPix(ctx: Ctx, orderId: string) {
+  assertRole(ctx, "dono", "caixa");
+  await tenantTransaction(ctx, async (tx) => {
+    const [o] = await tx
+      .update(orders)
+      .set({ pixConfirmedAt: new Date(), pixConfirmedBy: ctx.userId })
+      .where(
+        and(
+          eq(orders.id, orderId),
+          eq(orders.tenantId, ctx.tenantId),
+          eq(orders.paymentMethod, "pix"),
+          isNull(orders.pixConfirmedAt),
+          inArray(orders.status, ["aberto", "em_rota", "entregue"]),
+        ),
+      )
+      .returning({ id: orders.id });
+    if (!o) throw new DomainError("Este pedido não tem Pix a conferir.");
+    await audit(tx, ctx, "pedido.pix_conferido", "order", o.id);
   });
 }
 

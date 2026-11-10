@@ -23,6 +23,7 @@ let m: {
   platform: typeof import("@/domain/platform");
   exportTenant: typeof import("@/domain/export");
   monitoring: typeof import("@/domain/monitoring");
+  portal: typeof import("@/domain/portal");
 };
 
 type World = Awaited<ReturnType<typeof makeTenant>>;
@@ -31,7 +32,7 @@ let A: World, B: World;
 async function makeTenant(name: string) {
   const { db } = m.db;
   const { tenants, users, products, customers, stockMovements } = m.schema;
-  const [t] = await db.insert(tenants).values({ name }).returning();
+  const [t] = await db.insert(tenants).values({ name, slug: `teste-${name.toLowerCase()}-${Date.now()}` }).returning();
   const [owner, driver] = await db
     .insert(users)
     .values([
@@ -74,6 +75,7 @@ before(async () => {
     platform: await import("@/domain/platform"),
     exportTenant: await import("@/domain/export"),
     monitoring: await import("@/domain/monitoring"),
+    portal: await import("@/domain/portal"),
   };
   await m.db.runMigrations();
   A = await makeTenant("A");
@@ -576,6 +578,50 @@ test("estoque: avaria, inventário, compra com fornecedor, reserva e preço do v
   ], "contagem de teste");
   assert.deepEqual(diffs, [{ product: "Galão Estoque", state: "cheio", before: 8, counted: 7 }]);
   assert.equal((await row()).fullStore, 7);
+});
+
+test("portal: só com portal ligado, reconhece o cliente pelo telefone e não usa produto de outra empresa", async () => {
+  const { db } = m.db;
+  const { tenants, customers } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const [t] = await db.select({ slug: tenants.slug }).from(tenants).where(eq(tenants.id, A.t.id));
+  assert.equal(await m.portal.portalTenant(t.slug), null);
+  await m.registry.saveSettings(A.ctx, { staffDiscountPct: 10, lateAfterMinutes: 60, pixKey: "", pixName: "", pixCity: "", portalEnabled: true });
+  assert.equal((await m.portal.portalTenant(t.slug))?.id, A.t.id);
+  assert.ok((await m.portal.portalProducts(A.t.id)).every((p) => p.name !== B.product.name));
+
+  const input = {
+    name: "Cliente do Site", phone: "(11) 97777-1234", address: "Rua do Site, 10", reference: "", notes: "",
+    items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }], paymentMethod: "dinheiro" as const, changeForCents: null,
+  };
+  const first = await m.portal.placePortalOrder(A.t.id, input);
+  const second = await m.portal.placePortalOrder(A.t.id, { ...input, phone: "11977771234", address: "Outro lugar, 5" });
+  assert.equal(first.origin, "portal");
+  assert.equal(first.status, "aberto");
+  assert.equal(second.customerId, first.customerId);
+  assert.match(second.notes, /Entregar em: Outro lugar, 5/);
+  assert.equal((await db.select().from(customers).where(eq(customers.phone, "(11) 97777-1234"))).length, 1);
+  await assert.rejects(m.portal.placePortalOrder(A.t.id, { ...input, items: [{ productId: B.product.id, quantity: 1, returnsEmpty: true }] }), /indisponível/);
+  // pedido recusado não deixa cliente novo para trás
+  await assert.rejects(m.portal.placePortalOrder(A.t.id, { ...input, phone: "21 99999-0000", items: [{ productId: B.product.id, quantity: 1, returnsEmpty: true }] }), /indisponível/);
+  assert.equal((await db.select().from(customers).where(eq(customers.phone, "21 99999-0000"))).length, 0);
+  await m.registry.saveSettings(A.ctx, { staffDiscountPct: 10, lateAfterMinutes: 60, pixKey: "", pixName: "", pixCity: "", portalEnabled: false });
+});
+
+test("Pix: só conta como recebido depois de conferido pelo dono ou caixa", async () => {
+  const order = await m.orders.createOrder(A.ctx, {
+    mode: "balcao", customerId: null, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
+    paymentMethod: "pix", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null,
+  });
+  assert.equal((await m.q.getOrder(A.t.id, order.id))!.pixConfirmedAt, null);
+  await assert.rejects(m.orders.confirmPix({ ...A.ctx, role: "atendente" }, order.id), /Sem permissão/);
+  await assert.rejects(m.orders.confirmPix(B.ctx, order.id), /não tem Pix a conferir/);
+  await m.orders.confirmPix({ ...A.ctx, role: "caixa" }, order.id);
+  assert.ok((await m.q.getOrder(A.t.id, order.id))!.pixConfirmedAt);
+  await assert.rejects(m.orders.confirmPix(A.ctx, order.id), /não tem Pix a conferir/);
+  const code = m.portal.orderPix({ pixKey: "chave@teste.com", pixName: "Loja A", pixCity: "Campinas" }, order);
+  assert.match(code!, /5406110\.00/);
+  assert.equal(m.portal.orderPix({ pixKey: "", pixName: "", pixCity: "" }, order), null);
 });
 
 test("RLS: dentro do escopo de A, consulta sem filtro só enxerga A", async () => {

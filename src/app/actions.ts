@@ -14,7 +14,8 @@ import { hashPassword, verifyPassword } from "@/lib/password";
 import { DomainError } from "@/lib/ctx";
 import { parseBRL } from "@/lib/money";
 import type { ActionState } from "@/components/action-form";
-import { createOrder, dispatchOrder, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder } from "@/domain/orders";
+import { createOrder, dispatchOrder, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder, confirmPix } from "@/domain/orders";
+import { orderPix, placePortalOrder, portalOrderSchema, portalTenant } from "@/domain/portal";
 import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
 import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, resolveDifference } from "@/domain/shifts";
 import { receivePurchase, adjustStock, markDamaged, runInventory, saveSupplier, supplierSchema } from "@/domain/stock";
@@ -212,6 +213,47 @@ export async function reassignAction(fd: FormData) {
   return run(() => reassignOrder(user, str(fd, "orderId"), driverId), ["/"], "Pedido passado para outro entregador.");
 }
 
+export async function confirmPixAction(fd: FormData) {
+  const user = await requireUser("dono", "caixa");
+  return run(() => confirmPix(user, str(fd, "orderId")), ["/"], "Pix conferido.");
+}
+
+export type PortalResult = { error?: string; number?: number; totalCents?: number; pix?: string | null };
+
+/** Pedido do portal público: sem login, então com limite por IP contra abuso. */
+export async function portalOrderAction(slug: string, fd: FormData): Promise<PortalResult> {
+  const t = await portalTenant(slug);
+  if (!t) return { error: "Esta loja não está recebendo pedidos pelo site agora." };
+  // campo escondido que só robô preenche
+  if (str(fd, "site")) return { error: "Não foi possível enviar o pedido." };
+  const ip = (await headers()).get("x-forwarded-for")?.split(",")[0].trim() || "local";
+  const key = `portal:${ip}`;
+  if (await isBlocked(key, 5)) return { error: "Muitos pedidos seguidos deste aparelho. Ligue para a loja ou tente em 15 minutos." };
+  try {
+    const order = await placePortalOrder(
+      t.id,
+      portalOrderSchema.parse({
+        name: str(fd, "name"),
+        phone: str(fd, "phone"),
+        address: str(fd, "address"),
+        reference: str(fd, "reference"),
+        items: JSON.parse(str(fd, "items") || "[]"),
+        paymentMethod: str(fd, "paymentMethod"),
+        changeForCents: money(fd, "changeFor", false),
+        notes: str(fd, "notes"),
+      }),
+    );
+    await recordFailure(key);
+    revalidatePath("/", "layout");
+    return { number: order.number, totalCents: order.totalCents, pix: order.paymentMethod === "pix" ? orderPix(t, order) : null };
+  } catch (e) {
+    if (e instanceof DomainError) return { error: e.message };
+    if (e instanceof z.ZodError) return { error: e.issues[0]?.message ?? "Confira os dados do pedido." };
+    if (e instanceof SyntaxError) return { error: "Escolha ao menos um produto." };
+    throw e;
+  }
+}
+
 export async function addAddressAction(fd: FormData) {
   const user = await requireUser("dono", "atendente", "caixa");
   return run(
@@ -230,7 +272,18 @@ export async function removeAddressAction(fd: FormData) {
 export async function saveSettingsAction(fd: FormData) {
   const user = await requireUser("dono");
   return run(
-    async () => saveSettings(user, settingsSchema.parse({ staffDiscountPct: int(fd, "staffDiscountPct"), lateAfterMinutes: int(fd, "lateAfterMinutes") })),
+    async () =>
+      saveSettings(
+        user,
+        settingsSchema.parse({
+          staffDiscountPct: int(fd, "staffDiscountPct"),
+          lateAfterMinutes: int(fd, "lateAfterMinutes"),
+          pixKey: str(fd, "pixKey"),
+          pixName: str(fd, "pixName"),
+          pixCity: str(fd, "pixCity"),
+          portalEnabled: fd.get("portalEnabled") === "on",
+        }),
+      ),
     ["/"],
     "Regras salvas.",
   );

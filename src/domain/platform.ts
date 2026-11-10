@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
@@ -19,13 +20,23 @@ export const newTenantSchema = z.object({
   password: z.string().min(8, "A senha inicial precisa de ao menos 8 caracteres."),
 });
 
+/** Endereço do portal: nome sem acento + sufixo aleatório, para não colidir nem ser adivinhado de outra empresa. */
+export const slugFor = (name: string) =>
+  `${name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 30)}-${randomBytes(3).toString("hex")}`;
+
 export async function createTenant(admin: SessionUser, input: z.infer<typeof newTenantSchema>) {
   assertAdmin(admin);
   const passwordHash = await hashPassword(input.password);
   return db.transaction(async (tx) => {
     const [taken] = await tx.select({ id: users.id }).from(users).where(eq(users.email, input.email));
     if (taken) throw new DomainError("Já existe um usuário com este e-mail.");
-    const [t] = await tx.insert(tenants).values({ name: input.company }).returning();
+    const [t] = await tx.insert(tenants).values({ name: input.company, slug: slugFor(input.company) }).returning();
     const [owner] = await tx
       .insert(users)
       .values({ tenantId: t.id, name: input.ownerName, email: input.email, role: "dono", passwordHash })
@@ -148,7 +159,7 @@ export async function ensurePlatformAdmin(email: string, password: string) {
   if (exists) return false;
   const passwordHash = await hashPassword(password);
   await db.transaction(async (tx) => {
-    const [t] = await tx.insert(tenants).values({ name: "Solace" }).returning();
+    const [t] = await tx.insert(tenants).values({ name: "Solace", slug: slugFor("Solace") }).returning();
     await tx.insert(users).values({
       tenantId: t.id,
       name: "Administrador Solace",

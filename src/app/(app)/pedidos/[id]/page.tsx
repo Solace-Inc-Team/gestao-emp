@@ -2,9 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
-import { getOrder, listDrivers, listShifts } from "@/domain/queries";
+import { getOrder, getSettings, listDrivers, listShifts } from "@/domain/queries";
+import { orderPix } from "@/domain/portal";
+import { PixBox } from "@/components/pix-box";
 import { ActionForm } from "@/components/action-form";
-import { cancelAction, deliverAction, dispatchAction, reassignAction, refundOrderAction } from "@/app/actions";
+import { cancelAction, confirmPixAction, deliverAction, dispatchAction, reassignAction, refundOrderAction } from "@/app/actions";
 import { DeliveryExceptions } from "@/components/delivery-forms";
 import { originLabel } from "@/domain/orders";
 import { Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
@@ -18,6 +20,7 @@ const actionLabel: Record<string, string> = {
   "pedido.entrega_parcial": "Entrega parcial registrada",
   "pedido.ocorrencia": "Entrega não realizada, voltou para a fila",
   "pedido.trocar_entregador": "Trocou de entregador",
+  "pedido.pix_conferido": "Pix conferido no extrato",
   "pedido.cancelar": "Pedido cancelado",
   "pedido.estornar": "Pedido estornado",
 };
@@ -28,7 +31,9 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
   if (!isUuid(id)) notFound();
   const o = await getOrder(user.tenantId, id);
   if (!o) notFound();
-  const [drivers, open] = await Promise.all([listDrivers(user.tenantId), listShifts(user.tenantId, "aberto")]);
+  const [drivers, open, settings] = await Promise.all([listDrivers(user.tenantId), listShifts(user.tenantId, "aberto"), getSettings(user.tenantId)]);
+  const pixOpen = o.paymentMethod === "pix" && !o.pixConfirmedAt && ["aberto", "em_rota", "entregue"].includes(o.status);
+  const pixCode = pixOpen ? orderPix(settings, { number: o.number, totalCents: o.totalCents - o.cashPartCents }) : null;
   const onShift = drivers.filter((d) => open.some((s) => s.driverId === d.id));
 
   return (
@@ -134,6 +139,25 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
             <p className="mt-3 text-sm text-muted">Chegou por {originLabel[o.origin as keyof typeof originLabel] ?? o.origin}</p>
             {o.driverName && <p className="mt-1">Entregador: <b>{o.driverName}</b></p>}
           </section>
+
+          {pixOpen && (
+            <section className="panel p-4">
+              <h2 className="h2 mb-1">Pix a conferir</h2>
+              <p className="mb-3 text-sm text-muted">
+                O pedido só conta como pago depois que alguém vê o valor no extrato. Comprovante enviado pelo cliente não basta.
+              </p>
+              {pixCode && <div className="mb-4"><PixBox code={pixCode} size={144} /></div>}
+              {(user.role === "dono" || user.role === "caixa") && (
+                <ActionForm action={confirmPixAction}>
+                  <input type="hidden" name="orderId" value={o.id} />
+                  <button className="btn btn-primary w-full">Pix conferido no extrato</button>
+                </ActionForm>
+              )}
+            </section>
+          )}
+          {o.paymentMethod === "pix" && o.pixConfirmedAt && (
+            <p className="rounded-md bg-ok-soft px-4 py-3 text-sm text-ok">Pix conferido em {fmtDateTime(o.pixConfirmedAt)}.</p>
+          )}
 
           {o.status === "aberto" && (
             <section className="panel p-4">

@@ -97,10 +97,18 @@ export async function removeAddress(ctx: Ctx, addressId: string) {
   });
 }
 
-export const settingsSchema = z.object({
-  staffDiscountPct: z.int().min(0, "O limite vai de 0 a 100%.").max(100, "O limite vai de 0 a 100%."),
-  lateAfterMinutes: z.int().min(10, "O prazo vai de 10 minutos a 24 horas.").max(1440, "O prazo vai de 10 minutos a 24 horas."),
-});
+export const settingsSchema = z
+  .object({
+    staffDiscountPct: z.int().min(0, "O limite vai de 0 a 100%.").max(100, "O limite vai de 0 a 100%."),
+    lateAfterMinutes: z.int().min(10, "O prazo vai de 10 minutos a 24 horas.").max(1440, "O prazo vai de 10 minutos a 24 horas."),
+    pixKey: z.string().trim().max(77, "Chave Pix muito longa."),
+    pixName: z.string().trim().max(60, "Nome muito longo."),
+    pixCity: z.string().trim().max(40, "Cidade muito longa."),
+    portalEnabled: z.boolean(),
+  })
+  .refine((s) => !s.pixKey || (s.pixName.length >= 2 && s.pixCity.length >= 2), {
+    message: "Com chave Pix, informe também o nome do recebedor e a cidade.",
+  });
 
 export async function saveSettings(ctx: Ctx, input: z.infer<typeof settingsSchema>) {
   assertRole(ctx, "dono");

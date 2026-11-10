@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { Clock3, KeyRound, LogOut, MapPin, Phone } from "lucide-react";
 import { requireUser } from "@/lib/auth";
-import { getShift, itemsForOrders, listOrders, openShiftFor, getOrder } from "@/domain/queries";
+import { getShift, getSettings, itemsForOrders, listOrders, openShiftFor, getOrder } from "@/domain/queries";
+import { orderPix } from "@/domain/portal";
+import { PixBox } from "@/components/pix-box";
 import { logout } from "@/app/actions";
 import { Logo } from "@/components/logo";
 import { Money, paymentLabel } from "@/components/ui";
@@ -16,6 +18,7 @@ export default async function Entregador() {
   const s = shift ? await getShift(user.tenantId, shift.id) : null;
   const route = shift ? await listOrders(user.tenantId, { status: "em_rota", driverId: user.userId }) : [];
   const details = await Promise.all(route.map((o) => getOrder(user.tenantId, o.id)));
+  const settings = await getSettings(user.tenantId);
   const items = await itemsForOrders(user.tenantId, route.map((o) => o.id));
   const done = s ? s.orders.filter((o) => o.status === "entregue") : [];
 
@@ -114,6 +117,14 @@ export default async function Entregador() {
                         </p>
                       ) : null}
                       {o.notes && <p className="mt-2 text-sm">Obs.: {o.notes}</p>}
+                      {o.paymentMethod === "pix" && !o.pixConfirmedAt && settings.pixKey && (
+                        <details className="mt-2">
+                          <summary className="tap cursor-pointer text-accent">Mostrar QR do Pix para o cliente</summary>
+                          <div className="mt-2">
+                            <PixBox code={orderPix(settings, { number: o.number, totalCents: o.totalCents - o.cashPartCents })!} size={200} />
+                          </div>
+                        </details>
+                      )}
                     </div>
                     <div className="border-t border-line p-3">
                       <DeliverButton orderId={o.id} label={o.paymentMethod === "fiado" ? "Entreguei (fiado)" : "Entreguei e recebi"} />

@@ -139,6 +139,7 @@ export const getOrder = scoped(async function getOrder(tenantId: string, id: str
       discountCents: orders.discountCents,
       discountReason: orders.discountReason,
       occurrenceAt: orders.occurrenceAt,
+      pixConfirmedAt: orders.pixConfirmedAt,
       changeForCents: orders.changeForCents,
       notes: orders.notes,
       cancelReason: orders.cancelReason,
@@ -182,7 +183,15 @@ export const listAddresses = scoped(function listAddresses(tenantId: string, cus
 
 export const getSettings = scoped(async function getSettings(tenantId: string) {
   const [t] = await db
-    .select({ staffDiscountPct: tenants.staffDiscountPct, lateAfterMinutes: tenants.lateAfterMinutes })
+    .select({
+      staffDiscountPct: tenants.staffDiscountPct,
+      lateAfterMinutes: tenants.lateAfterMinutes,
+      pixKey: tenants.pixKey,
+      pixName: tenants.pixName,
+      pixCity: tenants.pixCity,
+      slug: tenants.slug,
+      portalEnabled: tenants.portalEnabled,
+    })
     .from(tenants)
     .where(eq(tenants.id, tenantId));
   return t;
@@ -393,6 +402,7 @@ export const dashboard = scoped(async function dashboard(tenantId: string) {
     inRoute: now.inRoute,
     late: now.late,
     returned: now.returned,
+    pixToCheck: now.pixToCheck,
     byMethod,
     cashInStreet: open.reduce((s, x) => s + x.expected, 0),
     openShifts: open,
@@ -459,6 +469,7 @@ export const exceptionsNow = scoped(async function exceptionsNow(tenantId: strin
     .select({
       late: sql<number>`(count(*) filter (where ${orders.status} in ('aberto', 'em_rota') and ${orders.createdAt} < ${limit.toISOString()}))::int`,
       returned: sql<number>`(count(*) filter (where ${orders.status} = 'aberto' and ${orders.occurrence} is not null))::int`,
+      pixToCheck: sql<number>`(count(*) filter (where ${orders.status} = 'entregue' and ${orders.paymentMethod} = 'pix' and ${orders.pixConfirmedAt} is null))::int`,
       waiting: sql<number>`(count(*) filter (where ${orders.status} = 'aberto'))::int`,
       inRoute: sql<number>`(count(*) filter (where ${orders.status} = 'em_rota'))::int`,
     })

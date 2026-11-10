@@ -10,7 +10,14 @@ export const DEMO_PASSWORD = "demo1234";
 
 // usa as funções de domínio de propósito, assim estoque e caixa da demo fecham certinho
 export async function seedDemo() {
-  const [t] = await db.insert(tenants).values({ name: "Distribuidora Fonte Azul" }).returning();
+  const [t] = await db.insert(tenants).values({
+      name: "Distribuidora Fonte Azul",
+      slug: "fonte-azul",
+      portalEnabled: true,
+      pixKey: "financeiro@fonteazul.com.br",
+      pixName: "Distribuidora Fonte Azul",
+      pixCity: "São Paulo",
+    }).returning();
   const passwordHash = await hashPassword(DEMO_PASSWORD);
   const mk = (name: string, email: string, role: "dono" | "atendente" | "caixa" | "entregador") =>
     ({ tenantId: t.id, name, email, role, passwordHash });
