@@ -9,7 +9,7 @@ export const metadata = { title: "Fiado" };
 const daysSince = (d: string | Date) => Math.floor((Date.now() - new Date(d).getTime()) / 864e5);
 
 export default async function Fiado() {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   const debtors = await listDebtors(user.tenantId);
   const total = debtors.reduce((s, d) => s + d.owed, 0);
 

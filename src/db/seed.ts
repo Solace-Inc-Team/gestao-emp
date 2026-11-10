@@ -12,7 +12,7 @@ export const DEMO_PASSWORD = "demo1234";
 export async function seedDemo() {
   const [t] = await db.insert(tenants).values({ name: "Distribuidora Fonte Azul" }).returning();
   const passwordHash = await hashPassword(DEMO_PASSWORD);
-  const mk = (name: string, email: string, role: "dono" | "atendente" | "entregador") =>
+  const mk = (name: string, email: string, role: "dono" | "atendente" | "caixa" | "entregador") =>
     ({ tenantId: t.id, name, email, role, passwordHash });
   const [dono, atendente, joao, carlos] = await db
     .insert(users)
@@ -21,6 +21,7 @@ export async function seedDemo() {
       mk("Paulo Lima", "atendente@demo.com", "atendente"),
       mk("João Pereira", "joao@demo.com", "entregador"),
       mk("Carlos Mendes", "carlos@demo.com", "entregador"),
+      mk("Rita Campos", "caixa@demo.com", "caixa"),
     ])
     .returning();
 

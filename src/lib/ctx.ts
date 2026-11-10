@@ -1,4 +1,4 @@
-export type Role = "dono" | "atendente" | "entregador";
+export type Role = "dono" | "atendente" | "caixa" | "entregador";
 
 export type Ctx = { tenantId: string; userId: string; role: Role };
 

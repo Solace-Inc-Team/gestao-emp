@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, gte, lt, inArray, isNull, sql, ilike, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db, scoped } from "@/db";
-import { customers, orderItems, orders, products, shifts, stockMovements, users, auditLog } from "@/db/schema";
+import { cashEntries, customers, orderItems, orders, products, shifts, stockMovements, users, auditLog } from "@/db/schema";
 import { expectedCash, paymentSummary } from "@/lib/cash";
 import { todayISO } from "@/lib/period";
 
@@ -227,11 +227,39 @@ export const getShift = scoped(async function getShift(tenantId: string, id: str
     .innerJoin(products, eq(products.id, stockMovements.productId))
     .where(and(eq(stockMovements.tenantId, tenantId), eq(stockMovements.driverId, s.shift.driverId)))
     .groupBy(products.name, stockMovements.state);
+  const entries = await db
+    .select({
+      id: cashEntries.id,
+      kind: cashEntries.kind,
+      amountCents: cashEntries.amountCents,
+      note: cashEntries.note,
+      createdAt: cashEntries.createdAt,
+      by: users.name,
+      voidedAt: cashEntries.voidedAt,
+      voidReason: cashEntries.voidReason,
+    })
+    .from(cashEntries)
+    .innerJoin(users, eq(users.id, cashEntries.createdBy))
+    .where(eq(cashEntries.shiftId, id))
+    .orderBy(asc(cashEntries.createdAt));
+  const valid = entries.filter((e) => !e.voidedAt);
+  const sumOf = (kind: "repasse" | "saida") => valid.filter((e) => e.kind === kind).reduce((t, e) => t + e.amountCents, 0);
+  const names = await db
+    .select({ id: users.id, name: users.name })
+    .from(users)
+    .where(inArray(users.id, [s.shift.closedBy, s.shift.resolvedBy, s.shift.openedBy].filter((x): x is string => !!x)));
+  const nameOf = (uid: string | null) => names.find((n) => n.id === uid)?.name ?? null;
   return {
     ...s.shift,
     driverName: s.driverName,
+    openedByName: nameOf(s.shift.openedBy),
+    closedByName: nameOf(s.shift.closedBy),
+    resolvedByName: nameOf(s.shift.resolvedBy),
     orders: shiftOrders,
-    expected: s.shift.expectedCashCents ?? expectedCash(s.shift.openingCashCents, shiftOrders),
+    entries,
+    handedOver: sumOf("repasse"),
+    spent: sumOf("saida"),
+    expected: s.shift.expectedCashCents ?? expectedCash(s.shift.openingCashCents, shiftOrders, sumOf("repasse") + sumOf("saida")),
     summary: paymentSummary(shiftOrders),
     held: held.filter((h) => h.qty !== 0),
   };
@@ -260,16 +288,26 @@ export const listShifts = scoped(async function listShifts(tenantId: string, sta
     .where(and(eq(shifts.tenantId, tenantId), status ? eq(shifts.status, status) : undefined))
     .orderBy(desc(shifts.openedAt))
     .limit(100);
+  const openIds = rows.filter((r) => r.shift.status === "aberto").map((r) => r.shift.id);
+  const handed = openIds.length
+    ? await db
+        .select({ shiftId: cashEntries.shiftId, total: sql<number>`sum(${cashEntries.amountCents})::int` })
+        .from(cashEntries)
+        .where(and(inArray(cashEntries.shiftId, openIds), isNull(cashEntries.voidedAt)))
+        .groupBy(cashEntries.shiftId)
+    : [];
   return Promise.all(
     rows.map(async (r) => {
       // turno fechado já guardou o esperado; buscar os pedidos dele seria uma consulta por linha à toa
       const os = r.shift.status === "aberto" ? await listShiftOrders(tenantId, r.shift.id) : [];
+      const out = handed.find((h) => h.shiftId === r.shift.id)?.total ?? 0;
       return {
         ...r.shift,
         driverName: r.driverName,
         orderCount: os.length,
         inRoute: os.filter((o) => o.status === "em_rota").length,
-        expected: r.shift.expectedCashCents ?? expectedCash(r.shift.openingCashCents, os),
+        expected: r.shift.expectedCashCents ?? expectedCash(r.shift.openingCashCents, os, out),
+        pending: r.shift.status === "fechado" && !!r.shift.differenceCents && !r.shift.resolvedAt,
       };
     }),
   );
@@ -292,7 +330,7 @@ export const dashboard = scoped(async function dashboard(tenantId: string) {
   const [{ divergent }] = await db
     .select({ divergent: sql<number>`count(*)::int` })
     .from(shifts)
-    .where(and(eq(shifts.tenantId, tenantId), eq(shifts.status, "fechado"), sql`${shifts.differenceCents} <> 0`, gte(shifts.closedAt, new Date(Date.now() - 7 * 864e5))));
+    .where(and(eq(shifts.tenantId, tenantId), eq(shifts.status, "fechado"), sql`${shifts.differenceCents} <> 0`, isNull(shifts.resolvedAt)));
   const stock = await stockOverview(tenantId);
   const sold = await db
     .select({ name: products.name, qty: sql<number>`sum(${orderItems.quantity})::int` })
@@ -310,7 +348,7 @@ export const dashboard = scoped(async function dashboard(tenantId: string) {
     byMethod,
     cashInStreet: open.reduce((s, x) => s + x.expected, 0),
     openShifts: open,
-    divergentLast7: divergent,
+    pendingDifferences: divergent,
     lowStock: stock.filter((p) => p.low),
     sold,
     recent: today.slice(0, 8),

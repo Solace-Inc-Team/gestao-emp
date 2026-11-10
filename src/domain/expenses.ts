@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { and, desc, eq, gte, isNull, lte, ne, sql } from "drizzle-orm";
 import { db, scoped, tenantTransaction } from "@/db";
-import { expenses, users } from "@/db/schema";
+import { cashEntries, expenses, users } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { audit } from "./stock";
 
@@ -29,7 +29,7 @@ export const expenseSchema = z.object({
 });
 
 export async function createExpense(ctx: Ctx, input: z.infer<typeof expenseSchema>) {
-  assertRole(ctx, "dono", "atendente");
+  assertRole(ctx, "dono", "atendente", "caixa");
   return tenantTransaction(ctx, async (tx) => {
     const [e] = await tx.insert(expenses).values({ ...input, tenantId: ctx.tenantId, createdBy: ctx.userId }).returning();
     await audit(tx, ctx, "despesa.criar", "expense", e.id, input);
@@ -49,6 +49,8 @@ export async function voidExpense(ctx: Ctx, expenseId: string, reason: string) {
     if (!e) throw new DomainError("Despesa não encontrada.");
     if (e.voidedAt) throw new DomainError("Despesa já cancelada.");
     if (e.orderId) throw new DomainError("Esta saída é a devolução de um pedido estornado e não pode ser cancelada.");
+    const [fromShift] = await tx.select({ id: cashEntries.id }).from(cashEntries).where(eq(cashEntries.expenseId, e.id));
+    if (fromShift) throw new DomainError("Este gasto saiu do dinheiro de um entregador. Estorne o lançamento na tela do acerto.");
     await tx
       .update(expenses)
       .set({ voidedAt: new Date(), voidedBy: ctx.userId, voidReason: reason.trim() })

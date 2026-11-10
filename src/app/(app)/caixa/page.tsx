@@ -8,13 +8,14 @@ import { Difference, Empty, Money, PageHeader, fmtDateTime } from "@/components/
 export const metadata = { title: "Caixa e acertos" };
 
 export default async function Caixa() {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   const [open, closed, drivers] = await Promise.all([
     listShifts(user.tenantId, "aberto"),
     listShifts(user.tenantId, "fechado"),
     listDrivers(user.tenantId),
   ]);
   const free = drivers.filter((d) => !open.some((s) => s.driverId === d.id));
+  const canSettle = user.role === "dono" || user.role === "caixa";
 
   return (
     <>
@@ -39,7 +40,7 @@ export default async function Caixa() {
                       <p className="text-sm text-muted">Deve apresentar</p>
                       <Money cents={s.expected} className="text-2xl font-semibold" />
                     </div>
-                    <Link href={`/caixa/${s.id}`} className="btn btn-primary">Fazer acerto</Link>
+                    <Link href={`/caixa/${s.id}`} className="btn btn-primary">{canSettle ? "Repasse ou acerto" : "Ver turno"}</Link>
                   </div>
                 </li>
               ))}
@@ -87,12 +88,15 @@ export default async function Caixa() {
             </thead>
             <tbody>
               {closed.map((s) => (
-                <tr key={s.id} className={s.differenceCents ? "bg-danger-soft/40" : ""}>
+                <tr key={s.id} className={s.pending ? "bg-danger-soft/40" : ""}>
                   <td><Link href={`/caixa/${s.id}`} className="font-medium hover:text-accent">{s.driverName}</Link></td>
                   <td>{fmtDateTime(s.closedAt)}</td>
                   <td className="text-right"><Money cents={s.expectedCashCents ?? 0} /></td>
                   <td className="text-right"><Money cents={s.countedCashCents ?? 0} /></td>
-                  <td className="text-right"><Difference cents={s.differenceCents ?? 0} /></td>
+                  <td className="text-right">
+                    <Difference cents={s.differenceCents ?? 0} />
+                    {s.pending && <span className="ml-2 rounded bg-danger-soft px-1.5 py-0.5 text-xs font-semibold text-danger">pendente</span>}
+                  </td>
                 </tr>
               ))}
             </tbody>

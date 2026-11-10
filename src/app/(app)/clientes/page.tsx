@@ -9,7 +9,7 @@ import { Empty, PageHeader } from "@/components/ui";
 export const metadata = { title: "Clientes" };
 
 export default async function Clientes({ searchParams }: PageProps<"/clientes">) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   const { q } = await searchParams;
   const term = typeof q === "string" ? q : "";
   const customers = await listCustomers(user.tenantId, term);

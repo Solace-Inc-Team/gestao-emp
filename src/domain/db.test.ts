@@ -343,7 +343,7 @@ test("exclusão de empresa: travas, apaga tudo dela e mais nada", async () => {
   const admin = { ...A.ctx, platformAdmin: true, name: "", email: "admin@teste", tenantName: "", totpEnabled: false, termsVersion: null };
   const countOf = async (table: string, t: string) =>
     Number((await m.db.pgClient.unsafe(`select count(*)::int n from ${table} where tenant_id = $1`, [t]))[0].n);
-  const tables = ["audit_log", "customer_payments", "expenses", "stock_movements", "order_items", "orders", "shifts", "customers", "products", "users"];
+  const tables = ["audit_log", "customer_payments", "cash_entries", "expenses", "stock_movements", "order_items", "orders", "shifts", "customers", "products", "users"];
   const before = { A: await countOf("orders", A.t.id), B: await countOf("orders", B.t.id) };
 
   await assert.rejects(m.platform.deleteTenant(admin, C.t.id, "C"), /Suspenda a empresa/);
@@ -419,6 +419,48 @@ test("anonimizar cliente: exige fiado quitado, apaga dados e some da busca", asy
   const logs = await db.select().from(auditLog).where(and(eq(auditLog.entity, "customer"), eq(auditLog.entityId, c.id)));
   assert.ok(!JSON.stringify(logs).includes("Rua"));
   await assert.rejects(m.registry.anonymizeCustomer(A.ctx, c.id), /já foram apagados/);
+});
+
+test("caixa: repasse e gasto diminuem o esperado; diferença fica pendente até o dono resolver", async () => {
+  const { db } = m.db;
+  const { users } = m.schema;
+  const [driver] = await db.insert(users).values({ tenantId: A.t.id, name: "Entregador Caixa", email: `cx@${A.t.id}.test`, role: "entregador", passwordHash: "x" }).returning();
+  const caixa = { ...A.ctx, role: "caixa" as const };
+  const atendente = { ...A.ctx, role: "atendente" as const };
+  const shift = await m.shifts.openShift(atendente, driver.id, 5000);
+  const order = await m.orders.createOrder(A.ctx, {
+    mode: "entrega", customerId: A.customer.id, items: [{ productId: A.product.id, quantity: 2, returnsEmpty: true }],
+    paymentMethod: "dinheiro", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: driver.id,
+  });
+  await m.orders.deliverOrder({ tenantId: A.t.id, userId: driver.id, role: "entregador" }, order.id);
+  // em mãos: 50 de troco + 220 da entrega
+  const entry = (kind: "repasse" | "saida", amountCents: number) => ({ shiftId: shift.id, kind, amountCents, note: "gasolina", category: "combustivel" });
+  await assert.rejects(m.shifts.addCashEntry(atendente, entry("repasse", 1000)), /Sem permissão/);
+  await assert.rejects(m.shifts.addCashEntry(B.ctx, entry("repasse", 1000)), /não encontrado/);
+  await assert.rejects(m.shifts.addCashEntry(caixa, entry("repasse", 27001)), /tem R\$\s270,00/);
+  await m.shifts.addCashEntry(caixa, entry("repasse", 10000));
+  const wrong = await m.shifts.addCashEntry(caixa, entry("saida", 9000));
+  await assert.rejects(m.exp.voidExpense(A.ctx, wrong.expenseId!, "erro"), /tela do acerto/);
+  await assert.rejects(m.shifts.voidCashEntry(caixa, wrong.id, "valor errado"), /Sem permissão/);
+  await m.shifts.voidCashEntry(A.ctx, wrong.id, "valor errado");
+  await assert.rejects(m.shifts.voidCashEntry(A.ctx, wrong.id, "de novo"), /já estornado/);
+  await m.shifts.addCashEntry(caixa, entry("saida", 3000));
+
+  const view = await m.q.getShift(A.t.id, shift.id);
+  assert.equal(view!.expected, 5000 + 22000 - 10000 - 3000);
+  const today = new Date().toISOString().slice(0, 10);
+  const spent = (await m.exp.listExpenses(A.t.id, "2000-01-01", "2999-01-01")).filter((e) => e.description === "gasolina" && !e.voidedAt);
+  assert.equal(spent.length, 1);
+  assert.ok(today);
+
+  await assert.rejects(m.shifts.closeShift(atendente, shift.id, 14000, ""), /Sem permissão/);
+  const closed = await m.shifts.closeShift(caixa, shift.id, 13000, "faltou dez");
+  assert.equal(closed.differenceCents, -1000);
+  await assert.rejects(m.shifts.addCashEntry(caixa, entry("repasse", 100)), /já foi fechado/);
+  await assert.rejects(m.shifts.resolveDifference(caixa, shift.id, "descontado", "combinado"), /Sem permissão/);
+  await assert.rejects(m.shifts.resolveDifference(A.ctx, shift.id, "inventado", "combinado"), /Escolha/);
+  await m.shifts.resolveDifference(A.ctx, shift.id, "descontado", "desconto no vale de sexta");
+  await assert.rejects(m.shifts.resolveDifference(A.ctx, shift.id, "descontado", "de novo"), /não tem diferença pendente/);
 });
 
 test("RLS: dentro do escopo de A, consulta sem filtro só enxerga A", async () => {

@@ -9,7 +9,7 @@ import { Difference, Empty, Money, PageHeader, fmtDateTime } from "@/components/
 export const metadata = { title: "Relatórios" };
 
 export default async function Relatorios({ searchParams }: PageProps<"/relatorios">) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   const { fromStr, toStr, from, to } = parsePeriod(await searchParams);
   const [{ days, closed }, fiadoPaid, spent] = await Promise.all([
     periodReport(user.tenantId, from, to),

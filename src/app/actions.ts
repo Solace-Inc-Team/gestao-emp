@@ -16,7 +16,7 @@ import { parseBRL } from "@/lib/money";
 import type { ActionState } from "@/components/action-form";
 import { createOrder, dispatchOrder, deliverOrder, cancelOrder, refundOrder, newOrderSchema } from "@/domain/orders";
 import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
-import { openShift, closeShift } from "@/domain/shifts";
+import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, resolveDifference } from "@/domain/shifts";
 import { receivePurchase, adjustStock } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
 import { createTenant, deleteTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
@@ -116,7 +116,7 @@ export async function logout() {
 }
 
 export async function createOrderAction(fd: FormData): Promise<ActionState> {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   let id = "";
   // cliente novo e pedido na mesma transação: se o pedido falhar, o cliente não fica duplicado
   const r = await run(() => tenantTransaction(user, async () => {
@@ -155,7 +155,7 @@ export async function createOrderAction(fd: FormData): Promise<ActionState> {
 }
 
 export async function dispatchAction(fd: FormData) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   const driverId = str(fd, "driverId");
   if (!driverId) return { error: "Escolha o entregador." };
   return run(() => dispatchOrder(user, str(fd, "orderId"), driverId), ["/"], "Pedido saiu para entrega.");
@@ -167,12 +167,12 @@ export async function deliverAction(fd: FormData) {
 }
 
 export async function cancelAction(fd: FormData) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   return run(() => cancelOrder(user, str(fd, "orderId"), str(fd, "reason")), ["/"], "Pedido cancelado.");
 }
 
 export async function openShiftAction(fd: FormData) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   return run(
     async () => openShift(user, str(fd, "driverId"), money(fd, "openingCash", false) ?? 0),
     ["/"],
@@ -180,8 +180,32 @@ export async function openShiftAction(fd: FormData) {
   );
 }
 
+export async function cashEntryAction(fd: FormData) {
+  const user = await requireUser("dono", "caixa");
+  const kind = str(fd, "kind");
+  return run(
+    async () =>
+      addCashEntry(
+        user,
+        cashEntrySchema.parse({ shiftId: str(fd, "shiftId"), kind, amountCents: money(fd, "amount"), note: str(fd, "note"), category: str(fd, "category") }),
+      ),
+    ["/"],
+    kind === "saida" ? "Gasto registrado e lançado nas despesas." : "Repasse registrado.",
+  );
+}
+
+export async function voidCashEntryAction(fd: FormData) {
+  const user = await requireUser("dono");
+  return run(() => voidCashEntry(user, str(fd, "entryId"), str(fd, "reason")), ["/"], "Lançamento estornado.");
+}
+
+export async function resolveDifferenceAction(fd: FormData) {
+  const user = await requireUser("dono");
+  return run(() => resolveDifference(user, str(fd, "shiftId"), str(fd, "resolution"), str(fd, "notes")), ["/"], "Diferença resolvida.");
+}
+
 export async function closeShiftAction(fd: FormData) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "caixa");
   return run(
     async () => closeShift(user, str(fd, "shiftId"), money(fd, "counted")!, str(fd, "notes")),
     ["/"],
@@ -190,7 +214,7 @@ export async function closeShiftAction(fd: FormData) {
 }
 
 export async function purchaseAction(fd: FormData) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   return run(
     async () =>
       receivePurchase(user, {
@@ -215,7 +239,7 @@ export async function adjustAction(fd: FormData) {
 }
 
 export async function saveCustomerAction(fd: FormData) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   const id = optId(fd, "id") ?? undefined;
   return run(
     async () =>
@@ -345,7 +369,7 @@ export async function disableTotpAction(fd: FormData): Promise<ActionState> {
 }
 
 export async function receivePaymentAction(fd: FormData) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   return run(
     async () =>
       receivePayment(
@@ -372,7 +396,7 @@ export async function voidPaymentAction(fd: FormData) {
 }
 
 export async function createExpenseAction(fd: FormData) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   const paidOn = str(fd, "paidOn");
   // data no futuro é aceita (conta agendada), mas avisa para pegar erro de digitação
   const future = paidOn > todayISO();

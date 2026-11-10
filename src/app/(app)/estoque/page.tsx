@@ -7,7 +7,7 @@ import { PageHeader, fmtDateTime } from "@/components/ui";
 export const metadata = { title: "Estoque" };
 
 export default async function Estoque() {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   const [stock, moves, products] = await Promise.all([
     stockOverview(user.tenantId),
     recentMovements(user.tenantId),

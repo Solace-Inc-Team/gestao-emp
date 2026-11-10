@@ -55,12 +55,26 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
         where i.tenant_id = ${t} order by o.number`,
     },
     "turnos_e_acertos.csv": {
-      header: ["Entregador", "Situação", "Troco inicial (R$)", "Esperado (R$)", "Contado (R$)", "Diferença (R$)", "Observação", "Aberto em", "Fechado em"],
+      header: [
+        "Entregador", "Situação", "Troco inicial (R$)", "Esperado (R$)", "Contado (R$)", "Diferença (R$)", "Observação", "Conferido por",
+        "Resolução da diferença", "Como foi resolvida", "Aberto em", "Fechado em", "Resolvida em",
+      ],
       query: sql`
         select u.name, s.status, ${money("s.opening_cash_cents")}, ${money("s.expected_cash_cents")}, ${money("s.counted_cash_cents")},
-               ${money("s.difference_cents")}, s.closing_notes, ${when("s.opened_at")}, ${when("s.closed_at")}
-        from shifts s join users u on u.id = s.driver_id
+               ${money("s.difference_cents")}, s.closing_notes, c.name, s.resolution, s.resolution_notes,
+               ${when("s.opened_at")}, ${when("s.closed_at")}, ${when("s.resolved_at")}
+        from shifts s join users u on u.id = s.driver_id left join users c on c.id = s.closed_by
         where s.tenant_id = ${t} order by s.opened_at`,
+    },
+    "repasses_e_saidas.csv": {
+      header: ["Data", "Entregador", "Tipo", "Valor (R$)", "Observação", "Lançado por", "Estornado em", "Motivo do estorno"],
+      query: sql`
+        select ${when("e.created_at")}, d.name, e.kind, ${money("e.amount_cents")}, e.note, u.name, ${when("e.voided_at")}, e.void_reason
+        from cash_entries e
+        join shifts s on s.id = e.shift_id
+        join users d on d.id = s.driver_id
+        join users u on u.id = e.created_by
+        where e.tenant_id = ${t} order by e.created_at`,
     },
     "movimentacoes_de_estoque.csv": {
       header: ["Data", "Produto", "Cheio ou vazio", "Onde", "Quantidade", "Motivo", "Pedido", "Por"],

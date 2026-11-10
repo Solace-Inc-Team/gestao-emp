@@ -7,7 +7,7 @@ import { Money, StatusBadge, Empty, fmtTime, paymentLabel } from "@/components/u
 export const metadata = { title: "Painel" };
 
 export default async function Painel() {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   const d = await dashboard(user.tenantId);
   const hoje = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" }).format(new Date());
 
@@ -53,12 +53,12 @@ export default async function Painel() {
         </div>
       )}
 
-      {(d.divergentLast7 > 0 || d.lowStock.length > 0) && (
+      {(d.pendingDifferences > 0 || d.lowStock.length > 0) && (
         <section aria-label="Alertas" className="mb-6 space-y-2">
-          {d.divergentLast7 > 0 && (
+          {d.pendingDifferences > 0 && (
             <Link href="/caixa" className="flex items-center justify-between gap-3 rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-danger">
               <span className="font-semibold">
-                {d.divergentLast7} {d.divergentLast7 === 1 ? "acerto fechou" : "acertos fecharam"} com diferença nos últimos 7 dias
+                {d.pendingDifferences} {d.pendingDifferences === 1 ? "acerto com diferença esperando" : "acertos com diferença esperando"} resolução
               </span>
               <span className="text-sm underline">Ver acertos</span>
             </Link>

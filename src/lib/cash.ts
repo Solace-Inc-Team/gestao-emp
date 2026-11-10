@@ -4,10 +4,16 @@ export type ShiftOrder = {
   totalCents: number;
 };
 
-export function expectedCash(openingCashCents: number, orders: ShiftOrder[]): number {
-  return orders
-    .filter((o) => o.status === "entregue" && o.paymentMethod === "dinheiro")
-    .reduce((sum, o) => sum + o.totalCents, openingCashCents);
+/**
+ * Dinheiro que o entregador deve ter em mãos: troco inicial + vendas em dinheiro
+ * - o que já repassou ao caixa - o que gastou com autorização.
+ */
+export function expectedCash(openingCashCents: number, orders: ShiftOrder[], handedOverCents = 0): number {
+  return (
+    orders
+      .filter((o) => o.status === "entregue" && o.paymentMethod === "dinheiro")
+      .reduce((sum, o) => sum + o.totalCents, openingCashCents) - handedOverCents
+  );
 }
 
 export function paymentSummary(orders: ShiftOrder[]) {

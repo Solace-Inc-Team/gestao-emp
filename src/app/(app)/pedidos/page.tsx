@@ -16,7 +16,7 @@ const tabs = [
 ] as const;
 
 export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   const sp = await searchParams;
   const current = tabs.find(([v]) => v === sp.status)?.[0] ?? "";
   const q = typeof sp.q === "string" ? sp.q : "";

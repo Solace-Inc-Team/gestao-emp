@@ -30,7 +30,7 @@ export const paymentSchema = z.object({
 });
 
 export async function receivePayment(ctx: Ctx, input: z.infer<typeof paymentSchema>) {
-  assertRole(ctx, "dono", "atendente");
+  assertRole(ctx, "dono", "atendente", "caixa");
   return tenantTransaction(ctx, async (tx) => {
     // trava o cliente: dois pagamentos ao mesmo tempo não passam juntos pela checagem de saldo
     const [c] = await tx

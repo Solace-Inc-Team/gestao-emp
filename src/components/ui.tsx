@@ -20,7 +20,7 @@ export function StatusBadge({ status }: { status: keyof typeof statusStyle }) {
 }
 
 export const paymentLabel = { dinheiro: "Dinheiro", pix: "Pix", cartao: "Cartão", fiado: "Fiado" } as const;
-export const roleLabel = { dono: "Dono", atendente: "Atendente", entregador: "Entregador" } as const;
+export const roleLabel = { dono: "Dono", atendente: "Atendente", caixa: "Caixa", entregador: "Entregador" } as const;
 
 export function Money({ cents, className = "" }: { cents: number; className?: string }) {
   return <span className={`num ${className}`}>{formatBRL(cents)}</span>;

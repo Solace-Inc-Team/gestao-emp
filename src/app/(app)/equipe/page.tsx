@@ -68,6 +68,7 @@ export default async function Equipe() {
               <select id="u-role" name="role" className="input" defaultValue="entregador">
                 <option value="entregador">Entregador</option>
                 <option value="atendente">Atendente</option>
+                <option value="caixa">Caixa (faz os acertos)</option>
                 <option value="dono">Dono</option>
               </select>
             </div>

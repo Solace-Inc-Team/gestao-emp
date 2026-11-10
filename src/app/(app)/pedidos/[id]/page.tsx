@@ -18,7 +18,7 @@ const actionLabel: Record<string, string> = {
 };
 
 export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   const { id } = await params;
   if (!isUuid(id)) notFound();
   const o = await getOrder(user.tenantId, id);

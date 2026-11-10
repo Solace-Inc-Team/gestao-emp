@@ -36,6 +36,8 @@ export default async function LoginPage() {
               <dd className="text-fg">dono@demo.com</dd>
               <dt>Atendente</dt>
               <dd className="text-fg">atendente@demo.com</dd>
+              <dt>Caixa</dt>
+              <dd className="text-fg">caixa@demo.com</dd>
               <dt>Entregador</dt>
               <dd className="text-fg">joao@demo.com</dd>
               <dt>Senha</dt>

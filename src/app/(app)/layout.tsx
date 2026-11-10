@@ -16,7 +16,7 @@ const initials = (name: string) =>
     .join("");
 
 export default async function AppLayout({ children }: LayoutProps<"/">) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   if (user.platformAdmin) redirect("/admin");
 
   const groups: NavGroup[] = [

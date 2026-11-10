@@ -14,7 +14,7 @@ const methodLabel = { dinheiro: "Dinheiro", pix: "Pix", cartao: "Cartão", bolet
 const fmtDay = (d: string) => d.split("-").reverse().join("/");
 
 export default async function Despesas({ searchParams }: PageProps<"/despesas">) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   const sp = await searchParams;
   const today = todayISO();
   const { fromStr, toStr } = parsePeriod({ de: today.slice(0, 8) + "01", ...sp });

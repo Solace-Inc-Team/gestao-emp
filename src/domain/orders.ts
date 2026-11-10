@@ -41,7 +41,7 @@ async function loadOrder(tx: Tx, ctx: Ctx, orderId: string) {
 }
 
 export async function createOrder(ctx: Ctx, input: NewOrder) {
-  assertRole(ctx, "dono", "atendente");
+  assertRole(ctx, "dono", "atendente", "caixa");
   return tenantTransaction(ctx, async (tx) => {
     // preço sempre do banco, nunca do form
     const prods = await lockProducts(tx, ctx, [...new Set(input.items.map((i) => i.productId))]);
@@ -137,7 +137,7 @@ async function dispatchInTx(tx: Tx, ctx: Ctx, orderId: string, driverId: string)
 }
 
 export async function dispatchOrder(ctx: Ctx, orderId: string, driverId: string) {
-  assertRole(ctx, "dono", "atendente");
+  assertRole(ctx, "dono", "atendente", "caixa");
   await tenantTransaction(ctx, (tx) => dispatchInTx(tx, ctx, orderId, driverId));
 }
 
@@ -158,7 +158,7 @@ export async function deliverOrder(ctx: Ctx, orderId: string) {
 }
 
 export async function cancelOrder(ctx: Ctx, orderId: string, reason: string) {
-  assertRole(ctx, "dono", "atendente");
+  assertRole(ctx, "dono", "atendente", "caixa");
   if (reason.trim().length < 3) throw new DomainError("Informe o motivo do cancelamento.");
   await tenantTransaction(ctx, async (tx) => {
     const { o, items, name } = await loadOrder(tx, ctx, orderId);

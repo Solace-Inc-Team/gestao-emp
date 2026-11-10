@@ -14,7 +14,7 @@ import { Empty, Money, StatusBadge, fmtDateTime, paymentLabel } from "@/componen
 export const metadata = { title: "Cliente" };
 
 export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   const { id } = await params;
   if (!isUuid(id)) notFound();
   const c = await getCustomer(user.tenantId, id);

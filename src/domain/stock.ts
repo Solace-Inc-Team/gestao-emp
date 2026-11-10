@@ -59,7 +59,7 @@ export async function receivePurchase(
   ctx: Ctx,
   input: { productId: string; full: number; emptiesReturned: number; note: string },
 ) {
-  assertRole(ctx, "dono", "atendente");
+  assertRole(ctx, "dono", "atendente", "caixa");
   if (input.full < 1) throw new DomainError("Informe a quantidade recebida.");
   await tenantTransaction(ctx, async (tx) => {
     const [p] = await lockProducts(tx, ctx, [input.productId]);

@@ -16,7 +16,7 @@ export const customerSchema = z.object({
 });
 
 export async function saveCustomer(ctx: Ctx, input: z.infer<typeof customerSchema>, id?: string) {
-  assertRole(ctx, "dono", "atendente");
+  assertRole(ctx, "dono", "atendente", "caixa");
   return tenantTransaction(ctx, async (tx) => {
     if (id) {
       const [c] = await tx
@@ -100,7 +100,7 @@ export const userSchema = z.object({
   name: z.string().trim().min(2, "Nome muito curto.").max(80, "O nome pode ter até 80 letras."),
   email: z.email("E-mail inválido.").transform((e) => e.toLowerCase()),
   password: z.string().min(8, "Senha precisa de ao menos 8 caracteres."),
-  role: z.enum(["dono", "atendente", "entregador"], { message: "Escolha a função." }),
+  role: z.enum(["dono", "atendente", "caixa", "entregador"], { message: "Escolha a função." }),
 });
 
 export async function createUser(ctx: Ctx, input: z.infer<typeof userSchema>) {

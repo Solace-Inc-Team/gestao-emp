@@ -6,7 +6,7 @@ import { NewOrderForm } from "./new-order-form";
 export const metadata = { title: "Novo pedido" };
 
 export default async function NovoPedido({ searchParams }: PageProps<"/pedidos/novo">) {
-  const user = await requireUser("dono", "atendente");
+  const user = await requireUser("dono", "atendente", "caixa");
   const { cliente } = await searchParams;
   // uma transação só para as leituras da tela: não ocupa 5 conexões do banco por visita
   const [products, initial, drivers, open, stock] = await withTenant(user.tenantId, () =>

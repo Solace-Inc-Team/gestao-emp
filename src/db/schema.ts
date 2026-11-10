@@ -20,7 +20,7 @@ const tenantId = () =>
     .references(() => tenants.id);
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 
-export const roleEnum = pgEnum("role", ["dono", "atendente", "entregador"]);
+export const roleEnum = pgEnum("role", ["dono", "atendente", "caixa", "entregador"]);
 export const orderStatusEnum = pgEnum("order_status", [
   "aberto",
   "em_rota",
@@ -31,6 +31,7 @@ export const orderStatusEnum = pgEnum("order_status", [
 export const paymentMethodEnum = pgEnum("payment_method", ["dinheiro", "pix", "cartao", "fiado"]);
 export const shiftStatusEnum = pgEnum("shift_status", ["aberto", "fechado"]);
 export const expenseMethodEnum = pgEnum("expense_method", ["dinheiro", "pix", "cartao", "boleto"]);
+export const cashEntryKindEnum = pgEnum("cash_entry_kind", ["repasse", "saida"]);
 export const containerStateEnum = pgEnum("container_state", ["cheio", "vazio"]);
 
 export const tenants = pgTable("tenants", {
@@ -150,8 +151,39 @@ export const shifts = pgTable(
     closedBy: uuid("closed_by").references(() => users.id),
     openedAt: timestamp("opened_at", { withTimezone: true }).notNull().defaultNow(),
     closedAt: timestamp("closed_at", { withTimezone: true }),
+    // diferença no acerto fica pendente até o dono dizer o que foi feito dela
+    resolution: text("resolution"),
+    resolutionNotes: text("resolution_notes"),
+    resolvedBy: uuid("resolved_by").references(() => users.id),
+    resolvedAt: timestamp("resolved_at", { withTimezone: true }),
   },
   (t) => [index("shifts_tenant_status_idx").on(t.tenantId, t.status)],
+);
+
+// dinheiro que sai da mão do entregador antes do acerto: repasse ao caixa ou gasto autorizado na rua.
+// Nunca é editado nem apagado; o erro se corrige com estorno.
+export const cashEntries = pgTable(
+  "cash_entries",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    shiftId: uuid("shift_id")
+      .notNull()
+      .references(() => shifts.id),
+    kind: cashEntryKindEnum("kind").notNull(),
+    amountCents: integer("amount_cents").notNull(),
+    note: text("note").notNull().default(""),
+    // saída autorizada também entra nas despesas da empresa
+    expenseId: uuid("expense_id"),
+    createdBy: uuid("created_by")
+      .notNull()
+      .references(() => users.id),
+    createdAt: createdAt(),
+    voidedAt: timestamp("voided_at", { withTimezone: true }),
+    voidedBy: uuid("voided_by").references(() => users.id),
+    voidReason: text("void_reason"),
+  },
+  (t) => [index("cash_entries_shift_idx").on(t.shiftId)],
 );
 
 export const orders = pgTable(
