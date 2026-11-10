@@ -31,7 +31,9 @@ export default async function NovoPedido({ searchParams }: PageProps<"/pedidos/n
           name: p.name,
           priceCents: p.priceCents,
           returnable: p.returnable,
-          available: stock.find((s) => s.id === p.id)?.fullStore ?? 0,
+          containerPriceCents: p.containerPriceCents,
+          available: stock.find((s) => s.id === p.id)?.available ?? 0,
+          reserved: stock.find((s) => s.id === p.id)?.reserved ?? 0,
         }))}
         drivers={drivers.map((d) => ({ ...d, onShift: onShift.has(d.id) }))}
         initialCustomer={

@@ -5,7 +5,7 @@ import { ActionForm } from "@/components/action-form";
 import { createOrderAction } from "@/app/actions";
 import { formatBRL, parseBRL } from "@/lib/money";
 
-type Product = { id: string; name: string; priceCents: number; returnable: boolean; available: number };
+type Product = { id: string; name: string; priceCents: number; containerPriceCents: number; returnable: boolean; available: number; reserved: number };
 type Customer = { id: string; name: string; phone: string; address: string; addresses?: { id: string; label: string; address: string }[] };
 type Driver = { id: string; name: string; onShift: boolean };
 
@@ -83,7 +83,9 @@ export function NewOrderForm({
   const parsedFee = parseBRL(fee) ?? 0;
   // taxa fora do limite não entra no total mostrado; o servidor recusa com a mensagem
   const feeCents = mode === "entrega" && parsedFee >= 0 && parsedFee <= 100_00 ? parsedFee : 0;
-  const subtotal = products.reduce((s, p) => s + (qty[p.id] ?? 0) * p.priceCents, 0);
+  // sem vazio para trocar, o vasilhame entra no preço
+  const priceOf = (p: Product) => p.priceCents + (p.returnable && keepsBottle[p.id] ? p.containerPriceCents : 0);
+  const subtotal = products.reduce((s, p) => s + (qty[p.id] ?? 0) * priceOf(p), 0);
   const parsedDiscount = parseBRL(discount) ?? 0;
   const discountCents = parsedDiscount > 0 && parsedDiscount <= subtotal ? parsedDiscount : 0;
   const overLimit = discountLimitPct !== null && discountCents > Math.floor((subtotal * discountLimitPct) / 100);
@@ -198,11 +200,12 @@ export function NewOrderForm({
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">{p.name}</p>
                       <p className="text-sm text-muted">
-                        <span className="num">{formatBRL(p.priceCents)}</span>, {p.available} {p.returnable ? "cheios na loja" : "em estoque"}
+                        <span className="num">{formatBRL(p.priceCents)}</span>, {p.available} {p.returnable ? "cheios livres" : "livres"}
+                        {p.reserved > 0 && ` (${p.reserved} em pedidos aguardando)`}
                       </p>
                       {/* o pedido passa mesmo assim (a carga pode chegar antes da entrega), mas a pessoa fica sabendo */}
                       {n > p.available && (
-                        <p className="text-sm font-medium text-warn-fg">Acima do estoque ({p.available})</p>
+                        <p className="text-sm font-medium text-warn-fg">Acima do estoque livre ({p.available})</p>
                       )}
                     </div>
                     <div className="flex items-center gap-1" role="group" aria-label={`Quantidade de ${p.name}`}>
@@ -219,6 +222,7 @@ export function NewOrderForm({
                         onChange={(e) => setKeepsBottle((k) => ({ ...k, [p.id]: e.target.checked }))}
                       />
                       Cliente não tem vasilhame para trocar
+                      {p.containerPriceCents > 0 && <span className="text-muted">(+{formatBRL(p.containerPriceCents)} pelo vasilhame, cada)</span>}
                     </label>
                   )}
                 </li>
@@ -315,7 +319,7 @@ export function NewOrderForm({
                   return (
                     <li key={i.productId} className="flex justify-between gap-2">
                       <span>{i.quantity}× {p.name}</span>
-                      <span className="num">{formatBRL(i.quantity * p.priceCents)}</span>
+                      <span className="num">{formatBRL(i.quantity * priceOf(p))}</span>
                     </li>
                   );
                 })}

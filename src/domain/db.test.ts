@@ -343,7 +343,7 @@ test("exclusão de empresa: travas, apaga tudo dela e mais nada", async () => {
   const admin = { ...A.ctx, platformAdmin: true, name: "", email: "admin@teste", tenantName: "", totpEnabled: false, termsVersion: null };
   const countOf = async (table: string, t: string) =>
     Number((await m.db.pgClient.unsafe(`select count(*)::int n from ${table} where tenant_id = $1`, [t]))[0].n);
-  const tables = ["audit_log", "customer_payments", "cash_entries", "customer_addresses", "expenses", "stock_movements", "order_items", "orders", "shifts", "customers", "products", "users"];
+  const tables = ["audit_log", "customer_payments", "cash_entries", "customer_addresses", "expenses", "stock_movements", "order_items", "orders", "shifts", "customers", "products", "suppliers", "users"];
   const before = { A: await countOf("orders", A.t.id), B: await countOf("orders", B.t.id) };
 
   await assert.rejects(m.platform.deleteTenant(admin, C.t.id, "C"), /Suspenda a empresa/);
@@ -538,6 +538,42 @@ test("cliente: endereço extra vai para o pedido e some na anonimização", asyn
   await m.registry.anonymizeCustomer(A.ctx, c.id);
   assert.equal((await db.select().from(customerAddresses).where(eq(customerAddresses.customerId, c.id))).length, 0);
   assert.equal((await m.q.getOrder(A.t.id, order.id))!.customerAddress, "");
+});
+
+test("estoque: avaria, inventário, compra com fornecedor, reserva e preço do vasilhame", async () => {
+  const p = await m.registry.saveProduct(A.ctx, { name: "Galão Estoque", priceCents: 1500, containerPriceCents: 4000, returnable: true, minStock: 0, active: true });
+  const s = await m.stock.saveSupplier(A.ctx, { name: "Fonte Serra", phone: "", notes: "", active: true });
+  const sB = await m.stock.saveSupplier(B.ctx, { name: "Fornecedor de B", phone: "", notes: "", active: true });
+  await assert.rejects(m.stock.receivePurchase(A.ctx, { productId: p.id, full: 10, emptiesReturned: 0, note: "", supplierId: sB.id }), /Fornecedor não encontrado/);
+  await m.stock.receivePurchase(A.ctx, { productId: p.id, full: 10, emptiesReturned: 0, note: "NF 12", supplierId: s.id, costCents: 9000, costMethod: "pix" });
+  const bought = (await m.exp.listExpenses(A.t.id, "2000-01-01", "2999-01-01")).find((e) => e.description.includes("Galão Estoque"));
+  assert.equal(bought?.amountCents, 9000);
+  assert.match(bought!.description, /Fonte Serra/);
+
+  await m.stock.markDamaged({ ...A.ctx, role: "atendente" }, { productId: p.id, from: "cheio", quantity: 2, note: "trincado" });
+  await assert.rejects(m.stock.markDamaged(A.ctx, { productId: p.id, from: "vazio", quantity: 1, note: "amassado" }), /Estoque insuficiente/);
+  const row = async () => (await m.q.stockOverview(A.t.id)).find((x) => x.id === p.id)!;
+  assert.deepEqual([(await row()).fullStore, (await row()).damaged], [8, 2]);
+
+  // pedido aguardando segura o estoque; sem vazio para trocar, o vasilhame entra no preço
+  const o = await m.orders.createOrder(A.ctx, {
+    mode: "entrega", customerId: A.customer.id, items: [{ productId: p.id, quantity: 3, returnsEmpty: false }],
+    paymentMethod: "pix", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null,
+  });
+  assert.equal(o.totalCents, 3 * (1500 + 4000));
+  assert.deepEqual([(await row()).reserved, (await row()).available], [3, 5]);
+  await m.orders.cancelOrder(A.ctx, o.id, "teste de reserva");
+  assert.equal((await row()).reserved, 0);
+
+  await assert.rejects(m.stock.runInventory({ ...A.ctx, role: "caixa" }, [{ productId: p.id, state: "cheio", counted: 8 }], ""), /Sem permissão/);
+  await assert.rejects(m.stock.runInventory(B.ctx, [{ productId: p.id, state: "cheio", counted: 1 }], ""), /não encontrado/);
+  const diffs = await m.stock.runInventory(A.ctx, [
+    { productId: p.id, state: "cheio", counted: 7 },
+    { productId: p.id, state: "vazio", counted: 0 },
+    { productId: p.id, state: "avariado", counted: 2 },
+  ], "contagem de teste");
+  assert.deepEqual(diffs, [{ product: "Galão Estoque", state: "cheio", before: 8, counted: 7 }]);
+  assert.equal((await row()).fullStore, 7);
 });
 
 test("RLS: dentro do escopo de A, consulta sem filtro só enxerga A", async () => {

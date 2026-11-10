@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, gte, lt, inArray, isNull, sql, ilike, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db, scoped } from "@/db";
-import { cashEntries, customerAddresses, customers, orderItems, orders, products, shifts, stockMovements, tenants, users, auditLog } from "@/db/schema";
+import { cashEntries, customerAddresses, customers, orderItems, orders, products, shifts, stockMovements, suppliers, tenants, users, auditLog } from "@/db/schema";
 import { expectedCash, paymentSummary } from "@/lib/cash";
 import { todayISO } from "@/lib/period";
 
@@ -15,6 +15,13 @@ export const listProducts = scoped((tenantId: string, onlyActive: boolean = fals
     .from(products)
     .where(and(eq(products.tenantId, tenantId), onlyActive ? eq(products.active, true) : undefined))
     .orderBy(asc(products.name)));
+
+export const listSuppliers = scoped((tenantId: string, onlyActive: boolean = false) =>
+  db
+    .select()
+    .from(suppliers)
+    .where(and(eq(suppliers.tenantId, tenantId), onlyActive ? eq(suppliers.active, true) : undefined))
+    .orderBy(asc(suppliers.name)));
 
 export const listDrivers = scoped((tenantId: string) =>
   db
@@ -202,14 +209,25 @@ export const stockOverview = scoped(async function stockOverview(tenantId: strin
     .from(stockMovements)
     .where(eq(stockMovements.tenantId, tenantId))
     .groupBy(stockMovements.productId, stockMovements.state, stockMovements.driverId);
+  // pedidos lançados que ainda não saíram já "seguram" os cheios da loja
+  const held = await db
+    .select({ productId: orderItems.productId, qty: sql<number>`sum(${orderItems.quantity})::int` })
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .where(and(eq(orders.tenantId, tenantId), eq(orders.status, "aberto")))
+    .groupBy(orderItems.productId);
   return prods.map((p) => {
     const mine = rows.filter((r) => r.productId === p.id);
-    const sum = (state: "cheio" | "vazio", atStore: boolean) =>
+    const sum = (state: "cheio" | "vazio" | "avariado", atStore: boolean) =>
       mine.filter((r) => r.state === state && (r.driverId === null) === atStore).reduce((s, r) => s + r.qty, 0);
     const fullStore = sum("cheio", true);
+    const reserved = held.find((h) => h.productId === p.id)?.qty ?? 0;
     return {
       ...p,
       fullStore,
+      reserved,
+      available: fullStore - reserved,
+      damaged: sum("avariado", true),
       emptyStore: sum("vazio", true),
       fullTransit: sum("cheio", false),
       emptyTransit: sum("vazio", false),

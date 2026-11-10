@@ -32,7 +32,7 @@ export const paymentMethodEnum = pgEnum("payment_method", ["dinheiro", "pix", "c
 export const shiftStatusEnum = pgEnum("shift_status", ["aberto", "fechado"]);
 export const expenseMethodEnum = pgEnum("expense_method", ["dinheiro", "pix", "cartao", "boleto"]);
 export const cashEntryKindEnum = pgEnum("cash_entry_kind", ["repasse", "saida"]);
-export const containerStateEnum = pgEnum("container_state", ["cheio", "vazio"]);
+export const containerStateEnum = pgEnum("container_state", ["cheio", "vazio", "avariado"]);
 
 export const tenants = pgTable("tenants", {
   id: id(),
@@ -111,6 +111,8 @@ export const products = pgTable(
     // botijão/galão: venda troca cheio por vazio
     returnable: boolean("returnable").notNull().default(true),
     minStock: integer("min_stock").notNull().default(0),
+    // cobrado a mais quando o cliente não devolve um vazio e fica com o vasilhame
+    containerPriceCents: integer("container_price_cents").notNull().default(0),
     active: boolean("active").notNull().default(true),
     createdAt: createdAt(),
   },
@@ -343,12 +345,27 @@ export const stockMovements = pgTable(
     reason: text("reason").notNull(),
     orderId: uuid("order_id").references(() => orders.id),
     shiftId: uuid("shift_id").references(() => shifts.id),
+    supplierId: uuid("supplier_id"),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id),
     createdAt: createdAt(),
   },
   (t) => [index("stock_tenant_product_idx").on(t.tenantId, t.productId)],
+);
+
+export const suppliers = pgTable(
+  "suppliers",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    name: text("name").notNull(),
+    phone: text("phone").notNull().default(""),
+    notes: text("notes").notNull().default(""),
+    active: boolean("active").notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [index("suppliers_tenant_idx").on(t.tenantId)],
 );
 
 export const auditLog = pgTable(

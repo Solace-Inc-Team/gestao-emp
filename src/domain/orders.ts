@@ -69,7 +69,10 @@ export async function createOrder(ctx: Ctx, raw: NewOrder) {
     const items = input.items.map((i) => {
       const p = prods.find((x) => x.id === i.productId && x.active);
       if (!p) throw new DomainError("Produto indisponível.");
-      return { ...i, unitPriceCents: p.priceCents, returnsEmpty: p.returnable && i.returnsEmpty, name: p.name };
+      const returnsEmpty = p.returnable && i.returnsEmpty;
+      // sem vazio para trocar, o cliente compra o vasilhame junto
+      const container = p.returnable && !returnsEmpty ? p.containerPriceCents : 0;
+      return { ...i, unitPriceCents: p.priceCents + container, returnsEmpty, name: p.name };
     });
 
     if (input.customerId) {

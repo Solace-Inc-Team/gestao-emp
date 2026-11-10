@@ -7,7 +7,7 @@ import { centsToInput } from "@/lib/money";
 
 export const metadata = { title: "Produtos e preços" };
 
-type P = { id?: string; name?: string; priceCents?: number; returnable?: boolean; minStock?: number; active?: boolean };
+type P = { id?: string; name?: string; priceCents?: number; containerPriceCents?: number; returnable?: boolean; minStock?: number; active?: boolean };
 
 function Fields({ p = {} }: { p?: P }) {
   const k = p.id ?? "novo";
@@ -20,6 +20,10 @@ function Fields({ p = {} }: { p?: P }) {
       <div className="w-32">
         <label className="label" htmlFor={`p-${k}`}>Preço</label>
         <input id={`p-${k}`} name="price" required inputMode="decimal" defaultValue={p.priceCents !== undefined ? centsToInput(p.priceCents) : ""} className="input" />
+      </div>
+      <div className="w-32">
+        <label className="label" htmlFor={`c-${k}`}>Vasilhame</label>
+        <input id={`c-${k}`} name="containerPrice" inputMode="decimal" maxLength={12} defaultValue={p.containerPriceCents ? centsToInput(p.containerPriceCents) : ""} className="input" placeholder="0,00" />
       </div>
       <div className="w-28">
         <label className="label" htmlFor={`m-${k}`}>Mínimo</label>
@@ -40,6 +44,7 @@ export default async function Produtos() {
       <PageHeader title="Produtos e preços" />
       <p className="-mt-3 mb-6 max-w-2xl text-muted">
         Mudar o preço vale para os próximos pedidos. Pedidos já lançados guardam o preço da época, e toda alteração fica registrada.
+        O valor do vasilhame é somado quando o cliente não tem um vazio para trocar.
       </p>
       <section className="panel mb-6">
         {products.map((p) => (

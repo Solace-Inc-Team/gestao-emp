@@ -37,8 +37,12 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
         where a.tenant_id = ${t} order by c.name`,
     },
     "produtos.csv": {
-      header: ["ID", "Nome", "Preço (R$)", "Retornável", "Estoque mínimo", "À venda", "Criado em"],
-      query: sql`select id, name, ${money("price_cents")}, ${yes("returnable")}, min_stock, ${yes("active")}, ${when("created_at")} from products where tenant_id = ${t} order by name`,
+      header: ["ID", "Nome", "Preço (R$)", "Preço do vasilhame (R$)", "Retornável", "Estoque mínimo", "À venda", "Criado em"],
+      query: sql`select id, name, ${money("price_cents")}, ${money("container_price_cents")}, ${yes("returnable")}, min_stock, ${yes("active")}, ${when("created_at")} from products where tenant_id = ${t} order by name`,
+    },
+    "fornecedores.csv": {
+      header: ["Nome", "Telefone", "Observações", "Ativo", "Criado em"],
+      query: sql`select name, phone, notes, ${yes("active")}, ${when("created_at")} from suppliers where tenant_id = ${t} order by name`,
     },
     "pedidos.csv": {
       header: [
@@ -86,7 +90,7 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
         where e.tenant_id = ${t} order by e.created_at`,
     },
     "movimentacoes_de_estoque.csv": {
-      header: ["Data", "Produto", "Cheio ou vazio", "Onde", "Quantidade", "Motivo", "Pedido", "Por"],
+      header: ["Data", "Produto", "Estado", "Onde", "Quantidade", "Motivo", "Pedido", "Por"],
       query: sql`
         select ${when("m.created_at")}, p.name, m.state, coalesce(d.name, 'Loja'), m.quantity, m.reason, o.number, u.name
         from stock_movements m

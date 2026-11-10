@@ -115,11 +115,13 @@ export const productSchema = z.object({
   priceCents: z.int().min(0).max(100_000_00, "Preço muito alto."),
   returnable: z.boolean(),
   minStock: z.int().min(0, "Estoque mínimo inválido.").max(100_000, "Estoque mínimo muito alto."),
+  containerPriceCents: z.int().min(0).max(100_000_00, "Preço do vasilhame muito alto.").default(0),
   active: z.boolean(),
 });
 
-export async function saveProduct(ctx: Ctx, input: z.infer<typeof productSchema>, id?: string) {
+export async function saveProduct(ctx: Ctx, raw: z.input<typeof productSchema>, id?: string) {
   assertRole(ctx, "dono");
+  const input = productSchema.parse(raw);
   return tenantTransaction(ctx, async (tx) => {
     // dois produtos com o mesmo nome confundem a entrada de estoque e o pedido
     const [same] = await tx

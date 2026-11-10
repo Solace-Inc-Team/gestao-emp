@@ -17,7 +17,7 @@ import type { ActionState } from "@/components/action-form";
 import { createOrder, dispatchOrder, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder } from "@/domain/orders";
 import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
 import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, resolveDifference } from "@/domain/shifts";
-import { receivePurchase, adjustStock } from "@/domain/stock";
+import { receivePurchase, adjustStock, markDamaged, runInventory, saveSupplier, supplierSchema } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
 import { createTenant, deleteTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
 import { resolveError, sendTestAlert } from "@/domain/monitoring";
@@ -277,6 +277,9 @@ export async function purchaseAction(fd: FormData) {
         full: int(fd, "full"),
         emptiesReturned: int(fd, "empties"),
         note: str(fd, "note"),
+        supplierId: optId(fd, "supplierId"),
+        costCents: money(fd, "cost", false),
+        costMethod: z.enum(["dinheiro", "pix", "cartao", "boleto"]).catch("boleto").parse(str(fd, "costMethod")),
       }),
     ["/"],
     "Entrada registrada.",
@@ -285,11 +288,49 @@ export async function purchaseAction(fd: FormData) {
 
 export async function adjustAction(fd: FormData) {
   const user = await requireUser("dono");
-  const state = str(fd, "state") === "vazio" ? "vazio" : "cheio";
+  const state = z.enum(["cheio", "vazio", "avariado"]).catch("cheio").parse(str(fd, "state"));
   return run(
     async () => adjustStock(user, { productId: str(fd, "productId"), state, counted: int(fd, "counted"), reason: str(fd, "reason") }),
     ["/"],
     "Estoque ajustado.",
+  );
+}
+
+export async function damagedAction(fd: FormData) {
+  const user = await requireUser("dono", "atendente", "caixa");
+  const from = str(fd, "from") === "vazio" ? "vazio" : "cheio";
+  return run(
+    async () => markDamaged(user, { productId: str(fd, "productId"), from, quantity: int(fd, "quantity"), note: str(fd, "note") }),
+    ["/"],
+    "Avaria registrada. O item saiu do estoque de venda.",
+  );
+}
+
+export async function inventoryAction(fd: FormData): Promise<ActionState> {
+  const user = await requireUser("dono");
+  let changed = 0;
+  const r = await run(async () => {
+    // campos c:<estado>:<id do produto>; em branco = não contado
+    const counts = [...fd.keys()]
+      .filter((k) => k.startsWith("c:") && str(fd, k) !== "")
+      .map((k) => {
+        const [, state, productId] = k.split(":");
+        return { productId, state: z.enum(["cheio", "vazio", "avariado"]).parse(state), counted: int(fd, k) };
+      });
+    changed = (await runInventory(user, counts, str(fd, "note"))).length;
+  }, ["/"]);
+  if (r?.error) return r;
+  return { ok: changed ? `Inventário registrado: ${changed} ${changed === 1 ? "diferença ajustada" : "diferenças ajustadas"}.` : "Inventário registrado: tudo bateu com o sistema." };
+}
+
+export async function saveSupplierAction(fd: FormData) {
+  const user = await requireUser("dono", "atendente", "caixa");
+  const id = optId(fd, "id") ?? undefined;
+  return run(
+    async () =>
+      saveSupplier(user, supplierSchema.parse({ name: str(fd, "name"), phone: str(fd, "phone"), notes: str(fd, "notes"), active: id ? fd.get("active") === "on" : true }), id),
+    ["/"],
+    id ? "Fornecedor atualizado." : "Fornecedor cadastrado.",
   );
 }
 
@@ -331,6 +372,7 @@ export async function saveProductAction(fd: FormData) {
           priceCents: money(fd, "price"),
           returnable: fd.get("returnable") === "on",
           minStock: int(fd, "minStock"),
+          containerPriceCents: money(fd, "containerPrice", false) ?? 0,
           active: id ? fd.get("active") === "on" : true,
         }),
         id,
