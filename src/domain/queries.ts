@@ -376,6 +376,7 @@ export const dashboard = scoped(async function dashboard(tenantId: string) {
     .from(shifts)
     .where(and(eq(shifts.tenantId, tenantId), eq(shifts.status, "fechado"), sql`${shifts.differenceCents} <> 0`, isNull(shifts.resolvedAt)));
   const stock = await stockOverview(tenantId);
+  const now = await exceptionsNow(tenantId);
   const sold = await db
     .select({ name: products.name, qty: sql<number>`sum(coalesce(${orderItems.deliveredQuantity}, ${orderItems.quantity}))::int` })
     .from(orderItems)
@@ -387,8 +388,11 @@ export const dashboard = scoped(async function dashboard(tenantId: string) {
   return {
     revenue: delivered.reduce((s, o) => s + o.totalCents, 0),
     deliveredCount: delivered.length,
-    pending: today.filter((o) => o.status === "aberto").length,
-    inRoute: today.filter((o) => o.status === "em_rota").length,
+    // a fila conta também o que sobrou de ontem
+    pending: now.waiting,
+    inRoute: now.inRoute,
+    late: now.late,
+    returned: now.returned,
     byMethod,
     cashInStreet: open.reduce((s, x) => s + x.expected, 0),
     openShifts: open,
@@ -397,6 +401,70 @@ export const dashboard = scoped(async function dashboard(tenantId: string) {
     sold,
     recent: today.slice(0, 8),
   };
+});
+
+/** Vendas entregues no período, quebradas por entregador e por produto, mais o que saiu do normal. */
+export const periodBreakdown = scoped(async function periodBreakdown(tenantId: string, from: Date, to: Date) {
+  const delivered = and(eq(orders.tenantId, tenantId), eq(orders.status, "entregue"), gte(orders.deliveredAt, from), lt(orders.deliveredAt, to));
+  const byDriver = await db
+    .select({
+      name: sql<string>`coalesce(${driver.name}, 'Balcão')`,
+      count: sql<number>`count(*)::int`,
+      total: sql<number>`sum(${orders.totalCents})::int`,
+      cash: sql<number>`sum(case when ${orders.paymentMethod} = 'dinheiro' then ${orders.totalCents} else ${orders.cashPartCents} end)::int`,
+    })
+    .from(orders)
+    .leftJoin(driver, eq(driver.id, orders.driverId))
+    .where(delivered)
+    .groupBy(sql`1`)
+    .orderBy(desc(sql`sum(${orders.totalCents})`));
+  const qty = sql`coalesce(${orderItems.deliveredQuantity}, ${orderItems.quantity})`;
+  const byProduct = await db
+    .select({
+      name: products.name,
+      qty: sql<number>`sum(${qty})::int`,
+      total: sql<number>`sum(${qty} * ${orderItems.unitPriceCents})::int`,
+      noReturn: sql<number>`sum(case when ${orderItems.returnsEmpty} then 0 else ${qty} end)::int`,
+    })
+    .from(orderItems)
+    .innerJoin(orders, eq(orders.id, orderItems.orderId))
+    .innerJoin(products, eq(products.id, orderItems.productId))
+    .where(delivered)
+    .groupBy(products.name)
+    .orderBy(desc(sql`sum(${qty} * ${orderItems.unitPriceCents})`));
+  const [extra] = await db
+    .select({
+      discounts: sql<number>`coalesce(sum(${orders.discountCents}) filter (where ${orders.status} = 'entregue' and ${orders.deliveredAt} >= ${from.toISOString()} and ${orders.deliveredAt} < ${to.toISOString()}), 0)::int`,
+      fees: sql<number>`coalesce(sum(${orders.deliveryFeeCents}) filter (where ${orders.status} = 'entregue' and ${orders.deliveredAt} >= ${from.toISOString()} and ${orders.deliveredAt} < ${to.toISOString()}), 0)::int`,
+      cancelled: sql<number>`(count(*) filter (where ${orders.status} = 'cancelado' and ${orders.createdAt} >= ${from.toISOString()} and ${orders.createdAt} < ${to.toISOString()}))::int`,
+      refunded: sql<number>`(count(*) filter (where ${orders.status} = 'estornado' and ${orders.refundedAt} >= ${from.toISOString()} and ${orders.refundedAt} < ${to.toISOString()}))::int`,
+    })
+    .from(orders)
+    .where(eq(orders.tenantId, tenantId));
+  const [events] = await db
+    .select({
+      occurrences: sql<number>`(count(*) filter (where ${auditLog.action} = 'pedido.ocorrencia'))::int`,
+      partials: sql<number>`(count(*) filter (where ${auditLog.action} = 'pedido.entrega_parcial'))::int`,
+    })
+    .from(auditLog)
+    .where(and(eq(auditLog.tenantId, tenantId), eq(auditLog.entity, "order"), gte(auditLog.createdAt, from), lt(auditLog.createdAt, to)));
+  return { byDriver, byProduct, ...extra, ...events };
+});
+
+/** O que pede atenção agora: usado no painel. */
+export const exceptionsNow = scoped(async function exceptionsNow(tenantId: string) {
+  const [t] = await db.select({ lateAfterMinutes: tenants.lateAfterMinutes }).from(tenants).where(eq(tenants.id, tenantId));
+  const limit = new Date(Date.now() - t.lateAfterMinutes * 60000);
+  const [r] = await db
+    .select({
+      late: sql<number>`(count(*) filter (where ${orders.status} in ('aberto', 'em_rota') and ${orders.createdAt} < ${limit.toISOString()}))::int`,
+      returned: sql<number>`(count(*) filter (where ${orders.status} = 'aberto' and ${orders.occurrence} is not null))::int`,
+      waiting: sql<number>`(count(*) filter (where ${orders.status} = 'aberto'))::int`,
+      inRoute: sql<number>`(count(*) filter (where ${orders.status} = 'em_rota'))::int`,
+    })
+    .from(orders)
+    .where(eq(orders.tenantId, tenantId));
+  return r;
 });
 
 export const periodReport = scoped(async function periodReport(tenantId: string, from: Date, to: Date) {

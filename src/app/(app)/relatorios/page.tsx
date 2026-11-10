@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { periodReport } from "@/domain/queries";
+import { periodBreakdown, periodReport } from "@/domain/queries";
 import { parsePeriod } from "@/lib/period";
 import { paymentsByDay } from "@/domain/receivables";
 import { expensesTotal } from "@/domain/expenses";
@@ -11,8 +11,9 @@ export const metadata = { title: "Relatórios" };
 export default async function Relatorios({ searchParams }: PageProps<"/relatorios">) {
   const user = await requireUser("dono", "atendente", "caixa");
   const { fromStr, toStr, from, to } = parsePeriod(await searchParams);
-  const [{ days, closed }, fiadoPaid, spent] = await Promise.all([
+  const [{ days, closed }, breakdown, fiadoPaid, spent] = await Promise.all([
     periodReport(user.tenantId, from, to),
+    periodBreakdown(user.tenantId, from, to),
     paymentsByDay(user.tenantId, from, to),
     expensesTotal(user.tenantId, fromStr, toStr, true),
   ]);
@@ -24,6 +25,7 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
   return (
     <>
       <PageHeader title="Relatórios">
+        <Link href={`/relatorios/fechamento?dia=${toStr}`} className="btn">Fechamento do dia</Link>
         <Link href={`/relatorios/csv?de=${fromStr}&ate=${toStr}`} className="btn">Baixar vendas em CSV</Link>
         {user.role === "dono" && (
           // <a> e não <Link>: é download de arquivo, não navegação
@@ -101,6 +103,73 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
         <p className="border-t border-line px-5 py-3 text-[13px] text-muted sm:col-span-3">
           Fiado recebido no período: <Money cents={fiadoTotal} className="font-medium text-fg" />. Já contado como venda no dia da entrega. Devoluções de pedidos estornados não entram nas despesas acima, porque a venda estornada já saiu das vendas.
         </p>
+      </section>
+
+      <div className="mb-6 grid gap-6 lg:grid-cols-2">
+        <section className="panel overflow-x-auto">
+          <h2 className="h2 border-b border-line px-4 py-3">Por entregador</h2>
+          {breakdown.byDriver.length ? (
+            <table className="table">
+              <thead><tr><th>Quem entregou</th><th className="text-right">Pedidos</th><th className="text-right">Em dinheiro</th><th className="text-right">Total</th></tr></thead>
+              <tbody>
+                {breakdown.byDriver.map((r) => (
+                  <tr key={r.name}>
+                    <td>{r.name}</td>
+                    <td className="num text-right">{r.count}</td>
+                    <td className="text-right"><Money cents={r.cash} /></td>
+                    <td className="text-right font-semibold"><Money cents={r.total} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <Empty>Sem entregas no período.</Empty>
+          )}
+        </section>
+        <section className="panel overflow-x-auto">
+          <h2 className="h2 border-b border-line px-4 py-3">Por produto</h2>
+          {breakdown.byProduct.length ? (
+            <table className="table">
+              <thead><tr><th>Produto</th><th className="text-right">Qtd.</th><th className="text-right">Sem troca</th><th className="text-right">Total</th></tr></thead>
+              <tbody>
+                {breakdown.byProduct.map((r) => (
+                  <tr key={r.name}>
+                    <td>{r.name}</td>
+                    <td className="num text-right">{r.qty}</td>
+                    <td className="num text-right text-muted">{r.noReturn || "-"}</td>
+                    <td className="text-right font-semibold"><Money cents={r.total} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <Empty>Sem vendas no período.</Empty>
+          )}
+        </section>
+      </div>
+
+      <section className="panel mb-6 grid grid-cols-2 sm:grid-cols-6 sm:divide-x sm:divide-line" aria-label="Fora do normal no período">
+        {(
+          [
+            ["Cancelados", breakdown.cancelled],
+            ["Estornados", breakdown.refunded],
+            ["Voltaram da rua", breakdown.occurrences],
+            ["Entregas parciais", breakdown.partials],
+          ] as const
+        ).map(([label, n]) => (
+          <div key={label} className="p-4">
+            <p className="text-[13px] text-muted">{label}</p>
+            <p className="num mt-1 text-xl font-semibold">{n}</p>
+          </div>
+        ))}
+        <div className="p-4">
+          <p className="text-[13px] text-muted">Descontos dados</p>
+          <Money cents={breakdown.discounts} className="mt-1 block text-xl font-semibold" />
+        </div>
+        <div className="p-4">
+          <p className="text-[13px] text-muted">Taxas de entrega</p>
+          <Money cents={breakdown.fees} className="mt-1 block text-xl font-semibold" />
+        </div>
       </section>
 
       <section className="panel overflow-x-auto">

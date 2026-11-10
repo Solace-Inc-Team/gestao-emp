@@ -249,3 +249,24 @@ body {
 .legal strong {
   font-weight: 600;
 }
+
+/* impressão (fechamento do dia): só o conteúdo, em preto no branco */
+@media print {
+  aside,
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  main {
+    padding: 0 !important;
+    max-width: none !important;
+  }
+  .panel {
+    border-color: #ccc;
+    box-shadow: none;
+    background: #fff;
+  }
+}
