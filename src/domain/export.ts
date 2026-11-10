@@ -29,18 +29,27 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
       header: ["ID", "Nome", "Telefone", "Endereço", "Referência", "Observações", "Criado em"],
       query: sql`select id, name, phone, address, reference, notes, ${when("created_at")} from customers where tenant_id = ${t} order by name`,
     },
+    "enderecos_de_clientes.csv": {
+      header: ["Cliente", "Nome do endereço", "Endereço", "Referência"],
+      query: sql`
+        select c.name, a.label, a.address, a.reference
+        from customer_addresses a join customers c on c.id = a.customer_id
+        where a.tenant_id = ${t} order by c.name`,
+    },
     "produtos.csv": {
       header: ["ID", "Nome", "Preço (R$)", "Retornável", "Estoque mínimo", "À venda", "Criado em"],
       query: sql`select id, name, ${money("price_cents")}, ${yes("returnable")}, min_stock, ${yes("active")}, ${when("created_at")} from products where tenant_id = ${t} order by name`,
     },
     "pedidos.csv": {
       header: [
-        "Número", "Situação", "Cliente", "Entregador", "Pagamento", "Taxa de entrega (R$)", "Total (R$)", "Troco para (R$)",
+        "Número", "Situação", "Cliente", "Entregador", "Origem", "Pagamento", "Parte em dinheiro (R$)", "Taxa de entrega (R$)", "Desconto (R$)",
+        "Motivo do desconto", "Total (R$)", "Troco para (R$)", "Endereço de entrega", "Última ocorrência",
         "Observações", "Motivo do cancelamento", "Motivo do estorno", "Lançado em", "Saiu em", "Entregue em", "Estornado em",
       ],
       query: sql`
-        select o.number, o.status, c.name, u.name, o.payment_method, ${money("o.delivery_fee_cents")}, ${money("o.total_cents")},
-               ${money("o.change_for_cents")}, o.notes, o.cancel_reason, o.refund_reason, ${when("o.created_at")}, ${when("o.dispatched_at")},
+        select o.number, o.status, c.name, u.name, o.origin, o.payment_method, ${money("o.cash_part_cents")}, ${money("o.delivery_fee_cents")},
+               ${money("o.discount_cents")}, o.discount_reason, ${money("o.total_cents")},
+               ${money("o.change_for_cents")}, coalesce(o.address, c.address), o.occurrence, o.notes, o.cancel_reason, o.refund_reason, ${when("o.created_at")}, ${when("o.dispatched_at")},
                ${when("o.delivered_at")}, ${when("o.refunded_at")}
         from orders o
         left join customers c on c.id = o.customer_id
@@ -48,9 +57,9 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
         where o.tenant_id = ${t} order by o.number`,
     },
     "itens_dos_pedidos.csv": {
-      header: ["Pedido", "Produto", "Quantidade", "Preço unitário (R$)", "Cliente devolveu vazio"],
+      header: ["Pedido", "Produto", "Quantidade pedida", "Quantidade entregue", "Preço unitário (R$)", "Cliente devolveu vazio"],
       query: sql`
-        select o.number, p.name, i.quantity, ${money("i.unit_price_cents")}, ${yes("i.returns_empty")}
+        select o.number, p.name, i.quantity, coalesce(i.delivered_quantity, i.quantity), ${money("i.unit_price_cents")}, ${yes("i.returns_empty")}
         from order_items i join orders o on o.id = i.order_id join products p on p.id = i.product_id
         where i.tenant_id = ${t} order by o.number`,
     },

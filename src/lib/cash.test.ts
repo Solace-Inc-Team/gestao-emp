@@ -35,3 +35,14 @@ test("parseBRL aceita formatos brasileiros e rejeita lixo", () => {
   assert.equal(parseBRL("abc"), null);
   assert.equal(parseBRL("1,234"), null);
 });
+
+test("pagamento misto: só a parte em dinheiro passa pela mão do entregador", () => {
+  const misto = [{ status: "entregue", paymentMethod: "pix", totalCents: 10000, cashPartCents: 3000 }] as const;
+  assert.equal(expectedCash(0, [...misto]), 3000);
+  assert.deepEqual(paymentSummary([...misto]), { dinheiro: 3000, pix: 7000, cartao: 0, fiado: 0 });
+});
+
+test("repasse e gasto autorizado diminuem o esperado; desconto diminui o total", () => {
+  assert.equal(expectedCash(5000, [...orders], 4000), 5000 + 11000 + 1400 - 4000);
+  assert.equal(orderTotal([{ quantity: 2, unitPriceCents: 1400 }], 300, 500), 2600);
+});

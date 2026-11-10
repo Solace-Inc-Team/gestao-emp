@@ -4,7 +4,9 @@ import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
 import { getOrder, listDrivers, listShifts } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
-import { cancelAction, deliverAction, dispatchAction, refundOrderAction } from "@/app/actions";
+import { cancelAction, deliverAction, dispatchAction, reassignAction, refundOrderAction } from "@/app/actions";
+import { DeliveryExceptions } from "@/components/delivery-forms";
+import { originLabel } from "@/domain/orders";
 import { Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
 
 export const metadata = { title: "Pedido" };
@@ -13,6 +15,9 @@ const actionLabel: Record<string, string> = {
   "pedido.criar": "Pedido lançado",
   "pedido.saida": "Saiu para entrega",
   "pedido.entregue": "Entrega confirmada",
+  "pedido.entrega_parcial": "Entrega parcial registrada",
+  "pedido.ocorrencia": "Entrega não realizada, voltou para a fila",
+  "pedido.trocar_entregador": "Trocou de entregador",
   "pedido.cancelar": "Pedido cancelado",
   "pedido.estornar": "Pedido estornado",
 };
@@ -35,6 +40,12 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
         <StatusBadge status={o.status} />
       </div>
 
+      {o.status === "aberto" && o.occurrence && (
+        <p className="mb-6 rounded-md border border-warn/40 bg-warn-soft px-4 py-3 text-warn-fg">
+          <b>Tentativa de entrega sem sucesso</b> ({fmtDateTime(o.occurrenceAt)}): {o.occurrence}. Combine com o cliente e envie de novo.
+        </p>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-[1.3fr_1fr]">
         <div className="space-y-6">
           <section className="panel">
@@ -49,16 +60,37 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                       {i.name}
                       {!i.returnsEmpty && <p className="text-sm text-muted">sem troca de vasilhame</p>}
                     </td>
-                    <td className="num text-right">{i.quantity}</td>
+                    <td className="num text-right">
+                      {i.deliveredQuantity !== null && i.deliveredQuantity !== i.quantity ? (
+                        <>
+                          {i.deliveredQuantity} <span className="text-muted line-through">{i.quantity}</span>
+                        </>
+                      ) : (
+                        i.quantity
+                      )}
+                    </td>
                     <td className="text-right"><Money cents={i.unitPriceCents} /></td>
-                    <td className="text-right"><Money cents={i.quantity * i.unitPriceCents} /></td>
+                    <td className="text-right"><Money cents={(i.deliveredQuantity ?? i.quantity) * i.unitPriceCents} /></td>
                   </tr>
                 ))}
                 {o.deliveryFeeCents > 0 && (
                   <tr><td colSpan={3}>Taxa de entrega</td><td className="text-right"><Money cents={o.deliveryFeeCents} /></td></tr>
                 )}
+                {o.discountCents > 0 && (
+                  <tr>
+                    <td colSpan={3}>Desconto{o.discountReason && <span className="text-muted">: {o.discountReason}</span>}</td>
+                    <td className="text-right">−<Money cents={o.discountCents} /></td>
+                  </tr>
+                )}
                 <tr>
-                  <td colSpan={3} className="font-semibold">Total, {paymentLabel[o.paymentMethod].toLowerCase()}</td>
+                  <td colSpan={3} className="font-semibold">
+                    Total, {paymentLabel[o.paymentMethod].toLowerCase()}
+                    {o.cashPartCents > 0 && (
+                      <span className="font-normal text-muted">
+                        {" "}(<Money cents={o.cashPartCents} /> em dinheiro e <Money cents={o.totalCents - o.cashPartCents} /> no {paymentLabel[o.paymentMethod].toLowerCase()})
+                      </span>
+                    )}
+                  </td>
                   <td className="text-right"><Money cents={o.totalCents} className="text-xl font-semibold" /></td>
                 </tr>
               </tbody>
@@ -99,7 +131,8 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
             ) : (
               <p className="text-muted">Venda no balcão</p>
             )}
-            {o.driverName && <p className="mt-3">Entregador: <b>{o.driverName}</b></p>}
+            <p className="mt-3 text-sm text-muted">Chegou por {originLabel[o.origin as keyof typeof originLabel] ?? o.origin}</p>
+            {o.driverName && <p className="mt-1">Entregador: <b>{o.driverName}</b></p>}
           </section>
 
           {o.status === "aberto" && (
@@ -128,6 +161,25 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
               <ActionForm action={deliverAction}>
                 <input type="hidden" name="orderId" value={o.id} />
                 <button className="btn btn-primary w-full">Confirmar entrega</button>
+              </ActionForm>
+              <div className="mt-3">
+                <DeliveryExceptions orderId={o.id} items={o.items} />
+              </div>
+            </section>
+          )}
+
+          {o.status === "em_rota" && onShift.some((d) => d.id !== o.driverId) && (
+            <section className="panel p-4">
+              <h2 className="h2 mb-1">Trocar de entregador</h2>
+              <p className="mb-3 text-sm text-muted">Os produtos do pedido passam para a conta do outro entregador.</p>
+              <ActionForm action={reassignAction} className="flex flex-wrap gap-2">
+                <input type="hidden" name="orderId" value={o.id} />
+                <label className="sr-only" htmlFor="newDriver">Novo entregador</label>
+                <select id="newDriver" name="driverId" className="input flex-1" required defaultValue="">
+                  <option value="" disabled>Escolha o entregador</option>
+                  {onShift.filter((d) => d.id !== o.driverId).map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+                <button className="btn">Passar pedido</button>
               </ActionForm>
             </section>
           )}

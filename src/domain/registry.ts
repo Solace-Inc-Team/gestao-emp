@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { tenantTransaction } from "@/db";
-import { auditLog, customers, orders, products, sessions, users } from "@/db/schema";
+import { auditLog, customerAddresses, customers, orders, products, sessions, tenants, users } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { hashPassword } from "@/lib/password";
 import { audit } from "./stock";
@@ -58,8 +58,55 @@ export async function anonymizeCustomer(ctx: Ctx, customerId: string) {
       .update(customers)
       .set({ name: "Cliente removido", phone: "", address: "", reference: "", notes: "", anonymizedAt: new Date() })
       .where(eq(customers.id, c.id));
+    await tx.delete(customerAddresses).where(eq(customerAddresses.customerId, c.id));
+    await tx.update(orders).set({ address: null, reference: null }).where(eq(orders.customerId, c.id));
     await tx.update(auditLog).set({ data: null }).where(and(eq(auditLog.entity, "customer"), eq(auditLog.entityId, c.id)));
     await audit(tx, ctx, "cliente.anonimizar", "customer", c.id);
+  });
+}
+
+export const addressSchema = z.object({
+  customerId: z.uuid(),
+  label: z.string().trim().min(2, "Dê um nome ao endereço (ex.: Trabalho).").max(40, "O nome do endereço pode ter até 40 letras."),
+  address: z.string().trim().min(5, "Informe o endereço.").max(200, "O endereço pode ter até 200 letras."),
+  reference: z.string().trim().max(200, "A referência pode ter até 200 letras."),
+});
+
+export async function addAddress(ctx: Ctx, input: z.infer<typeof addressSchema>) {
+  assertRole(ctx, "dono", "atendente", "caixa");
+  await tenantTransaction(ctx, async (tx) => {
+    const [c] = await tx
+      .select({ id: customers.id })
+      .from(customers)
+      .where(and(eq(customers.id, input.customerId), eq(customers.tenantId, ctx.tenantId), isNull(customers.anonymizedAt)));
+    if (!c) throw new DomainError("Cliente não encontrado.");
+    await tx.insert(customerAddresses).values({ ...input, tenantId: ctx.tenantId });
+    await audit(tx, ctx, "cliente.endereco", "customer", c.id);
+  });
+}
+
+export async function removeAddress(ctx: Ctx, addressId: string) {
+  assertRole(ctx, "dono", "atendente", "caixa");
+  await tenantTransaction(ctx, async (tx) => {
+    const [a] = await tx
+      .delete(customerAddresses)
+      .where(and(eq(customerAddresses.id, addressId), eq(customerAddresses.tenantId, ctx.tenantId)))
+      .returning({ customerId: customerAddresses.customerId });
+    if (!a) throw new DomainError("Endereço não encontrado.");
+    await audit(tx, ctx, "cliente.remover_endereco", "customer", a.customerId);
+  });
+}
+
+export const settingsSchema = z.object({
+  staffDiscountPct: z.int().min(0, "O limite vai de 0 a 100%.").max(100, "O limite vai de 0 a 100%."),
+  lateAfterMinutes: z.int().min(10, "O prazo vai de 10 minutos a 24 horas.").max(1440, "O prazo vai de 10 minutos a 24 horas."),
+});
+
+export async function saveSettings(ctx: Ctx, input: z.infer<typeof settingsSchema>) {
+  assertRole(ctx, "dono");
+  await tenantTransaction(ctx, async (tx) => {
+    await tx.update(tenants).set(input).where(eq(tenants.id, ctx.tenantId));
+    await audit(tx, ctx, "empresa.regras", "tenant", ctx.tenantId, input);
   });
 }
 

@@ -2,11 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
-import { getCustomer, listOrders } from "@/domain/queries";
+import { getCustomer, listAddresses, listOrders } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
 import { CustomerFields } from "@/components/customer-fields";
 import { PopoverForm } from "@/components/popover-form";
-import { anonymizeCustomerAction, receivePaymentAction, saveCustomerAction, voidPaymentAction } from "@/app/actions";
+import { addAddressAction, removeAddressAction, anonymizeCustomerAction, receivePaymentAction, saveCustomerAction, voidPaymentAction } from "@/app/actions";
 import { customerStatement } from "@/domain/receivables";
 import { centsToInput } from "@/lib/money";
 import { Empty, Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
@@ -19,7 +19,11 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
   if (!isUuid(id)) notFound();
   const c = await getCustomer(user.tenantId, id);
   if (!c) notFound();
-  const [orders, st] = await Promise.all([listOrders(user.tenantId, { customerId: id }), customerStatement(user.tenantId, id)]);
+  const [orders, st, addresses] = await Promise.all([
+    listOrders(user.tenantId, { customerId: id }),
+    customerStatement(user.tenantId, id),
+    listAddresses(user.tenantId, [id]),
+  ]);
 
   return (
     <>
@@ -113,6 +117,42 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                   <input type="hidden" name="id" value={c.id} />
                   <CustomerFields c={c} />
                   <button className="btn btn-primary sm:col-span-2 sm:justify-self-start">Salvar alterações</button>
+                </ActionForm>
+              </section>
+              <section className="panel p-4">
+                <h2 className="h2 mb-1">Outros endereços de entrega</h2>
+                <p className="mb-3 text-sm text-muted">Trabalho, casa da mãe, obra. No novo pedido dá para escolher onde entregar.</p>
+                {addresses.length > 0 && (
+                  <ul className="mb-4 divide-y divide-line rounded-md border border-line">
+                    {addresses.map((a) => (
+                      <li key={a.id} className="flex items-start justify-between gap-3 px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="font-medium">{a.label}</p>
+                          <p className="text-sm text-muted">{[a.address, a.reference].filter(Boolean).join(", ")}</p>
+                        </div>
+                        <ActionForm action={removeAddressAction} confirm={`Remover o endereço "${a.label}"?`}>
+                          <input type="hidden" name="addressId" value={a.id} />
+                          <button className="tap text-[13px] text-muted hover:text-danger">Remover</button>
+                        </ActionForm>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <ActionForm action={addAddressAction} className="grid gap-3 sm:grid-cols-2" reset>
+                  <input type="hidden" name="customerId" value={c.id} />
+                  <div>
+                    <label className="label" htmlFor="addr-label">Nome do endereço</label>
+                    <input id="addr-label" name="label" required minLength={2} maxLength={40} className="input" placeholder="Trabalho" />
+                  </div>
+                  <div>
+                    <label className="label" htmlFor="addr-ref">Referência</label>
+                    <input id="addr-ref" name="reference" maxLength={200} className="input" />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="label" htmlFor="addr-address">Endereço</label>
+                    <input id="addr-address" name="address" required minLength={5} maxLength={200} className="input" />
+                  </div>
+                  <button className="btn sm:justify-self-start">Adicionar endereço</button>
                 </ActionForm>
               </section>
               {user.role === "dono" && (

@@ -14,14 +14,14 @@ import { hashPassword, verifyPassword } from "@/lib/password";
 import { DomainError } from "@/lib/ctx";
 import { parseBRL } from "@/lib/money";
 import type { ActionState } from "@/components/action-form";
-import { createOrder, dispatchOrder, deliverOrder, cancelOrder, refundOrder, newOrderSchema } from "@/domain/orders";
+import { createOrder, dispatchOrder, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder } from "@/domain/orders";
 import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
 import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, resolveDifference } from "@/domain/shifts";
 import { receivePurchase, adjustStock } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
 import { createTenant, deleteTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
 import { resolveError, sendTestAlert } from "@/domain/monitoring";
-import { anonymizeCustomer, saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword, acceptTerms } from "@/domain/registry";
+import { addAddress, addressSchema, removeAddress, saveSettings, settingsSchema, anonymizeCustomer, saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword, acceptTerms } from "@/domain/registry";
 import { TERMS_VERSION } from "@/lib/legal";
 import { todayISO } from "@/lib/period";
 
@@ -142,6 +142,11 @@ export async function createOrderAction(fd: FormData): Promise<ActionState> {
         customerId,
         items: JSON.parse(str(fd, "items") || "[]"),
         paymentMethod: str(fd, "paymentMethod"),
+        cashPartCents: money(fd, "cashPart", false) ?? 0,
+        origin: str(fd, "origin") || "telefone",
+        addressId: optId(fd, "addressId"),
+        discountCents: money(fd, "discount", false) ?? 0,
+        discountReason: str(fd, "discountReason"),
         deliveryFeeCents: money(fd, "deliveryFee", false) ?? 0,
         changeForCents: money(fd, "changeFor", false),
         notes: str(fd, "notes"),
@@ -164,6 +169,56 @@ export async function dispatchAction(fd: FormData) {
 export async function deliverAction(fd: FormData) {
   const user = await requireUser();
   return run(() => deliverOrder(user, str(fd, "orderId")), ["/"], "Entrega confirmada.");
+}
+
+export async function partialDeliveryAction(fd: FormData) {
+  const user = await requireUser();
+  return run(
+    async () => {
+      // campos qty:<id do item> = quantidade que chegou ao cliente
+      const delivered: Record<string, number> = {};
+      for (const k of fd.keys()) if (k.startsWith("qty:")) delivered[k.slice(4)] = int(fd, k);
+      await deliverOrder(user, str(fd, "orderId"), { delivered, note: str(fd, "note") });
+    },
+    ["/"],
+    "Entrega parcial registrada. O total do pedido foi refeito.",
+  );
+}
+
+export async function occurrenceAction(fd: FormData) {
+  const user = await requireUser();
+  return run(() => reportOccurrence(user, str(fd, "orderId"), str(fd, "kind"), str(fd, "note")), ["/"], "Ocorrência registrada. O pedido voltou para a fila.");
+}
+
+export async function reassignAction(fd: FormData) {
+  const user = await requireUser("dono", "atendente", "caixa");
+  const driverId = str(fd, "driverId");
+  if (!driverId) return { error: "Escolha o entregador." };
+  return run(() => reassignOrder(user, str(fd, "orderId"), driverId), ["/"], "Pedido passado para outro entregador.");
+}
+
+export async function addAddressAction(fd: FormData) {
+  const user = await requireUser("dono", "atendente", "caixa");
+  return run(
+    async () =>
+      addAddress(user, addressSchema.parse({ customerId: str(fd, "customerId"), label: str(fd, "label"), address: str(fd, "address"), reference: str(fd, "reference") })),
+    ["/"],
+    "Endereço adicionado.",
+  );
+}
+
+export async function removeAddressAction(fd: FormData) {
+  const user = await requireUser("dono", "atendente", "caixa");
+  return run(() => removeAddress(user, str(fd, "addressId")), ["/"], "Endereço removido.");
+}
+
+export async function saveSettingsAction(fd: FormData) {
+  const user = await requireUser("dono");
+  return run(
+    async () => saveSettings(user, settingsSchema.parse({ staffDiscountPct: int(fd, "staffDiscountPct"), lateAfterMinutes: int(fd, "lateAfterMinutes") })),
+    ["/"],
+    "Regras salvas.",
+  );
 }
 
 export async function cancelAction(fd: FormData) {

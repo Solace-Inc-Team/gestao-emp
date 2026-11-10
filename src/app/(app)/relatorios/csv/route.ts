@@ -16,6 +16,9 @@ export async function GET(req: Request) {
       customer: customers.name,
       driver: users.name,
       payment: orders.paymentMethod,
+      cashPart: orders.cashPartCents,
+      discount: orders.discountCents,
+      origin: orders.origin,
       total: orders.totalCents,
     })
     .from(orders)
@@ -25,8 +28,8 @@ export async function GET(req: Request) {
     .orderBy(asc(orders.deliveredAt));
 
   const csv = toCsv(
-    ["Pedido", "Entregue em", "Cliente", "Entregador", "Pagamento", "Total"],
-    rows.map((r) => [r.number, r.deliveredAt, r.customer ?? "Balcão", r.driver ?? "", r.payment, reais(r.total)]),
+    ["Pedido", "Entregue em", "Cliente", "Entregador", "Origem", "Pagamento", "Parte em dinheiro", "Desconto", "Total"],
+    rows.map((r) => [r.number, r.deliveredAt, r.customer ?? "Balcão", r.driver ?? "", r.origin, r.payment, reais(r.cashPart), reais(r.discount), reais(r.total)]),
   );
   return new Response(csv, {
     headers: {

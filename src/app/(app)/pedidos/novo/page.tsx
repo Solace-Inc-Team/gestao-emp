@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { getCustomer, listDrivers, listProducts, listShifts, stockOverview } from "@/domain/queries";
+import { getCustomer, getSettings, listAddresses, listDrivers, listProducts, listShifts, stockOverview } from "@/domain/queries";
 import { withTenant } from "@/db";
 import { NewOrderForm } from "./new-order-form";
 
@@ -9,13 +9,16 @@ export default async function NovoPedido({ searchParams }: PageProps<"/pedidos/n
   const user = await requireUser("dono", "atendente", "caixa");
   const { cliente } = await searchParams;
   // uma transação só para as leituras da tela: não ocupa 5 conexões do banco por visita
-  const [products, initial, drivers, open, stock] = await withTenant(user.tenantId, () =>
+  const isCustomer = typeof cliente === "string" && /^[0-9a-f-]{36}$/.test(cliente);
+  const [products, initial, drivers, open, stock, settings, addresses] = await withTenant(user.tenantId, () =>
     Promise.all([
       listProducts(user.tenantId, true),
-      typeof cliente === "string" && /^[0-9a-f-]{36}$/.test(cliente) ? getCustomer(user.tenantId, cliente) : null,
+      isCustomer ? getCustomer(user.tenantId, cliente as string) : null,
       listDrivers(user.tenantId),
       listShifts(user.tenantId, "aberto"),
       stockOverview(user.tenantId),
+      getSettings(user.tenantId),
+      isCustomer ? listAddresses(user.tenantId, [cliente as string]) : [],
     ]),
   );
   const onShift = new Set(open.map((s) => s.driverId));
@@ -31,7 +34,12 @@ export default async function NovoPedido({ searchParams }: PageProps<"/pedidos/n
           available: stock.find((s) => s.id === p.id)?.fullStore ?? 0,
         }))}
         drivers={drivers.map((d) => ({ ...d, onShift: onShift.has(d.id) }))}
-        initialCustomer={initial ? { id: initial.id, name: initial.name, phone: initial.phone, address: initial.address } : undefined}
+        initialCustomer={
+          initial && !initial.anonymizedAt
+            ? { id: initial.id, name: initial.name, phone: initial.phone, address: initial.address, addresses: addresses.map((a) => ({ id: a.id, label: a.label, address: a.address })) }
+            : undefined
+        }
+        discountLimitPct={user.role === "dono" ? null : settings.staffDiscountPct}
       />
     </>
   );

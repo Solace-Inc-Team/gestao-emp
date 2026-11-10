@@ -98,6 +98,7 @@ export async function deleteTenant(admin: SessionUser, tenantId: string, confirm
     await del("itens_pedido", sql`delete from order_items where tenant_id = ${t.id}`);
     await del("pedidos", sql`delete from orders where tenant_id = ${t.id}`);
     await del("turnos", sql`delete from shifts where tenant_id = ${t.id}`);
+    await del("enderecos", sql`delete from customer_addresses where tenant_id = ${t.id}`);
     await del("clientes", sql`delete from customers where tenant_id = ${t.id}`);
     await del("produtos", sql`delete from products where tenant_id = ${t.id}`);
     await del("sessoes", sql`delete from sessions where user_id in (select id from users where tenant_id = ${t.id})`);

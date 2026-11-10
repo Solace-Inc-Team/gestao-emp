@@ -40,6 +40,9 @@ export const tenants = pgTable("tenants", {
   active: boolean("active").notNull().default(true),
   // conta o prazo da política: dados de empresa cancelada saem em até 90 dias
   suspendedAt: timestamp("suspended_at", { withTimezone: true }),
+  // regras da casa, ajustadas pelo dono em Configurações
+  staffDiscountPct: integer("staff_discount_pct").notNull().default(10),
+  lateAfterMinutes: integer("late_after_minutes").notNull().default(60),
   createdAt: createdAt(),
 });
 
@@ -197,8 +200,19 @@ export const orders = pgTable(
     driverId: uuid("driver_id").references(() => users.id),
     shiftId: uuid("shift_id").references(() => shifts.id),
     paymentMethod: paymentMethodEnum("payment_method").notNull(),
+    // pagamento misto: parte em dinheiro de um pedido pago no Pix ou no cartão (passa pela mão do entregador)
+    cashPartCents: integer("cash_part_cents").notNull().default(0),
+    origin: text("origin").notNull().default("telefone"),
     deliveryFeeCents: integer("delivery_fee_cents").notNull().default(0),
+    discountCents: integer("discount_cents").notNull().default(0),
+    discountReason: text("discount_reason"),
     totalCents: integer("total_cents").notNull(),
+    // endereço de entrega quando não é o principal do cliente
+    address: text("address"),
+    reference: text("reference"),
+    // última tentativa de entrega que não deu certo
+    occurrence: text("occurrence"),
+    occurrenceAt: timestamp("occurrence_at", { withTimezone: true }),
     changeForCents: integer("change_for_cents"),
     notes: text("notes").notNull().default(""),
     cancelReason: text("cancel_reason"),
@@ -228,6 +242,8 @@ export const orderItems = pgTable("order_items", {
     .notNull()
     .references(() => products.id),
   quantity: integer("quantity").notNull(),
+  // entrega parcial: quanto chegou de fato ao cliente (vazio = tudo)
+  deliveredQuantity: integer("delivered_quantity"),
   unitPriceCents: integer("unit_price_cents").notNull(),
   // false = cliente levou o vasilhame junto
   returnsEmpty: boolean("returns_empty").notNull().default(true),
@@ -278,6 +294,22 @@ export const expenses = pgTable(
     voidReason: text("void_reason"),
   },
   (t) => [index("expenses_tenant_paid_idx").on(t.tenantId, t.paidOn)],
+);
+
+export const customerAddresses = pgTable(
+  "customer_addresses",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    customerId: uuid("customer_id")
+      .notNull()
+      .references(() => customers.id),
+    label: text("label").notNull(),
+    address: text("address").notNull(),
+    reference: text("reference").notNull().default(""),
+    createdAt: createdAt(),
+  },
+  (t) => [index("customer_addresses_customer_idx").on(t.customerId)],
 );
 
 // erros do servidor, agrupados por assinatura; é da plataforma (Solace), não de uma empresa

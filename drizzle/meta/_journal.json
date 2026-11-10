@@ -78,6 +78,13 @@
       "when": 1794305201277,
       "tag": "0010_motor_de_caixa",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794305460869,
+      "tag": "0011_pedidos_e_entregas",
+      "breakpoints": true
     }
   ]
 }

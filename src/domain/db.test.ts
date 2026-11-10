@@ -343,7 +343,7 @@ test("exclusão de empresa: travas, apaga tudo dela e mais nada", async () => {
   const admin = { ...A.ctx, platformAdmin: true, name: "", email: "admin@teste", tenantName: "", totpEnabled: false, termsVersion: null };
   const countOf = async (table: string, t: string) =>
     Number((await m.db.pgClient.unsafe(`select count(*)::int n from ${table} where tenant_id = $1`, [t]))[0].n);
-  const tables = ["audit_log", "customer_payments", "cash_entries", "expenses", "stock_movements", "order_items", "orders", "shifts", "customers", "products", "users"];
+  const tables = ["audit_log", "customer_payments", "cash_entries", "customer_addresses", "expenses", "stock_movements", "order_items", "orders", "shifts", "customers", "products", "users"];
   const before = { A: await countOf("orders", A.t.id), B: await countOf("orders", B.t.id) };
 
   await assert.rejects(m.platform.deleteTenant(admin, C.t.id, "C"), /Suspenda a empresa/);
@@ -461,6 +461,83 @@ test("caixa: repasse e gasto diminuem o esperado; diferença fica pendente até 
   await assert.rejects(m.shifts.resolveDifference(A.ctx, shift.id, "inventado", "combinado"), /Escolha/);
   await m.shifts.resolveDifference(A.ctx, shift.id, "descontado", "desconto no vale de sexta");
   await assert.rejects(m.shifts.resolveDifference(A.ctx, shift.id, "descontado", "de novo"), /não tem diferença pendente/);
+});
+
+test("pedido: desconto com limite, pagamento misto, entrega parcial, ocorrência e troca de entregador", async () => {
+  const { db } = m.db;
+  const { users, orders, stockMovements } = m.schema;
+  const { and, eq, sql } = await import("drizzle-orm");
+  const mk = (n: string) => ({ tenantId: A.t.id, name: n, email: `${n}@${A.t.id}.test`, role: "entregador" as const, passwordHash: "x" });
+  const [d1, d2] = await db.insert(users).values([mk("rota1"), mk("rota2")]).returning();
+  await m.stock.receivePurchase(A.ctx, { productId: A.product.id, full: 20, emptiesReturned: 0, note: "carga do teste" });
+  const s1 = await m.shifts.openShift(A.ctx, d1.id, 0);
+  await m.shifts.openShift(A.ctx, d2.id, 0);
+  const atendente = { ...A.ctx, role: "atendente" as const };
+  const held = async (driverId: string) =>
+    (await db.select({ q: sql<number>`coalesce(sum(${stockMovements.quantity}), 0)::int` }).from(stockMovements)
+      .where(and(eq(stockMovements.driverId, driverId), eq(stockMovements.state, "cheio"))))[0].q;
+  const base = {
+    mode: "entrega" as const, customerId: A.customer.id, items: [{ productId: A.product.id, quantity: 3, returnsEmpty: true }],
+    deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: d1.id,
+  };
+
+  // 3 x 110 = 330; limite da equipe é 10% (33,00)
+  await assert.rejects(m.orders.createOrder(atendente, { ...base, paymentMethod: "pix", discountCents: 3301, discountReason: "amigo" }), /acima do seu limite/);
+  await assert.rejects(m.orders.createOrder(A.ctx, { ...base, paymentMethod: "pix", discountCents: 1000 }), /motivo do desconto/);
+  await assert.rejects(m.orders.createOrder(A.ctx, { ...base, paymentMethod: "fiado", cashPartCents: 1000 }), /Pix ou no cartão/);
+  await assert.rejects(m.orders.createOrder(A.ctx, { ...base, paymentMethod: "pix", cashPartCents: 33000 }), /menor que o total/);
+  const o = await m.orders.createOrder(atendente, { ...base, paymentMethod: "pix", discountCents: 3000, discountReason: "cliente antigo", cashPartCents: 10000, origin: "whatsapp" });
+  assert.equal(o.totalCents, 30000);
+  assert.equal(await held(d1.id), 3);
+
+  // troca de entregador leva a carga junto
+  await assert.rejects(m.orders.reassignOrder(B.ctx, o.id, d2.id), /não encontrado/);
+  await m.orders.reassignOrder(atendente, o.id, d2.id);
+  assert.equal(await held(d1.id), 0);
+  assert.equal(await held(d2.id), 3);
+
+  // não conseguiu entregar: volta para a fila e a carga volta para a loja
+  const driver2 = { tenantId: A.t.id, userId: d2.id, role: "entregador" as const };
+  await assert.rejects(m.orders.reportOccurrence({ ...driver2, userId: d1.id }, o.id, "ausente", ""), /outro entregador/);
+  await m.orders.reportOccurrence(driver2, o.id, "ausente", "ninguém atendeu");
+  assert.equal(await held(d2.id), 0);
+  const [back] = await db.select().from(orders).where(eq(orders.id, o.id));
+  assert.equal(back.status, "aberto");
+  assert.match(back.occurrence!, /Cliente ausente: ninguém atendeu/);
+
+  // sai de novo e chega só 1 de 3: total refeito, 2 cheios continuam com o entregador
+  await m.orders.dispatchOrder(atendente, o.id, d1.id);
+  const driver1 = { tenantId: A.t.id, userId: d1.id, role: "entregador" as const };
+  const [item] = (await m.q.getOrder(A.t.id, o.id))!.items;
+  await assert.rejects(m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 0 }, note: "nada" }), /Não consegui entregar/);
+  await assert.rejects(m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 4 }, note: "a mais" }), /inválida/);
+  await m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 1 }, note: "só quis um" });
+  const after = (await m.q.getOrder(A.t.id, o.id))!;
+  assert.equal(after.totalCents, 11000 - 3000);
+  assert.equal(after.cashPartCents, 8000);
+  assert.equal(after.items[0].deliveredQuantity, 1);
+  assert.equal(await held(d1.id), 2);
+  // no acerto, só a parte em dinheiro é cobrada do entregador
+  assert.equal((await m.q.getShift(A.t.id, s1.id))!.expected, 8000);
+});
+
+test("cliente: endereço extra vai para o pedido e some na anonimização", async () => {
+  const { db } = m.db;
+  const { customerAddresses } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const c = await m.registry.saveCustomer(A.ctx, { name: "Cliente Dois Endereços", phone: "", address: "Rua Principal, 1", reference: "", notes: "" });
+  await m.registry.addAddress(A.ctx, { customerId: c.id, label: "Trabalho", address: "Av. do Trabalho, 500", reference: "portaria" });
+  await assert.rejects(m.registry.addAddress(B.ctx, { customerId: c.id, label: "Invasor", address: "Rua de B, 9", reference: "" }), /não encontrado/);
+  const [addr] = await db.select().from(customerAddresses).where(eq(customerAddresses.customerId, c.id));
+  const order = await m.orders.createOrder(A.ctx, {
+    mode: "entrega", customerId: c.id, addressId: addr.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
+    paymentMethod: "pix", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null,
+  });
+  assert.equal((await m.q.getOrder(A.t.id, order.id))!.customerAddress, "Av. do Trabalho, 500");
+  await m.orders.cancelOrder(A.ctx, order.id, "teste");
+  await m.registry.anonymizeCustomer(A.ctx, c.id);
+  assert.equal((await db.select().from(customerAddresses).where(eq(customerAddresses.customerId, c.id))).length, 0);
+  assert.equal((await m.q.getOrder(A.t.id, order.id))!.customerAddress, "");
 });
 
 test("RLS: dentro do escopo de A, consulta sem filtro só enxerga A", async () => {

@@ -6,6 +6,7 @@ import { logout } from "@/app/actions";
 import { Logo } from "@/components/logo";
 import { Money, paymentLabel } from "@/components/ui";
 import { DeliverButton } from "./deliver-button";
+import { DeliveryExceptions } from "@/components/delivery-forms";
 
 export const metadata = { title: "Minhas entregas" };
 
@@ -50,6 +51,11 @@ export default async function Entregador() {
               <p className="mt-3 text-[13px] text-muted">
                 Troco <Money cents={s.openingCashCents} className="text-fg" /> + vendas em dinheiro{" "}
                 <Money cents={s.summary.dinheiro} className="text-fg" />
+                {s.handedOver + s.spent > 0 && (
+                  <>
+                    {" "}− já entregue ao caixa e gastos <Money cents={s.handedOver + s.spent} className="text-fg" />
+                  </>
+                )}
               </p>
             </section>
 
@@ -92,7 +98,14 @@ export default async function Entregador() {
                         ))}
                       </ul>
                       <div className="mt-3 flex flex-wrap items-baseline justify-between gap-2 rounded-md bg-subtle px-3 py-2">
-                        <span>Cobrar em {paymentLabel[o.paymentMethod].toLowerCase()}</span>
+                        <span>
+                          Cobrar em {paymentLabel[o.paymentMethod].toLowerCase()}
+                          {o.cashPartCents > 0 && (
+                            <span className="block text-[13px] text-muted">
+                              <Money cents={o.cashPartCents} /> em dinheiro, o resto no {paymentLabel[o.paymentMethod].toLowerCase()}
+                            </span>
+                          )}
+                        </span>
                         <Money cents={o.totalCents} className="text-2xl font-semibold" />
                       </div>
                       {o.changeForCents ? (
@@ -104,6 +117,9 @@ export default async function Entregador() {
                     </div>
                     <div className="border-t border-line p-3">
                       <DeliverButton orderId={o.id} label={o.paymentMethod === "fiado" ? "Entreguei (fiado)" : "Entreguei e recebi"} />
+                      <div className="mt-2">
+                        <DeliveryExceptions orderId={o.id} items={items.filter((i) => i.orderId === o.id)} />
+                      </div>
                     </div>
                   </li>
                 ) : null,

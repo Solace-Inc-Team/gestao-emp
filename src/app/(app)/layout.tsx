@@ -30,6 +30,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       title: "Operação",
       links: [
         { href: "/pedidos", label: "Pedidos" },
+        { href: "/entregas", label: "Entregas" },
         { href: "/caixa", label: "Caixa e acertos" },
         { href: "/estoque", label: "Estoque" },
         { href: "/clientes", label: "Clientes" },
@@ -45,6 +46,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           ? [
               { href: "/produtos", label: "Produtos e preços" },
               { href: "/equipe", label: "Equipe" },
+              { href: "/configuracoes", label: "Configurações" },
             ]
           : []),
       ],

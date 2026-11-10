@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ActionForm } from "@/components/action-form";
 import { createOrderAction } from "@/app/actions";
 import { formatBRL, parseBRL } from "@/lib/money";
 
 type Product = { id: string; name: string; priceCents: number; returnable: boolean; available: number };
-type Customer = { id: string; name: string; phone: string; address: string };
+type Customer = { id: string; name: string; phone: string; address: string; addresses?: { id: string; label: string; address: string }[] };
 type Driver = { id: string; name: string; onShift: boolean };
 
 const payments = [
@@ -20,10 +20,13 @@ export function NewOrderForm({
   products,
   drivers,
   initialCustomer,
+  discountLimitPct,
 }: {
   products: Product[];
   drivers: Driver[];
   initialCustomer?: Customer;
+  /** null = sem limite (dono) */
+  discountLimitPct: number | null;
 }) {
   const [mode, setMode] = useState<"entrega" | "balcao">("entrega");
   const [qty, setQty] = useState<Record<string, number>>({});
@@ -34,6 +37,25 @@ export function NewOrderForm({
   const [creating, setCreating] = useState(false);
   const [payment, setPayment] = useState<(typeof payments)[number][0]>("dinheiro");
   const [fee, setFee] = useState("");
+  const [discount, setDiscount] = useState("");
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // atalhos de quem atende no teclado: "/" vai para a busca de cliente, Ctrl+Enter lança
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = e.target instanceof HTMLElement && /^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName);
+      if (e.key === "/" && !typing) {
+        e.preventDefault();
+        searchRef.current?.focus();
+      }
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        searchRef.current?.form?.requestSubmit();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // busca no servidor enquanto digita; a resposta de uma busca antiga não sobrescreve a nova
   useEffect(() => {
@@ -61,8 +83,12 @@ export function NewOrderForm({
   const parsedFee = parseBRL(fee) ?? 0;
   // taxa fora do limite não entra no total mostrado; o servidor recusa com a mensagem
   const feeCents = mode === "entrega" && parsedFee >= 0 && parsedFee <= 100_00 ? parsedFee : 0;
+  const subtotal = products.reduce((s, p) => s + (qty[p.id] ?? 0) * p.priceCents, 0);
+  const parsedDiscount = parseBRL(discount) ?? 0;
+  const discountCents = parsedDiscount > 0 && parsedDiscount <= subtotal ? parsedDiscount : 0;
+  const overLimit = discountLimitPct !== null && discountCents > Math.floor((subtotal * discountLimitPct) / 100);
   // só pra exibir, o total que vale é calculado no servidor
-  const total = products.reduce((s, p) => s + (qty[p.id] ?? 0) * p.priceCents, feeCents);
+  const total = subtotal + feeCents - discountCents;
   const step = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, Math.min(99, (q[id] ?? 0) + d)) }));
 
   return (
@@ -99,7 +125,19 @@ export function NewOrderForm({
               </div>
               <button type="button" className="tap text-sm text-accent underline" onClick={() => setCustomer(undefined)}>Trocar</button>
             </div>
-          ) : creating ? (
+          ) : null}
+          {customer && !creating && mode === "entrega" && (customer.addresses?.length ?? 0) > 0 && (
+            <div className="mt-3">
+              <label className="label" htmlFor="addressId">Entregar em</label>
+              <select id="addressId" name="addressId" className="input" defaultValue="">
+                <option value="">Endereço principal: {customer.address || "sem endereço"}</option>
+                {customer.addresses!.map((a) => (
+                  <option key={a.id} value={a.id}>{a.label}: {a.address}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {customer && !creating ? null : creating ? (
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="nc-name">Nome</label>
@@ -123,8 +161,8 @@ export function NewOrderForm({
             </div>
           ) : (
             <div>
-              <label className="label" htmlFor="busca">Buscar por nome, telefone ou endereço</label>
-              <input id="busca" value={search} onChange={(e) => setSearch(e.target.value)} className="input" autoComplete="off" />
+              <label className="label" htmlFor="busca">Buscar por nome, telefone ou endereço <span className="hidden font-normal text-muted lg:inline">(atalho: /)</span></label>
+              <input id="busca" ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} className="input" autoComplete="off" />
               {shown.length > 0 && (
                 <ul className="mt-2 divide-y divide-line rounded-md border border-line">
                   {shown.map((c) => (
@@ -197,6 +235,13 @@ export function NewOrderForm({
           {mode === "entrega" && (
             <>
               <div>
+                <label className="label" htmlFor="origin">Pedido chegou por</label>
+                <select id="origin" name="origin" className="input" defaultValue="whatsapp">
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="telefone">Telefone</option>
+                </select>
+              </div>
+              <div>
                 <label className="label" htmlFor="fee">Taxa de entrega</label>
                 <input id="fee" name="deliveryFee" maxLength={12} value={fee} onChange={(e) => setFee(e.target.value)} inputMode="decimal" className="input" placeholder="0,00" />
               </div>
@@ -238,7 +283,30 @@ export function NewOrderForm({
               <input id="change" name="changeFor" maxLength={12} inputMode="decimal" className="input" placeholder="100,00" />
             </div>
           )}
+          {(payment === "pix" || payment === "cartao") && (
+            <div className="mt-3">
+              <label className="label" htmlFor="cashPart">Parte em dinheiro (opcional)</label>
+              <input id="cashPart" name="cashPart" inputMode="decimal" maxLength={12} className="input" placeholder="0,00" />
+              <p className="mt-1 text-[13px] text-muted">Se o cliente pagar um pedaço em dinheiro, esse valor entra no acerto do entregador.</p>
+            </div>
+          )}
           {payment === "fiado" && <p className="mt-3 text-sm text-muted">Fiado exige cliente identificado.</p>}
+          <details className="mt-3" open={!!discount}>
+            <summary className="tap cursor-pointer text-sm text-accent">Dar desconto</summary>
+            <div className="mt-2 space-y-2">
+              <div>
+                <label className="label" htmlFor="discount">Desconto em R$</label>
+                <input id="discount" name="discount" value={discount} onChange={(e) => setDiscount(e.target.value)} inputMode="decimal" maxLength={12} className="input" placeholder="0,00" />
+              </div>
+              <div>
+                <label className="label" htmlFor="discountReason">Motivo</label>
+                <input id="discountReason" name="discountReason" maxLength={160} required={discountCents > 0} className="input" placeholder="Ex.: cliente antigo, 10 galões" />
+              </div>
+              {overLimit && (
+                <p className="text-[13px] font-medium text-warn-fg">Acima do seu limite de {discountLimitPct}%. Só o dono consegue lançar este desconto.</p>
+              )}
+            </div>
+          </details>
           <div className="mt-5 border-t border-line pt-4">
             {items.length > 0 && (
               <ul className="mb-3 space-y-1 text-sm">
@@ -254,6 +322,9 @@ export function NewOrderForm({
                 {feeCents > 0 && (
                   <li className="flex justify-between"><span>Entrega</span><span className="num">{formatBRL(feeCents)}</span></li>
                 )}
+                {discountCents > 0 && (
+                  <li className="flex justify-between"><span>Desconto</span><span className="num">−{formatBRL(discountCents)}</span></li>
+                )}
               </ul>
             )}
             <p className="flex items-baseline justify-between">
@@ -263,6 +334,7 @@ export function NewOrderForm({
             <button className="btn btn-primary mt-4 h-12 w-full text-lg" disabled={!items.length}>
               {mode === "balcao" ? "Registrar venda" : "Lançar pedido"}
             </button>
+            <p className="mt-2 hidden text-center text-[13px] text-muted lg:block">Ctrl + Enter também lança</p>
           </div>
         </div>
       </aside>

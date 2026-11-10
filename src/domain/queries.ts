@@ -2,7 +2,7 @@ import "server-only";
 import { and, asc, desc, eq, gte, lt, inArray, isNull, sql, ilike, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db, scoped } from "@/db";
-import { cashEntries, customers, orderItems, orders, products, shifts, stockMovements, users, auditLog } from "@/db/schema";
+import { cashEntries, customerAddresses, customers, orderItems, orders, products, shifts, stockMovements, tenants, users, auditLog } from "@/db/schema";
 import { expectedCash, paymentSummary } from "@/lib/cash";
 import { todayISO } from "@/lib/period";
 
@@ -70,11 +70,16 @@ const orderCols = {
   number: orders.number,
   status: orders.status,
   paymentMethod: orders.paymentMethod,
+  cashPartCents: orders.cashPartCents,
   totalCents: orders.totalCents,
   createdAt: orders.createdAt,
   deliveredAt: orders.deliveredAt,
+  dispatchedAt: orders.dispatchedAt,
+  origin: orders.origin,
+  occurrence: orders.occurrence,
   customerName: customers.name,
-  customerAddress: customers.address,
+  // endereço escolhido no pedido, ou o principal do cliente
+  customerAddress: sql<string | null>`coalesce(${orders.address}, ${customers.address})`,
   driverName: driver.name,
   driverId: orders.driverId,
 };
@@ -122,13 +127,15 @@ export const getOrder = scoped(async function getOrder(tenantId: string, id: str
       ...orderCols,
       customerId: orders.customerId,
       customerPhone: customers.phone,
-      customerReference: customers.reference,
+      customerReference: sql<string | null>`case when ${orders.address} is null then ${customers.reference} else ${orders.reference} end`,
       deliveryFeeCents: orders.deliveryFeeCents,
+      discountCents: orders.discountCents,
+      discountReason: orders.discountReason,
+      occurrenceAt: orders.occurrenceAt,
       changeForCents: orders.changeForCents,
       notes: orders.notes,
       cancelReason: orders.cancelReason,
       refundReason: orders.refundReason,
-      dispatchedAt: orders.dispatchedAt,
       shiftId: orders.shiftId,
     })
     .from(orders)
@@ -141,6 +148,7 @@ export const getOrder = scoped(async function getOrder(tenantId: string, id: str
       id: orderItems.id,
       name: products.name,
       quantity: orderItems.quantity,
+      deliveredQuantity: orderItems.deliveredQuantity,
       unitPriceCents: orderItems.unitPriceCents,
       returnsEmpty: orderItems.returnsEmpty,
     })
@@ -156,10 +164,27 @@ export const getOrder = scoped(async function getOrder(tenantId: string, id: str
   return { ...o, items, history };
 });
 
+export const listAddresses = scoped(function listAddresses(tenantId: string, customerIds: string[]) {
+  if (!customerIds.length) return Promise.resolve([]);
+  return db
+    .select({ id: customerAddresses.id, customerId: customerAddresses.customerId, label: customerAddresses.label, address: customerAddresses.address, reference: customerAddresses.reference })
+    .from(customerAddresses)
+    .where(and(eq(customerAddresses.tenantId, tenantId), inArray(customerAddresses.customerId, customerIds)))
+    .orderBy(asc(customerAddresses.createdAt));
+});
+
+export const getSettings = scoped(async function getSettings(tenantId: string) {
+  const [t] = await db
+    .select({ staffDiscountPct: tenants.staffDiscountPct, lateAfterMinutes: tenants.lateAfterMinutes })
+    .from(tenants)
+    .where(eq(tenants.id, tenantId));
+  return t;
+});
+
 export const itemsForOrders = scoped(async function itemsForOrders(tenantId: string, orderIds: string[]) {
   if (!orderIds.length) return [];
   return db
-    .select({ orderId: orderItems.orderId, name: products.name, quantity: orderItems.quantity, returnsEmpty: orderItems.returnsEmpty })
+    .select({ id: orderItems.id, orderId: orderItems.orderId, name: products.name, quantity: orderItems.quantity, returnsEmpty: orderItems.returnsEmpty })
     .from(orderItems)
     .innerJoin(products, eq(products.id, orderItems.productId))
     .where(and(eq(orderItems.tenantId, tenantId), inArray(orderItems.orderId, orderIds)));
@@ -272,6 +297,7 @@ const listShiftOrders = (tenantId: string, shiftId: string) =>
       number: orders.number,
       status: orders.status,
       paymentMethod: orders.paymentMethod,
+      cashPartCents: orders.cashPartCents,
       totalCents: orders.totalCents,
       customerName: customers.name,
     })
@@ -333,13 +359,13 @@ export const dashboard = scoped(async function dashboard(tenantId: string) {
     .where(and(eq(shifts.tenantId, tenantId), eq(shifts.status, "fechado"), sql`${shifts.differenceCents} <> 0`, isNull(shifts.resolvedAt)));
   const stock = await stockOverview(tenantId);
   const sold = await db
-    .select({ name: products.name, qty: sql<number>`sum(${orderItems.quantity})::int` })
+    .select({ name: products.name, qty: sql<number>`sum(coalesce(${orderItems.deliveredQuantity}, ${orderItems.quantity}))::int` })
     .from(orderItems)
     .innerJoin(orders, eq(orders.id, orderItems.orderId))
     .innerJoin(products, eq(products.id, orderItems.productId))
     .where(and(eq(orders.tenantId, tenantId), eq(orders.status, "entregue"), gte(orders.deliveredAt, since)))
     .groupBy(products.name)
-    .orderBy(desc(sql`sum(${orderItems.quantity})`));
+    .orderBy(desc(sql`sum(coalesce(${orderItems.deliveredQuantity}, ${orderItems.quantity}))`));
   return {
     revenue: delivered.reduce((s, o) => s + o.totalCents, 0),
     deliveredCount: delivered.length,
@@ -361,9 +387,10 @@ export const periodReport = scoped(async function periodReport(tenantId: string,
       day: sql<string>`to_char(${orders.deliveredAt} at time zone 'America/Sao_Paulo', 'YYYY-MM-DD')`,
       count: sql<number>`count(*)::int`,
       total: sql<number>`sum(${orders.totalCents})::int`,
-      cash: sql<number>`sum(case when ${orders.paymentMethod} = 'dinheiro' then ${orders.totalCents} else 0 end)::int`,
-      pix: sql<number>`sum(case when ${orders.paymentMethod} = 'pix' then ${orders.totalCents} else 0 end)::int`,
-      card: sql<number>`sum(case when ${orders.paymentMethod} = 'cartao' then ${orders.totalCents} else 0 end)::int`,
+      // pagamento misto: a parte em dinheiro conta como dinheiro, o resto na forma escolhida
+      cash: sql<number>`sum(case when ${orders.paymentMethod} = 'dinheiro' then ${orders.totalCents} else ${orders.cashPartCents} end)::int`,
+      pix: sql<number>`sum(case when ${orders.paymentMethod} = 'pix' then ${orders.totalCents} - ${orders.cashPartCents} else 0 end)::int`,
+      card: sql<number>`sum(case when ${orders.paymentMethod} = 'cartao' then ${orders.totalCents} - ${orders.cashPartCents} else 0 end)::int`,
       credit: sql<number>`sum(case when ${orders.paymentMethod} = 'fiado' then ${orders.totalCents} else 0 end)::int`,
     })
     .from(orders)
