@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { tenantTransaction, type Tx } from "@/db";
 import { orders, orderItems, customers, shifts, expenses, tenants } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
@@ -55,7 +55,7 @@ export async function createOrder(ctx: Ctx, input: NewOrder) {
       const [c] = await tx
         .select({ id: customers.id })
         .from(customers)
-        .where(and(eq(customers.id, input.customerId), eq(customers.tenantId, ctx.tenantId)));
+        .where(and(eq(customers.id, input.customerId), eq(customers.tenantId, ctx.tenantId), isNull(customers.anonymizedAt)));
       if (!c) throw new DomainError("Cliente não encontrado.");
     }
 

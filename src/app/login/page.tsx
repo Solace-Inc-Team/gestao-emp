@@ -19,14 +19,15 @@ export default async function LoginPage() {
         <ActionForm action={login} className="mt-8 space-y-4">
           <div>
             <label className="label" htmlFor="email">E-mail</label>
-            <input id="email" name="email" type="email" autoComplete="username" required className="input h-10" />
+            <input id="email" name="email" type="email" autoComplete="username" required className="input h-11" />
           </div>
           <div>
             <label className="label" htmlFor="password">Senha</label>
-            <input id="password" name="password" type="password" autoComplete="current-password" required className="input h-10" />
+            <input id="password" name="password" type="password" autoComplete="current-password" required className="input h-11" />
           </div>
-          <button className="btn btn-primary h-10 w-full">Entrar</button>
+          <button className="btn btn-primary h-11 w-full">Entrar</button>
         </ActionForm>
+        <p className="mt-4 text-[13px] text-muted">Esqueceu a senha? Peça ao dono da empresa para redefinir. Se você é o dono, fale com a Solace.</p>
         {process.env.SEED_DEMO === "true" && (
           <div className="mt-10 border-t border-line pt-6 text-[13px] text-muted">
             <p className="mb-2 font-medium text-fg">Acessos de demonstração</p>

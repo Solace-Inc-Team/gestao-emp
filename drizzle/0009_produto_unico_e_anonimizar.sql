@@ -1,0 +1,2 @@
+ALTER TABLE "customers" ADD COLUMN "anonymized_at" timestamp with time zone;--> statement-breakpoint
+CREATE UNIQUE INDEX "products_tenant_name_uq" ON "products" USING btree ("tenant_id",lower("name"));

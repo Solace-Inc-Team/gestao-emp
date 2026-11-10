@@ -2,10 +2,10 @@ import Link from "next/link";
 import { Clock3, KeyRound, LogOut, MapPin, Phone } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { getShift, itemsForOrders, listOrders, openShiftFor, getOrder } from "@/domain/queries";
-import { ActionForm } from "@/components/action-form";
-import { deliverAction, logout } from "@/app/actions";
+import { logout } from "@/app/actions";
 import { Logo } from "@/components/logo";
 import { Money, paymentLabel } from "@/components/ui";
+import { DeliverButton } from "./deliver-button";
 
 export const metadata = { title: "Minhas entregas" };
 
@@ -102,12 +102,9 @@ export default async function Entregador() {
                       ) : null}
                       {o.notes && <p className="mt-2 text-sm">Obs.: {o.notes}</p>}
                     </div>
-                    <ActionForm action={deliverAction} className="border-t border-line p-3">
-                      <input type="hidden" name="orderId" value={o.id} />
-                      <button className="btn btn-primary h-12 w-full text-[15px]">
-                        {o.paymentMethod === "fiado" ? "Entreguei (fiado)" : "Entreguei e recebi"}
-                      </button>
-                    </ActionForm>
+                    <div className="border-t border-line p-3">
+                      <DeliverButton orderId={o.id} label={o.paymentMethod === "fiado" ? "Entreguei (fiado)" : "Entreguei e recebi"} />
+                    </div>
                   </li>
                 ) : null,
               )}

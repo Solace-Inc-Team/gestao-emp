@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { tenantTransaction } from "@/db";
-import { customers, products, sessions, users } from "@/db/schema";
+import { auditLog, customers, orders, products, sessions, users } from "@/db/schema";
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { hashPassword } from "@/lib/password";
 import { audit } from "./stock";
+import { fiadoBalance } from "./receivables";
 
 export const customerSchema = z.object({
   name: z.string().trim().min(2, "Nome muito curto.").max(120, "O nome pode ter até 120 letras."),
@@ -21,7 +22,7 @@ export async function saveCustomer(ctx: Ctx, input: z.infer<typeof customerSchem
       const [c] = await tx
         .update(customers)
         .set(input)
-        .where(and(eq(customers.id, id), eq(customers.tenantId, ctx.tenantId)))
+        .where(and(eq(customers.id, id), eq(customers.tenantId, ctx.tenantId), isNull(customers.anonymizedAt)))
         .returning();
       if (!c) throw new DomainError("Cliente não encontrado.");
       await audit(tx, ctx, "cliente.editar", "customer", c.id, input);
@@ -30,6 +31,35 @@ export async function saveCustomer(ctx: Ctx, input: z.infer<typeof customerSchem
     const [c] = await tx.insert(customers).values({ ...input, tenantId: ctx.tenantId }).returning();
     await audit(tx, ctx, "cliente.criar", "customer", c.id);
     return c;
+  });
+}
+
+/**
+ * LGPD: a pedido do cliente, apaga nome, contato e endereço (inclusive do histórico de alterações).
+ * Os pedidos ficam, sem identificar a pessoa, para o caixa e os relatórios continuarem certos.
+ */
+export async function anonymizeCustomer(ctx: Ctx, customerId: string) {
+  assertRole(ctx, "dono");
+  await tenantTransaction(ctx, async (tx) => {
+    const [c] = await tx
+      .select()
+      .from(customers)
+      .where(and(eq(customers.id, customerId), eq(customers.tenantId, ctx.tenantId)))
+      .for("update");
+    if (!c) throw new DomainError("Cliente não encontrado.");
+    if (c.anonymizedAt) throw new DomainError("Os dados deste cliente já foram apagados.");
+    if ((await fiadoBalance(tx, ctx.tenantId, c.id)) > 0) throw new DomainError("Este cliente tem fiado em aberto. Receba ou estorne antes de apagar os dados.");
+    const [busy] = await tx
+      .select({ id: orders.id })
+      .from(orders)
+      .where(and(eq(orders.customerId, c.id), inArray(orders.status, ["aberto", "em_rota"])));
+    if (busy) throw new DomainError("Este cliente tem pedido em andamento. Conclua ou cancele antes.");
+    await tx
+      .update(customers)
+      .set({ name: "Cliente removido", phone: "", address: "", reference: "", notes: "", anonymizedAt: new Date() })
+      .where(eq(customers.id, c.id));
+    await tx.update(auditLog).set({ data: null }).where(and(eq(auditLog.entity, "customer"), eq(auditLog.entityId, c.id)));
+    await audit(tx, ctx, "cliente.anonimizar", "customer", c.id);
   });
 }
 
@@ -44,6 +74,12 @@ export const productSchema = z.object({
 export async function saveProduct(ctx: Ctx, input: z.infer<typeof productSchema>, id?: string) {
   assertRole(ctx, "dono");
   return tenantTransaction(ctx, async (tx) => {
+    // dois produtos com o mesmo nome confundem a entrada de estoque e o pedido
+    const [same] = await tx
+      .select({ id: products.id })
+      .from(products)
+      .where(and(eq(products.tenantId, ctx.tenantId), sql`lower(${products.name}) = lower(${input.name})`, id ? ne(products.id, id) : undefined));
+    if (same) throw new DomainError("Já existe um produto com este nome.");
     if (id) {
       const [before] = await tx
         .select()
@@ -95,7 +131,8 @@ export async function resetUserPassword(ctx: Ctx, userId: string, password: stri
   await tenantTransaction(ctx, async (tx) => {
     const [u] = await tx
       .update(users)
-      .set({ passwordHash })
+      // quem perdeu o celular também perde o 2FA: desliga para ativar de novo no aparelho novo
+      .set({ passwordHash, totpEnabled: false, totpSecret: null })
       .where(and(eq(users.id, userId), eq(users.tenantId, ctx.tenantId)))
       .returning({ id: users.id });
     if (!u) throw new DomainError("Usuário não encontrado.");

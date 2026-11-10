@@ -247,8 +247,11 @@ test("redefinir senha: só dentro da empresa, derruba sessões e desliga 2FA do 
   await assert.rejects(m.registry.resetUserPassword(A.ctx, A.owner.id, "senha-nova-1"), /própria senha/);
 
   await db.insert(sessions).values({ id: "sessao-teste", userId: A.driver.id, expiresAt: new Date(Date.now() + 3600e3) });
+  await db.update(users).set({ totpEnabled: true, totpSecret: "ABC" }).where(eq(users.id, A.driver.id));
   await m.registry.resetUserPassword(A.ctx, A.driver.id, "senha-nova-1");
   assert.equal((await db.select().from(sessions).where(eq(sessions.userId, A.driver.id))).length, 0);
+  const [d] = await db.select().from(users).where(eq(users.id, A.driver.id));
+  assert.equal(d.totpEnabled, false);
 
   await db.update(users).set({ totpEnabled: true, totpSecret: "ABC" }).where(eq(users.id, A.owner.id));
   const admin = { ...B.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false, termsVersion: null };
@@ -385,6 +388,37 @@ test("cliente novo e pedido na mesma transação: pedido recusado não deixa cli
     /troco é menor/,
   );
   assert.equal(await customers(), before);
+});
+
+test("produto com nome repetido na empresa é recusado, em outra empresa não", async () => {
+  const p = { priceCents: 100, returnable: false, minStock: 0, active: true };
+  await assert.rejects(m.registry.saveProduct(A.ctx, { ...p, name: "gás a" }), /Já existe um produto/);
+  const outro = await m.registry.saveProduct(A.ctx, { ...p, name: "Produto Único A" });
+  await m.registry.saveProduct(A.ctx, { ...p, name: "Produto Único A" }, outro.id); // salvar ele mesmo pode
+  await m.registry.saveProduct(B.ctx, { ...p, name: "Produto Único A" });
+});
+
+test("anonimizar cliente: exige fiado quitado, apaga dados e some da busca", async () => {
+  const { db } = m.db;
+  const { auditLog } = m.schema;
+  const { and, eq } = await import("drizzle-orm");
+  const c = await m.registry.saveCustomer(A.ctx, { name: "Maria Sigilo", phone: "11999990000", address: "Rua X", reference: "", notes: "" });
+  await m.registry.saveCustomer(A.ctx, { name: "Maria Sigilo", phone: "11999990000", address: "Rua Y", reference: "", notes: "" }, c.id);
+  const fiado = await m.orders.createOrder(A.ctx, {
+    mode: "balcao", customerId: c.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
+    paymentMethod: "fiado", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null,
+  });
+  await assert.rejects(m.registry.anonymizeCustomer(A.ctx, c.id), /fiado em aberto/);
+  await m.rec.receivePayment(A.ctx, { customerId: c.id, amountCents: fiado.totalCents, method: "pix", note: "" });
+  await assert.rejects(m.registry.anonymizeCustomer(B.ctx, c.id), /não encontrado/);
+  await assert.rejects(m.registry.anonymizeCustomer({ ...A.ctx, role: "atendente" }, c.id), /Sem permissão/);
+
+  await m.registry.anonymizeCustomer(A.ctx, c.id);
+  const [after] = await m.q.listCustomers(A.t.id, "Sigilo");
+  assert.equal(after, undefined);
+  const logs = await db.select().from(auditLog).where(and(eq(auditLog.entity, "customer"), eq(auditLog.entityId, c.id)));
+  assert.ok(!JSON.stringify(logs).includes("Rua"));
+  await assert.rejects(m.registry.anonymizeCustomer(A.ctx, c.id), /já foram apagados/);
 });
 
 test("RLS: dentro do escopo de A, consulta sem filtro só enxerga A", async () => {

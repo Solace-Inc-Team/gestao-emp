@@ -7,6 +7,8 @@ export type ActionState = { error?: string; ok?: string } | undefined | void;
 
 const TOAST_EVENT = "deposito:toast";
 
+export const toast = (message: string) => window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: message }));
+
 // onSubmit manual em vez de action={...}: o React limpa o form depois da action, e em caso de erro
 // a gente quer manter o que foi digitado
 export function ActionForm({
@@ -45,7 +47,7 @@ export function ActionForm({
           setError(r?.error);
           if (r?.error) return;
           // o aviso fica fora do form: muitas ações trocam a tela e o form some junto
-          if (r?.ok) window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: r.ok }));
+          if (r?.ok) toast(r.ok);
           const menu = form.closest("details");
           if (menu) menu.open = false;
           if (reset || menu) form.reset();
@@ -72,26 +74,26 @@ export function ActionForm({
 
 /** Mostra os avisos de sucesso das ações. Fica no layout raiz. */
 export function Toaster() {
-  const [toast, setToast] = useState<{ id: number; message: string }>();
+  const [current, setCurrent] = useState<{ id: number; message: string }>();
   useEffect(() => {
-    const show = (e: Event) => setToast({ id: Date.now(), message: (e as CustomEvent<string>).detail });
+    const show = (e: Event) => setCurrent({ id: Date.now(), message: (e as CustomEvent<string>).detail });
     window.addEventListener(TOAST_EVENT, show);
     return () => window.removeEventListener(TOAST_EVENT, show);
   }, []);
   useEffect(() => {
-    if (!toast) return;
-    const t = setTimeout(() => setToast(undefined), 3500);
+    if (!current) return;
+    const t = setTimeout(() => setCurrent(undefined), 3500);
     return () => clearTimeout(t);
-  }, [toast]);
+  }, [current]);
   return (
     <div role="status" aria-live="polite" className="fixed right-4 bottom-4 z-50">
-      {toast && (
+      {current && (
         <p
-          key={toast.id}
+          key={current.id}
           className="flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-3 text-[13px] font-medium shadow-[0_8px_30px_rgb(0_0_0/0.12)]"
         >
           <CircleCheck size={16} strokeWidth={2} className="text-ok" aria-hidden="true" />
-          {toast.message}
+          {current.message}
         </p>
       )}
     </div>

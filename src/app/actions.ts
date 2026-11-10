@@ -21,8 +21,9 @@ import { receivePurchase, adjustStock } from "@/domain/stock";
 import { receivePayment, paymentSchema, voidPayment } from "@/domain/receivables";
 import { createTenant, deleteTenant, newTenantSchema, resetOwnerAccess, setTenantActive } from "@/domain/platform";
 import { resolveError, sendTestAlert } from "@/domain/monitoring";
-import { saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword, acceptTerms } from "@/domain/registry";
+import { anonymizeCustomer, saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword, acceptTerms } from "@/domain/registry";
 import { TERMS_VERSION } from "@/lib/legal";
+import { todayISO } from "@/lib/period";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
 const optId = (fd: FormData, k: string) => str(fd, k) || null;
@@ -234,6 +235,11 @@ export async function saveCustomerAction(fd: FormData) {
   );
 }
 
+export async function anonymizeCustomerAction(fd: FormData) {
+  const user = await requireUser("dono");
+  return run(() => anonymizeCustomer(user, str(fd, "customerId")), ["/"], "Dados pessoais do cliente apagados.");
+}
+
 export async function saveProductAction(fd: FormData) {
   const user = await requireUser("dono");
   const id = optId(fd, "id") ?? undefined;
@@ -367,6 +373,9 @@ export async function voidPaymentAction(fd: FormData) {
 
 export async function createExpenseAction(fd: FormData) {
   const user = await requireUser("dono", "atendente");
+  const paidOn = str(fd, "paidOn");
+  // data no futuro é aceita (conta agendada), mas avisa para pegar erro de digitação
+  const future = paidOn > todayISO();
   return run(
     async () =>
       createExpense(
@@ -376,11 +385,11 @@ export async function createExpenseAction(fd: FormData) {
           description: str(fd, "description"),
           amountCents: money(fd, "amount"),
           method: str(fd, "method"),
-          paidOn: str(fd, "paidOn"),
+          paidOn,
         }),
       ),
     ["/"],
-    "Despesa lançada.",
+    future ? `Despesa lançada com data futura (${paidOn.split("-").reverse().join("/")}). Confira se a data está certa.` : "Despesa lançada.",
   );
 }
 
@@ -391,7 +400,7 @@ export async function voidExpenseAction(fd: FormData) {
 
 export async function resetUserPasswordAction(fd: FormData) {
   const user = await requireUser("dono");
-  return run(() => resetUserPassword(user, str(fd, "userId"), str(fd, "password")), ["/equipe"], "Senha redefinida. Passe a senha nova para a pessoa.");
+  return run(() => resetUserPassword(user, str(fd, "userId"), str(fd, "password")), ["/equipe"], "Senha redefinida e verificação em duas etapas desligada. Passe a senha nova para a pessoa.");
 }
 
 export async function resetOwnerAccessAction(fd: FormData): Promise<ActionState> {

@@ -11,6 +11,7 @@ import {
   index,
   uniqueIndex,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 const id = () => uuid("id").primaryKey().defaultRandom();
 const tenantId = () =>
@@ -109,7 +110,7 @@ export const products = pgTable(
     active: boolean("active").notNull().default(true),
     createdAt: createdAt(),
   },
-  (t) => [index("products_tenant_idx").on(t.tenantId)],
+  (t) => [index("products_tenant_idx").on(t.tenantId), uniqueIndex("products_tenant_name_uq").on(t.tenantId, sql`lower(${t.name})`)],
 );
 
 export const customers = pgTable(
@@ -122,6 +123,8 @@ export const customers = pgTable(
     address: text("address").notNull().default(""),
     reference: text("reference").notNull().default(""),
     notes: text("notes").notNull().default(""),
+    // LGPD: dados pessoais apagados a pedido do cliente; os pedidos continuam nos relatórios
+    anonymizedAt: timestamp("anonymized_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [index("customers_tenant_idx").on(t.tenantId)],

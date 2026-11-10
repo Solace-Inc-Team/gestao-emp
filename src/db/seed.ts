@@ -31,7 +31,7 @@ export async function seedDemo() {
     .insert(products)
     .values([
       { tenantId: t.id, name: "Gás P13", priceCents: 11000, returnable: true, minStock: 10 },
-      { tenantId: t.id, name: "Água mineral 20L", priceCents: 1400, returnable: true, minStock: 15 },
+      { tenantId: t.id, name: "Galão de água 20L", priceCents: 1400, returnable: true, minStock: 15 },
       { tenantId: t.id, name: "Gás P45", priceCents: 42000, returnable: true, minStock: 2 },
       { tenantId: t.id, name: "Suporte para galão", priceCents: 2500, returnable: false, minStock: 3 },
     ])

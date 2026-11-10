@@ -32,8 +32,9 @@ export default async function Codigo() {
               className="input num h-12 text-center text-xl tracking-[0.3em]"
             />
           </div>
-          <button className="btn btn-primary h-10 w-full">Confirmar</button>
+          <button className="btn btn-primary h-11 w-full">Confirmar</button>
         </ActionForm>
+        <p className="mt-4 text-[13px] text-muted">Perdeu o celular ou trocou de aparelho? Peça ao dono da empresa para redefinir seu acesso (se você é o dono, fale com a Solace). A verificação em duas etapas é desligada e você ativa de novo no aparelho novo.</p>
         <Link href="/login" className="mt-6 inline-block text-[13px] text-muted hover:text-fg">Voltar ao login</Link>
       </div>
     </main>

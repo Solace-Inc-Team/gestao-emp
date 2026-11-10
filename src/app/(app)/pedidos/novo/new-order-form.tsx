@@ -160,8 +160,12 @@ export function NewOrderForm({
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">{p.name}</p>
                       <p className="text-sm text-muted">
-                        <span className="num">{formatBRL(p.priceCents)}</span>, {p.available} cheios na loja
+                        <span className="num">{formatBRL(p.priceCents)}</span>, {p.available} {p.returnable ? "cheios na loja" : "em estoque"}
                       </p>
+                      {/* o pedido passa mesmo assim (a carga pode chegar antes da entrega), mas a pessoa fica sabendo */}
+                      {n > p.available && (
+                        <p className="text-sm font-medium text-warn-fg">Acima do estoque ({p.available})</p>
+                      )}
                     </div>
                     <div className="flex items-center gap-1" role="group" aria-label={`Quantidade de ${p.name}`}>
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, -1)} aria-label="Diminuir">−</button>

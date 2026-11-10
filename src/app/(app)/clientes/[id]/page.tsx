@@ -6,7 +6,7 @@ import { getCustomer, listOrders } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
 import { CustomerFields } from "@/components/customer-fields";
 import { PopoverForm } from "@/components/popover-form";
-import { receivePaymentAction, saveCustomerAction, voidPaymentAction } from "@/app/actions";
+import { anonymizeCustomerAction, receivePaymentAction, saveCustomerAction, voidPaymentAction } from "@/app/actions";
 import { customerStatement } from "@/domain/receivables";
 import { centsToInput } from "@/lib/money";
 import { Empty, Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
@@ -29,7 +29,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
           <span className="text-muted">/</span>
           <h1 className="h1">{c.name}</h1>
         </div>
-        <Link href={`/pedidos/novo?cliente=${c.id}`} className="btn btn-primary">Novo pedido</Link>
+        {!c.anonymizedAt && <Link href={`/pedidos/novo?cliente=${c.id}`} className="btn btn-primary">Novo pedido</Link>}
       </div>
       <div className="grid gap-6 lg:grid-cols-[1fr_1.3fr]">
         <div className="space-y-6">
@@ -98,14 +98,37 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
               </ul>
             </section>
           )}
-          <section className="panel p-4">
-            <h2 className="h2 mb-3">Dados</h2>
-            <ActionForm action={saveCustomerAction} className="grid gap-3 sm:grid-cols-2">
-              <input type="hidden" name="id" value={c.id} />
-              <CustomerFields c={c} />
-              <button className="btn btn-primary sm:col-span-2 sm:justify-self-start">Salvar alterações</button>
-            </ActionForm>
-          </section>
+          {c.anonymizedAt ? (
+            <section className="panel p-4">
+              <h2 className="h2 mb-1">Dados apagados</h2>
+              <p className="text-sm text-muted">
+                Nome, contato e endereço foram apagados em {fmtDateTime(c.anonymizedAt)} a pedido do cliente. Os pedidos continuam nos relatórios.
+              </p>
+            </section>
+          ) : (
+            <>
+              <section className="panel p-4">
+                <h2 className="h2 mb-3">Dados</h2>
+                <ActionForm action={saveCustomerAction} className="grid gap-3 sm:grid-cols-2">
+                  <input type="hidden" name="id" value={c.id} />
+                  <CustomerFields c={c} />
+                  <button className="btn btn-primary sm:col-span-2 sm:justify-self-start">Salvar alterações</button>
+                </ActionForm>
+              </section>
+              {user.role === "dono" && (
+                <section className="panel p-4">
+                  <h2 className="h2 mb-1">Apagar dados pessoais</h2>
+                  <p className="mb-3 text-sm text-muted">
+                    Quando o cliente pedir (LGPD). Apaga nome, telefone, endereço e observações, inclusive do histórico. Os pedidos ficam, sem identificar a pessoa. Não tem volta.
+                  </p>
+                  <ActionForm action={anonymizeCustomerAction} confirm={`Apagar os dados pessoais de ${c.name}? Não tem volta.`}>
+                    <input type="hidden" name="customerId" value={c.id} />
+                    <button className="btn btn-danger">Apagar dados do cliente</button>
+                  </ActionForm>
+                </section>
+              )}
+            </>
+          )}
         </div>
         <section className="panel">
           <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-4 py-3">

@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, gte, lt, inArray, sql, ilike, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lt, inArray, isNull, sql, ilike, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db, scoped } from "@/db";
 import { customers, orderItems, orders, products, shifts, stockMovements, users, auditLog } from "@/db/schema";
@@ -40,6 +40,7 @@ export const listCustomers = scoped(function listCustomers(tenantId: string, q: 
     .where(
       and(
         eq(customers.tenantId, tenantId),
+        isNull(customers.anonymizedAt),
         q.trim()
           ? or(
               ilike(customers.name, term),
