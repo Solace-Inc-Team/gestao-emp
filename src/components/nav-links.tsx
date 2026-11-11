@@ -1,5 +1,6 @@
 "use client";
 
+import { ViewTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -55,10 +56,15 @@ export function NavLinks({ groups }: { groups: NavGroup[] }) {
                 key={l.href}
                 href={l.href}
                 aria-current={on ? "page" : undefined}
-                className={`flex h-11 shrink-0 items-center gap-2.5 lg:h-8 rounded-md px-2 text-[13px] font-medium transition-colors ${
-                  on ? "bg-subtle text-fg" : "text-muted hover:bg-subtle/70 hover:text-fg"
+                className={`relative isolate flex h-11 shrink-0 items-center gap-2.5 lg:h-8 rounded-md px-2 text-[13px] font-medium transition-colors ${
+                  on ? "text-fg" : "text-muted hover:bg-subtle/70 hover:text-fg"
                 }`}
               >
+                {on && (
+                  <ViewTransition name="nav-pill" share="nav-pill">
+                    <span aria-hidden="true" className="absolute inset-0 -z-10 rounded-md bg-subtle" />
+                  </ViewTransition>
+                )}
                 {Icon && <Icon size={16} strokeWidth={1.75} aria-hidden="true" />}
                 {l.label}
               </Link>

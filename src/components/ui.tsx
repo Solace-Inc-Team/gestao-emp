@@ -13,7 +13,7 @@ export function StatusBadge({ status }: { status: keyof typeof statusStyle }) {
   const [label, dot] = statusStyle[status];
   return (
     <span className="inline-flex items-center gap-1.5 rounded-full border border-line px-2 py-0.5 text-xs font-medium whitespace-nowrap">
-      <span aria-hidden="true" className={`size-1.5 rounded-full ${dot}`} />
+      <span aria-hidden="true" className={`size-1.5 rounded-full ${dot} ${status === "aberto" || status === "em_rota" ? "pulse-dot" : ""}`} />
       <span className={status === "cancelado" || status === "estornado" ? "text-muted" : ""}>{label}</span>
     </span>
   );

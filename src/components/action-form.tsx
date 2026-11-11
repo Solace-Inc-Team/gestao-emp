@@ -42,11 +42,15 @@ export function ActionForm({
         if (confirm && !window.confirm(confirm)) return;
         const form = e.currentTarget;
         const fd = new FormData(form);
+        // o botão que enviou mostra que está esperando e depois o ✓ (estilos em globals.css)
+        const button = (e.nativeEvent as SubmitEvent).submitter;
+        button?.setAttribute("data-state", "loading");
         start(async () => {
           let r: ActionState;
           try {
             r = await action(fd);
           } catch (e) {
+            button?.removeAttribute("data-state");
             // sem sinal o fetch da ação falha: mantém a tela e o que foi digitado em vez de cair na página de erro
             if (e instanceof TypeError || !navigator.onLine) {
               setError("Sem internet. Tente de novo quando o sinal voltar.");
@@ -55,7 +59,12 @@ export function ActionForm({
             throw e;
           }
           setError(r?.error);
-          if (r?.error) return;
+          if (r?.error) {
+            button?.removeAttribute("data-state");
+            return;
+          }
+          button?.setAttribute("data-state", "done");
+          setTimeout(() => button?.removeAttribute("data-state"), 1200);
           // o aviso fica fora do form: muitas ações trocam a tela e o form some junto
           if (r?.ok) toast(r.ok);
           const menu = form.closest("details");
@@ -83,29 +92,45 @@ export function ActionForm({
 }
 
 /** Mostra os avisos de sucesso das ações. Fica no layout raiz. */
+type Toast = { id: number; message: string; leaving?: boolean };
+
 export function Toaster() {
-  const [current, setCurrent] = useState<{ id: number; message: string }>();
+  const [toasts, setToasts] = useState<Toast[]>([]);
   useEffect(() => {
-    const show = (e: Event) => setCurrent({ id: Date.now(), message: (e as CustomEvent<string>).detail });
+    let seq = 0;
+    const timers = new Set<ReturnType<typeof setTimeout>>();
+    const later = (ms: number, fn: () => void) => {
+      const t = setTimeout(() => {
+        timers.delete(t);
+        fn();
+      }, ms);
+      timers.add(t);
+    };
+    const show = (e: Event) => {
+      const id = ++seq;
+      setToasts((list) => [...list.slice(-2), { id, message: (e as CustomEvent<string>).detail }]);
+      // marca a saída, espera a animação e só então tira da lista
+      later(3500, () => setToasts((list) => list.map((t) => (t.id === id ? { ...t, leaving: true } : t))));
+      later(3700, () => setToasts((list) => list.filter((t) => t.id !== id)));
+    };
     window.addEventListener(TOAST_EVENT, show);
-    return () => window.removeEventListener(TOAST_EVENT, show);
+    return () => {
+      window.removeEventListener(TOAST_EVENT, show);
+      timers.forEach(clearTimeout);
+    };
   }, []);
-  useEffect(() => {
-    if (!current) return;
-    const t = setTimeout(() => setCurrent(undefined), 3500);
-    return () => clearTimeout(t);
-  }, [current]);
   return (
-    <div role="status" aria-live="polite" className="fixed right-4 bottom-4 z-50">
-      {current && (
+    <div role="status" aria-live="polite" className="fixed right-4 bottom-4 z-50 flex flex-col items-end gap-2">
+      {toasts.map((current) => (
         <p
           key={current.id}
-          className="flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-3 text-[13px] font-medium shadow-[0_8px_30px_rgb(0_0_0/0.12)]"
+          data-leaving={current.leaving || undefined}
+          className="toast flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-3 text-[13px] font-medium shadow-[0_8px_30px_rgb(0_0_0/0.12)]"
         >
           <CircleCheck size={16} strokeWidth={2} className="text-ok" aria-hidden="true" />
           {current.message}
         </p>
-      )}
+      ))}
     </div>
   );
 }

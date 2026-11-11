@@ -48,7 +48,7 @@ export default async function Entregas() {
           {queue.length ? (
             <ul>
               {queue.map((o) => (
-                <li key={o.id} className="border-b border-line px-4 py-3 last:border-0">
+                <li key={o.id} className={`border-b border-line px-4 py-3 last:border-0 ${minutesSince(o.createdAt) < 1 ? "row-new" : ""}`}>
                   <div className="flex flex-wrap items-baseline justify-between gap-x-3">
                     <Link href={`/pedidos/${o.id}`} className="font-semibold hover:text-accent">
                       <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
@@ -100,7 +100,7 @@ export default async function Entregas() {
                     <span className="text-muted">{mine.length ? `${mine.length} em rota` : "livre"}</span>
                   </p>
                   {mine.map((o) => (
-                    <div key={o.id} className="flex flex-wrap items-baseline justify-between gap-x-3 px-4 py-2.5">
+                    <div key={o.id} className={`flex flex-wrap items-baseline justify-between gap-x-3 px-4 py-2.5 ${minutesSince(o.dispatchedAt) < 1 ? "row-new" : ""}`}>
                       <Link href={`/pedidos/${o.id}`} className="min-w-0 hover:text-accent">
                         <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
                         <span className="block text-sm text-muted">{o.customerAddress}</span>

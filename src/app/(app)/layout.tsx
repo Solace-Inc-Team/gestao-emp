@@ -6,6 +6,7 @@ import { logout } from "@/app/actions";
 import { Logo } from "@/components/logo";
 import { NavLinks, type NavGroup } from "@/components/nav-links";
 import { roleLabel } from "@/components/ui";
+import { PageTransition } from "@/components/page-transition";
 
 const initials = (name: string) =>
   name
@@ -82,7 +83,9 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </form>
         </div>
       </aside>
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10 lg:py-10">{children}</main>
+      <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10 lg:py-10">
+        <PageTransition>{children}</PageTransition>
+      </main>
     </div>
   );
 }

@@ -32,7 +32,7 @@ export function PopoverForm({
       <ActionForm
         action={action}
         confirm={confirm}
-        className={`absolute ${align === "left" ? "left-0" : "right-0"} z-10 mt-2 flex w-64 flex-col gap-2 rounded-lg border border-line bg-surface p-3 text-left shadow-[0_8px_30px_rgb(0_0_0/0.12)]`}
+        className={`popover ${align === "left" ? "popover-left left-0" : "right-0"} absolute z-10 mt-2 flex w-64 flex-col gap-2 rounded-lg border border-line bg-surface p-3 text-left shadow-[0_8px_30px_rgb(0_0_0/0.12)]`}
       >
         {children}
         <button className={`btn ${danger ? "btn-danger" : "btn-primary"}`}>{submit}</button>

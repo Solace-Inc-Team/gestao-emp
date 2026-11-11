@@ -6,6 +6,9 @@ import { Money, PageHeader, SiteBadge, StatusBadge, fmtDateTime, paymentLabel } 
 
 export const metadata = { title: "Pedidos" };
 
+// pedido lançado há menos de um minuto acende na lista
+const isNew = (d: Date) => Date.now() - d.getTime() < 60_000;
+
 const tabs = [
   ["", "Todos"],
   ["aberto", "Aguardando"],
@@ -88,7 +91,7 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
             </thead>
             <tbody>
               {orders.map((o) => (
-                <tr key={o.id}>
+                <tr key={o.id} className={isNew(o.createdAt) ? "row-new" : undefined}>
                   <td className="num text-muted">
                     <Link href={`/pedidos/${o.id}`} className="hover:text-fg">#{o.number}</Link>
                   </td>
