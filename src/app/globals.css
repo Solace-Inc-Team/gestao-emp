@@ -379,6 +379,17 @@ details[open] > :not(summary) {
   animation-name: via-blur;
 }
 
+/* entregador: cartão entregue sai pela direita */
+::view-transition-old(.slide-out) {
+  animation: var(--dur-slow) var(--ease-out) both slide-out;
+}
+
+/* tempo para desfazer a entrega, encolhendo até zero */
+.undo-bar {
+  transform-origin: left;
+  animation: undo linear both;
+}
+
 /* marcador do item ativo no menu desliza até o próximo */
 ::view-transition-group(.nav-pill) {
   animation-duration: var(--dur-slow);
@@ -435,6 +446,17 @@ details[open] > :not(summary) {
 @keyframes via-blur {
   40% {
     filter: blur(2px);
+  }
+}
+@keyframes slide-out {
+  to {
+    opacity: 0;
+    translate: calc(var(--rise) * 12) 0;
+  }
+}
+@keyframes undo {
+  to {
+    scale: 0 1;
   }
 }
 @keyframes fade-in {

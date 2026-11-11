@@ -7,6 +7,13 @@ import { toast } from "@/components/action-form";
 const WAIT = 5;
 const QUEUE = "deposito:entregas-a-enviar";
 
+// toque curto no Android (o iPhone ignora): confirma no bolso sem olhar a tela
+const buzz = (pattern: number | number[]) => {
+  try {
+    navigator.vibrate?.(pattern);
+  } catch {}
+};
+
 // entregas confirmadas sem internet ficam guardadas no aparelho até a conexão voltar
 const queued = (): string[] => {
   try {
@@ -39,7 +46,10 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
         setQueued(queued().filter((id) => id !== orderId));
         setWaitingNetwork(false);
         setError(r?.error);
-        if (r?.ok) toast(r.ok);
+        if (r?.ok) {
+          buzz([12, 60, 12]);
+          toast(r.ok);
+        }
       } catch {
         // sem resposta do servidor: guarda e tenta de novo. Repetir é seguro, o servidor não confirma duas vezes
         setQueued([...new Set([...queued(), orderId])]);
@@ -87,18 +97,24 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
 
   if (waitingNetwork)
     return (
-      <p role="status" className="rounded-lg bg-warn-soft px-3 py-3 text-[15px] text-warn-fg">
+      <p role="status" className="enter rounded-lg bg-warn-soft px-3 py-3 text-[15px] text-warn-fg">
         Sem internet. A entrega está guardada neste celular e será confirmada sozinha quando a conexão voltar.
       </p>
     );
 
   if (left !== null && left > 0)
     return (
-      <div className="flex items-center gap-3" role="status">
-        <p className="flex-1 text-[15px]">Confirmando em {left}s…</p>
-        <button type="button" className="btn h-12 px-5 text-[15px]" onClick={() => setLeft(null)}>
-          Desfazer
-        </button>
+      <div className="enter" role="status">
+        <div className="flex items-center gap-3">
+          <p className="num flex-1 text-[15px]">Confirmando em {left}s…</p>
+          <button type="button" className="btn h-12 px-5 text-[15px]" onClick={() => setLeft(null)}>
+            Desfazer
+          </button>
+        </div>
+        {/* o tempo que resta para desfazer, encolhendo */}
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-subtle" aria-hidden="true">
+          <div className="undo-bar h-full rounded-full bg-fg" style={{ animationDuration: `${WAIT}s` }} />
+        </div>
       </div>
     );
 
@@ -109,6 +125,7 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
         disabled={pending || left === 0}
         onClick={() => {
           setError(undefined);
+          buzz(10);
           setLeft(WAIT);
         }}
         className="btn btn-primary deliver-btn h-12 w-full text-[15px]"

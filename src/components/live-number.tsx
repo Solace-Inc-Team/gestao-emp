@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import NumberFlow from "@number-flow/react";
+import { formatBRL } from "@/lib/money";
 
 const money = { style: "currency", currency: "BRL" } as const;
 
@@ -28,12 +29,11 @@ export function LiveNumber({
     return () => cancelAnimationFrame(id);
   }, [ready]);
   const shown = ready ? value : 0;
+  // o leitor de tela lê dígito por dígito o que está rolando; ele recebe só o valor final, em texto comum
   return (
-    <NumberFlow
-      value={cents ? shown / 100 : shown}
-      locales="pt-BR"
-      format={cents ? money : undefined}
-      className={`num ${className}`}
-    />
+    <span className={`inline-block ${className}`}>
+      <NumberFlow aria-hidden="true" value={cents ? shown / 100 : shown} locales="pt-BR" format={cents ? money : undefined} className="num" />
+      <span className="sr-only">{cents ? formatBRL(value) : value.toLocaleString("pt-BR")}</span>
+    </span>
   );
 }
