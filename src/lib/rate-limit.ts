@@ -15,6 +15,19 @@ export async function isBlocked(key: string, max = MAX_FAILURES) {
   return n >= max;
 }
 
+/**
+ * Registra a tentativa e diz se ela passou do limite. Registrar ANTES de conferir fecha a brecha
+ * de várias requisições simultâneas passarem juntas pela checagem.
+ */
+export async function attempt(key: string, max = MAX_FAILURES) {
+  await recordFailure(key);
+  const [{ n }] = await db
+    .select({ n: count() })
+    .from(loginAttempts)
+    .where(and(eq(loginAttempts.key, key), gte(loginAttempts.createdAt, new Date(Date.now() - WINDOW_MS))));
+  return n > max;
+}
+
 /** Limite geral por IP, somando todos os e-mails tentados dali. */
 export const IP_MAX_FAILURES = 30;
 

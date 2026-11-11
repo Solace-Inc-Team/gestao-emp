@@ -527,6 +527,9 @@ test("pedido: desconto com limite, pagamento misto, entrega parcial, ocorrência
   assert.equal(await held(d1.id), 2);
   // no acerto, só a parte em dinheiro é cobrada do entregador
   assert.equal((await m.q.getShift(A.t.id, s1.id))!.expected, 10000);
+  // e o fechamento usa a mesma conta da tela: contar menos que isso é falta, não acerto certo
+  await assert.rejects(m.shifts.closeShift(A.ctx, s1.id, 5000, ""), /Há diferença no caixa/);
+  assert.equal((await m.shifts.closeShift(A.ctx, s1.id, 10000, "")).differenceCents, 0);
 });
 
 test("cliente: endereço extra vai para o pedido e some na anonimização", async () => {

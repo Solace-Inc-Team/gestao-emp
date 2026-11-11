@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 import { db, tenantTransaction } from "@/db";
 import { users, tenants, sessions } from "@/db/schema";
 import { getUser, pendingTerms, requireUser, requireAdmin, createSession, destroySession, getPendingMfa, completeMfa } from "@/lib/auth";
-import { isBlocked, recordFailure, clearFailures, BLOCKED_MESSAGE, IP_MAX_FAILURES } from "@/lib/rate-limit";
+import { attempt, isBlocked, recordFailure, clearFailures, BLOCKED_MESSAGE, IP_MAX_FAILURES } from "@/lib/rate-limit";
 import { newTotpSecret, verifyTotp } from "@/lib/totp";
 import { hashPassword, verifyPassword } from "@/lib/password";
 import { DomainError } from "@/lib/ctx";
@@ -51,21 +51,24 @@ function money(fd: FormData, k: string, required = true): number | null {
  */
 async function confirmPassword(user: { userId: string }, fd: FormData) {
   const key = `senha:${user.userId}`;
-  if (await isBlocked(key)) throw new DomainError(BLOCKED_MESSAGE);
+  if (await attempt(key)) throw new DomainError(BLOCKED_MESSAGE);
   const [u] = await db.select({ hash: users.passwordHash }).from(users).where(eq(users.id, user.userId));
-  if (!u || !(await verifyPassword(str(fd, "confirmPassword"), u.hash))) {
-    await recordFailure(key);
-    throw new DomainError("Senha incorreta. A ação não foi feita.");
-  }
+  if (!u || !(await verifyPassword(str(fd, "confirmPassword"), u.hash))) throw new DomainError("Senha incorreta. A ação não foi feita.");
   await clearFailures(key);
 }
+
+// regra sem mensagem própria cairia no texto padrão da biblioteca, em inglês
+const zodMessage = (e: z.ZodError) => {
+  const m = e.issues[0]?.message;
+  return m && !/^(Too |Invalid |Unrecognized |Expected )/i.test(m) ? m : "Dados inválidos. Confira os campos e tente de novo.";
+};
 
 async function run(fn: () => Promise<unknown>, paths: string[], ok?: string): Promise<ActionState> {
   try {
     await fn();
   } catch (e) {
     if (e instanceof DomainError) return { error: e.message };
-    if (e instanceof z.ZodError) return { error: e.issues[0]?.message ?? "Dados inválidos." };
+    if (e instanceof z.ZodError) return { error: zodMessage(e) };
     // id mal formado vindo do formulário: o Postgres recusa o uuid
     const code = (e as { cause?: { code?: string } }).cause?.code;
     if (code === "22P02") return { error: "Registro não encontrado. Recarregue a página." };
@@ -82,7 +85,7 @@ export async function login(fd: FormData): Promise<ActionState> {
   const ip = await clientIp();
   const key = `login:${email}:${ip}`;
   const ipKey = `ip:${ip}`;
-  if ((await isBlocked(key)) || (await isBlocked(ipKey, IP_MAX_FAILURES))) return { error: BLOCKED_MESSAGE };
+  if ((await attempt(key)) || (await isBlocked(ipKey, IP_MAX_FAILURES))) return { error: BLOCKED_MESSAGE };
   const [u] = await db
     .select({ user: users, tenantActive: tenants.active })
     .from(users)
@@ -92,7 +95,6 @@ export async function login(fd: FormData): Promise<ActionState> {
   const passwordOk = await verifyPassword(password, u?.user.passwordHash ?? (await dummyHash));
   // mesma mensagem nos dois casos pra não entregar quais e-mails existem
   if (!u || !u.user.active || !passwordOk) {
-    await recordFailure(key);
     await recordFailure(ipKey);
     return { error: "E-mail ou senha incorretos." };
   }
@@ -116,11 +118,8 @@ export async function verifyMfaAction(fd: FormData): Promise<ActionState> {
   const pending = await getPendingMfa();
   if (!pending?.secret) redirect("/login");
   const key = `totp:${pending.userId}`;
-  if (await isBlocked(key)) return { error: BLOCKED_MESSAGE };
-  if (!verifyTotp(pending.secret, str(fd, "code"))) {
-    await recordFailure(key);
-    return { error: "Código inválido. Confira o app autenticador e tente de novo." };
-  }
+  if (await attempt(key)) return { error: BLOCKED_MESSAGE };
+  if (!verifyTotp(pending.secret, str(fd, "code"))) return { error: "Código inválido. Confira o app autenticador e tente de novo." };
   await clearFailures(key);
   await completeMfa(pending.sessionId, pending.userId);
   redirect(homeFor(pending));
@@ -228,9 +227,8 @@ export async function portalOrderAction(slug: string, fd: FormData): Promise<Por
   // campo escondido que só robô preenche
   if (str(fd, "site")) return { error: "Não foi possível enviar o pedido." };
   const key = `portal:${await clientIp()}`;
-  if (await isBlocked(key, 5)) return { error: "Muitos pedidos seguidos deste aparelho. Ligue para a loja ou tente em 15 minutos." };
   // conta antes de gravar: envios simultâneos e tentativas com erro também gastam o limite
-  await recordFailure(key);
+  if (await attempt(key, 5)) return { error: "Muitos pedidos seguidos deste aparelho. Ligue para a loja ou tente em 15 minutos." };
   try {
     const order = await placePortalOrder(
       t.id,
@@ -249,7 +247,7 @@ export async function portalOrderAction(slug: string, fd: FormData): Promise<Por
     return { number: order.number, totalCents: order.totalCents, pix: order.paymentMethod === "pix" ? orderPix(t, order) : null };
   } catch (e) {
     if (e instanceof DomainError) return { error: e.message };
-    if (e instanceof z.ZodError) return { error: e.issues[0]?.message ?? "Confira os dados do pedido." };
+    if (e instanceof z.ZodError) return { error: zodMessage(e) };
     if (e instanceof SyntaxError) return { error: "Escolha ao menos um produto." };
     throw e;
   }

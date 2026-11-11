@@ -33,7 +33,8 @@ async function lockOpenShift(tx: Tx, ctx: Ctx, shiftId: string) {
 
 const shiftOrdersOf = (tx: Tx, shiftId: string) =>
   tx
-    .select({ status: orders.status, paymentMethod: orders.paymentMethod, totalCents: orders.totalCents })
+    // cashPartCents junto: a parte em dinheiro de um pedido no Pix ou cartão também é dinheiro do entregador
+    .select({ status: orders.status, paymentMethod: orders.paymentMethod, totalCents: orders.totalCents, cashPartCents: orders.cashPartCents })
     .from(orders)
     .where(eq(orders.shiftId, shiftId));
 
