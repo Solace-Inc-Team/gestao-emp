@@ -3,3 +3,7 @@ node_modules
 .env*
 !.env.example
 .git
+.next-e2e
+e2e
+test-results
+playwright.config.ts

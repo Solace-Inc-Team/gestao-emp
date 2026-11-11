@@ -11,6 +11,8 @@ const securityHeaders = [
 
 const nextConfig: NextConfig = {
   output: "standalone",
+  // os testes de ponta a ponta sobem um segundo servidor em outra pasta
+  distDir: process.env.NEXT_DIST_DIR || ".next",
   agentRules: false,
   poweredByHeader: false,
   async headers() {
