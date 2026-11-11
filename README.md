@@ -1,112 +1,105 @@
 # Depósito
 
-Sistema de gestão para distribuidoras de água e gás. Cobre o caminho inteiro de uma venda: o pedido que
-chega pelo WhatsApp ou pelo site, a saída com o entregador, a entrega, o dinheiro que precisa voltar ao
-caixa e o botijão vazio que precisa voltar ao estoque.
-
-Feito pela [Solace](https://github.com/Solace-Inc-Team) para uma revenda real e desenhado desde o início
-para atender várias empresas no mesmo banco, com os dados de cada uma isolados.
+Gestão para distribuidoras de água e gás: pedidos, entregas, estoque de botijões e galões (cheios e
+vazios) e o acerto de caixa de cada entregador. Começou para uma revenda e já atende várias empresas no
+mesmo banco, cada uma enxergando só os próprios dados.
 
 ![Painel do dia](docs/telas/painel.png)
 
-## O problema
+## Pra que serve
 
-Numa revenda de gás e água, o pedido chega por mensagem, o entregador sai com a mercadoria, recebe em
-dinheiro e acerta no fim do dia. Quando o valor não fecha, ninguém sabe dizer se faltou uma entrega, um
-troco ou um botijão. O sistema existe para que cada real e cada vasilhame tenham origem, responsável e
-horário, sem depender de caderno.
+Numa revenda o pedido chega pelo WhatsApp, o entregador sai com o gás, recebe em dinheiro e acerta no fim
+do dia. Quando o dinheiro não bate, ninguém sabe se faltou uma entrega, um troco ou um botijão. Aqui
+cada venda, cada real e cada vasilhame ficam registrados com quem fez e quando.
 
-## O que ele faz
+## Telas
 
-**Pedidos e entregas**
+### Pedidos e entregas
 
-- lançamento rápido com busca de cliente, atalhos de teclado e preço sempre vindo do cadastro;
-- fila de entregas com o que espera, o que está com cada entregador e o que atrasou;
-- entrega parcial (o total é refeito), tentativa sem sucesso (volta para a fila com o motivo) e troca de entregador;
-- desconto com motivo e limite por perfil, pagamento misto, vários endereços por cliente;
-- portal público por empresa, onde o próprio cliente faz o pedido e recebe o QR do Pix.
+O atendente lança o pedido buscando o cliente pelo nome ou telefone (dá pra fazer tudo pelo teclado, `/`
+busca e Ctrl+Enter lança). O preço vem sempre do cadastro. Na tela de entregas aparece o que está
+esperando, o que está com cada entregador e o que atrasou.
 
-| Novo pedido | Fila de entregas |
+Se o cliente só quis parte do pedido, o entregador registra a entrega parcial e o total é refeito. Se
+não achou ninguém, o pedido volta pra fila com o motivo. Também tem desconto com limite por perfil,
+pagamento misto (parte em dinheiro, parte no Pix) e mais de um endereço por cliente.
+
+| Novo pedido | Entregas |
 |---|---|
 | ![Novo pedido](docs/telas/novo-pedido.png) | ![Entregas](docs/telas/entregas.png) |
 
-**Caixa por entregador**
+### Caixa
 
-- turno com troco inicial, repasses durante o dia e gastos autorizados na rua;
-- acerto conferido pelo caixa ou pelo dono, nunca por quem entregou;
-- diferença não some: fica pendente até o dono registrar o que foi feito dela;
-- Pix só conta como recebido depois de conferido no extrato.
+Cada entregador abre o turno com um troco. Durante o dia ele pode deixar parte do dinheiro no caixa ou
+pagar um gasto autorizado (gasolina, por exemplo). No fim, o caixa ou o dono conta o dinheiro e fecha o
+acerto; o próprio entregador não consegue. Se faltar ou sobrar, a diferença fica pendente até o dono
+dizer o que foi feito dela. Pix só conta como recebido depois que alguém confere no extrato.
 
 ![Acerto de caixa](docs/telas/acerto.png)
 
-**Estoque de retornáveis**
+### Estoque
 
-- cheios, vazios e avariados, na loja e com cada entregador;
-- pedidos aguardando já reservam o que está na loja;
-- inventário de tudo de uma vez, em que só as diferenças viram ajuste;
-- fornecedores, e compra que já entra nas despesas.
+Cheios, vazios e avariados, na loja e com cada entregador. Pedido que ainda não saiu já segura o
+botijão na loja. O inventário é feito de uma vez e só as diferenças viram ajuste.
 
 ![Estoque no modo escuro](docs/telas/estoque.png)
 
-**No celular**
+### Celular
 
-O entregador vê só as entregas dele, quanto deve ter em dinheiro e um botão grande para confirmar, com
-cinco segundos para desfazer. Sem sinal, a confirmação fica guardada no aparelho e segue sozinha depois.
+O entregador vê só as entregas dele, quanto deve ter em dinheiro e um botão grande pra confirmar, com
+5 segundos pra desfazer. Sem internet a confirmação fica guardada e vai sozinha quando o sinal volta.
+O cliente também pode pedir pelo link da loja e já recebe o QR do Pix.
 
-| Entregador | Portal do cliente |
+| Entregador | Pedido pelo site |
 |---|---|
-| <img src="docs/telas/entregador.png" width="300" alt="Tela do entregador"> | <img src="docs/telas/portal.png" width="300" alt="Portal de pedidos"> |
+| <img src="docs/telas/entregador.png" width="300" alt="Tela do entregador"> | <img src="docs/telas/portal.png" width="300" alt="Pedido pelo site"> |
 
-**Gestão**
-
-Fiado com extrato e baixa, despesas, estorno de venda, relatórios por dia, entregador e produto,
-fechamento do dia para imprimir, exportação de todos os dados em planilhas e um painel da Solace para
-criar, suspender e excluir empresas.
+Além disso: fiado com extrato, despesas, estorno de venda, relatórios por dia, entregador e produto,
+fechamento do dia pra imprimir, exportação dos dados em planilha e um painel da Solace pra criar,
+suspender e excluir empresas.
 
 ## Perfis
 
-| Perfil | Faz | Não faz |
-|---|---|---|
-| Dono | Tudo, mais preços, equipe, estornos, inventário e resolução de diferenças | |
-| Caixa | O que o atendente faz, mais repasses, acertos e conferência de Pix | Resolver diferença, estornar |
-| Atendente | Pedidos, clientes, entregas, entrada de estoque | Fechar acerto, dar desconto acima do limite |
-| Entregador | Ver e confirmar as próprias entregas | Mudar preço, ver o caixa, acertar o próprio turno |
+| Perfil | O que faz |
+|---|---|
+| Dono | Tudo: preços, equipe, estornos, inventário, configurações |
+| Caixa | Pedidos e entregas, mais repasses, acertos e conferência de Pix |
+| Atendente | Pedidos, clientes, entregas e entrada de estoque |
+| Entregador | Só as próprias entregas, pelo celular |
 
-## Como é por dentro
+## Por dentro
 
-Next.js 16 (App Router, server actions), TypeScript, PostgreSQL com Drizzle e Tailwind. É um monólito:
-as regras ficam em `src/domain`, as telas chamam server actions e as actions chamam o domínio.
+Next.js 16 com server actions, TypeScript, PostgreSQL com Drizzle e Tailwind. As regras ficam em
+`src/domain`; as telas chamam as actions de `src/app/actions.ts`, que conferem perfil e entrada e
+chamam o domínio.
 
-Decisões que valem a leitura do código:
+Algumas escolhas:
 
-- **Isolamento entre empresas em duas camadas.** Toda consulta filtra por empresa e, por baixo, o
-  Postgres aplica Row-Level Security: cada requisição roda numa transação com um papel sem privilégios
-  e a empresa fixada (`withTenant`, em [src/db/index.ts](src/db/index.ts)). Uma consulta que esqueça o
-  filtro continua isolada, e há um teste que prova isso.
-- **Saldo é soma de movimentos.** Estoque e caixa não têm campo de saldo para editar. O que existe são
-  lançamentos que nunca são apagados; erro se corrige com estorno, e o histórico fica.
-- **Dinheiro em centavos inteiros**, do banco à tela.
-- **Concorrência tratada no banco.** Dois pedidos ao mesmo tempo não pegam o mesmo número nem o mesmo
-  botijão, e um acerto não fecha no meio de um despacho (`SELECT ... FOR UPDATE` nos pontos certos).
-- **Ações sem volta pedem a senha de novo:** estorno, ajuste de estoque, inventário e exclusão de dados pessoais.
-- **Privacidade.** O dono exporta tudo, apaga os dados pessoais de um cliente a pedido dele, e a empresa
-  que sai tem os dados excluídos com registro. Erros do servidor são guardados sem os valores das consultas.
-- **Sem serviços externos obrigatórios.** Sessão, 2FA (TOTP) e o código Pix copia e cola são implementados
-  aqui, com `node:crypto`.
+- Isolamento entre empresas em duas camadas. Toda consulta filtra pela empresa e, por baixo, o Postgres
+  aplica Row-Level Security: cada requisição roda numa transação com um papel sem privilégios e a empresa
+  fixada (`withTenant` em [src/db/index.ts](src/db/index.ts)). Se alguém esquecer o filtro, continua
+  isolado. Tem teste pra isso.
+- Estoque e caixa não têm campo de saldo. O saldo é a soma dos lançamentos, que nunca são apagados; erro
+  se corrige com estorno.
+- Dinheiro sempre em centavos inteiros.
+- Concorrência resolvida no banco com `SELECT ... FOR UPDATE`: dois pedidos ao mesmo tempo não pegam o
+  mesmo número nem o último botijão, e um acerto não fecha no meio de um despacho.
+- Estorno, ajuste de estoque, inventário e apagar dados de cliente pedem a senha de novo.
+- Sessão, 2FA e o código Pix são feitos aqui mesmo com `node:crypto`, sem serviço externo.
 
 ```
 src/
   domain/     regras: pedidos, turnos, estoque, fiado, despesas, portal, plataforma
-  app/        telas e server actions ((app) escritório, entregador, pedir, admin)
-  db/         schema, conexão com escopo por empresa, dados de demonstração
-  lib/        cálculo de caixa, Pix, TOTP, CSV, sessão, limite de tentativas
-drizzle/      migrações SQL, aplicadas na subida do servidor
-e2e/          cenários de ponta a ponta
+  app/        telas e server actions
+  db/         schema, conexão por empresa, dados de demonstração
+  lib/        cálculo de caixa, Pix, 2FA, CSV, sessão, limite de tentativas
+drizzle/      migrações, aplicadas quando o servidor sobe
+e2e/          testes no navegador
 ```
 
-## Rodando
+## Rodando local
 
-Precisa só de Node 24. O `npm run dev` sobe junto um Postgres local (`embedded-postgres`, dados em
+Só precisa de Node 24. O `npm run dev` sobe um Postgres junto (`embedded-postgres`, dados em
 `~/.gestao-emp/pg`), sem Docker.
 
 ```bash
@@ -115,8 +108,8 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Com `SEED_DEMO=true` o primeiro start cria a "Distribuidora Fonte Azul", com pedidos, turnos e estoque.
-Todos entram com a senha `demo1234`:
+Com `SEED_DEMO=true` o primeiro start cria a empresa de exemplo "Distribuidora Fonte Azul". A senha de
+todos é `demo1234`:
 
 | Perfil | E-mail |
 |---|---|
@@ -125,36 +118,31 @@ Todos entram com a senha `demo1234`:
 | Caixa | caixa@demo.com |
 | Entregadores | joao@demo.com, carlos@demo.com |
 
-O portal da demo fica em `/pedir/fonte-azul`. Com `ADMIN_EMAIL` e `ADMIN_PASSWORD` definidos, o start
-também cria o acesso ao painel `/admin`. Para zerar o banco local, apague `~/.gestao-emp/pg`.
+O pedido pelo site fica em `/pedir/fonte-azul`. Com `ADMIN_EMAIL` e `ADMIN_PASSWORD` definidos, o start
+cria também o acesso ao `/admin`. Pra zerar o banco, apague `~/.gestao-emp/pg`.
 
 ## Testes
 
 ```bash
 npm test            # cálculo de caixa, Pix, 2FA, CSV
-npm run test:db     # regras com Postgres de verdade: isolamento, caixa, estoque, fiado, portal
-npm run test:e2e    # navegador: pedido até o acerto, fiado, portal e acesso por perfil
+npm run test:db     # regras com Postgres de verdade
+npm run test:e2e    # navegador: pedido até o acerto, fiado, pedido pelo site, acesso por perfil
 ```
 
-`test:db` e `test:e2e` usam o Postgres do `npm run dev` (ou o de `TEST_PG_URL`) e criam bancos próprios,
-sem tocar nos dados de desenvolvimento. Na primeira vez, `npx playwright install chromium`.
+Os dois últimos usam o Postgres do `npm run dev` e criam bancos próprios, sem mexer nos dados locais.
+Na primeira vez rode `npx playwright install chromium`.
 
-## Publicação
+## Deploy
 
-Um `Dockerfile` e um Postgres bastam. O passo a passo para um VPS com Coolify, incluindo backup,
-restauração testada e alertas, está em [DEPLOY.md](DEPLOY.md).
+Um `Dockerfile` e um Postgres. O passo a passo pra VPS com Coolify, com backup e alertas, está no
+[DEPLOY.md](DEPLOY.md).
 
-## O que ainda não tem
+## Falta
 
-- baixa automática de Pix por webhook (hoje a conferência é manual, no extrato);
-- cobrança da assinatura das empresas e filiais;
-- comodato e caução de vasilhame;
-- acompanhamento do pedido pelo cliente no portal;
-- emissão fiscal, que fica com o sistema do contador.
+- baixa automática de Pix (hoje é conferido no extrato)
+- cobrança da assinatura e filiais
+- comodato e caução de vasilhame
+- cliente acompanhar o pedido pelo site
+- dados da empresa em `src/lib/legal.ts` e revisão dos termos por um advogado
 
-Antes de usar com clientes reais, preencha os dados da empresa em `src/lib/legal.ts` e revise os termos
-e a política de privacidade com um advogado.
-
-## Licença
-
-Código proprietário da Solace, publicado para consulta. Sem licença de uso ou redistribuição.
+Uso restrito à Solace.
