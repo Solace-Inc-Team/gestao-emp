@@ -50,7 +50,7 @@ export default function Inicio() {
           <nav className="flex items-center gap-6 text-[13px] text-muted">
             <a href="#como-funciona" className="hidden hover:text-fg sm:inline">Como funciona</a>
             <a href="#recursos" className="hidden hover:text-fg sm:inline">Recursos</a>
-            <Link href="/login" className="btn h-8 px-3 text-[13px]">Entrar</Link>
+            <Link href="/login" className="btn px-3 text-[13px] sm:h-8">Entrar</Link>
           </nav>
         </div>
       </header>
@@ -67,16 +67,16 @@ export default function Inicio() {
               {/* cada palavra entra sozinha; o espaço fica fora para não ser comido pelo inline-block */}
               {titulo.map((w, i) => (
                 <Fragment key={i}>
-                  <span style={atraso(120 + i * 60)} className="hero-word">
+                  <span style={atraso(60 + i * 35)} className="hero-word">
                     {w}
                   </span>{" "}
                 </Fragment>
               ))}
             </h1>
-            <p style={atraso(560)} className="hero-in mx-auto mt-5 max-w-[34rem] text-[16px] leading-relaxed text-muted sm:text-[17px]">
+            <p style={atraso(300)} className="hero-in mx-auto mt-5 max-w-[34rem] text-[16px] leading-relaxed text-muted sm:text-[17px]">
               Pedidos, entregas, botijões cheios e vazios e o dinheiro de cada entregador, registrados com quem fez e quando.
             </p>
-            <div style={atraso(680)} className="hero-in mt-8 flex flex-wrap justify-center gap-3">
+            <div style={atraso(380)} className="hero-in mt-8 flex flex-wrap justify-center gap-3">
               <Link href="/login" className="btn btn-primary h-11 px-5 text-[15px]">
                 Entrar no sistema <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
@@ -84,7 +84,7 @@ export default function Inicio() {
             </div>
           </div>
 
-          <div style={atraso(820)} className="hero-in hero-stage mx-auto mt-16 max-w-6xl px-4 sm:mt-20 sm:px-6">
+          <div style={atraso(480)} className="hero-in hero-stage mx-auto mt-16 max-w-6xl px-4 sm:mt-20 sm:px-6">
             <div className="hero-tilt hero-shot rounded-2xl border border-line bg-surface p-1.5 shadow-[0_30px_80px_-30px_rgb(0_0_0/0.35)] sm:p-2">
               {[
                 { src: painel, cls: "dark:hidden" },
@@ -163,26 +163,29 @@ export default function Inicio() {
                   Cheios, vazios e avariados, na loja e na rua. Saldo é a soma dos lançamentos; erro se corrige com estorno,
                   nunca apagando.
                 </p>
-                <table className="num mt-8 w-full overflow-hidden rounded-xl border border-line bg-bg text-[14px]">
-                  <thead>
-                    <tr className="text-left text-[12px] text-muted">
-                      <th className="px-4 py-2.5 font-medium">Produto</th>
-                      <th className="px-4 py-2.5 text-right font-medium">Cheios</th>
-                      <th className="px-4 py-2.5 text-right font-medium">Vazios</th>
-                      <th className="px-4 py-2.5 text-right font-medium">Na rua</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {estoque.map((e) => (
-                      <tr key={e.p} className="border-t border-line">
-                        <td className="px-4 py-2.5">{e.p}</td>
-                        <td className="px-4 py-2.5 text-right"><LiveNumber value={e.cheio} fromZero="visible" /></td>
-                        <td className="px-4 py-2.5 text-right text-muted"><LiveNumber value={e.vazio} fromZero="visible" /></td>
-                        <td className="px-4 py-2.5 text-right text-muted"><LiveNumber value={e.rua} fromZero="visible" /></td>
+                {/* números simples entrando linha a linha: dez contadores rolando juntos pesam na rolagem de celular fraco */}
+                <InView className="mt-8">
+                  <table className="num w-full overflow-hidden rounded-xl border border-line bg-bg text-[14px]">
+                    <thead>
+                      <tr className="text-left text-[12px] text-muted">
+                        <th className="px-4 py-2.5 font-medium">Produto</th>
+                        <th className="px-4 py-2.5 text-right font-medium">Cheios</th>
+                        <th className="px-4 py-2.5 text-right font-medium">Vazios</th>
+                        <th className="px-4 py-2.5 text-right font-medium">Na rua</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {estoque.map((e, i) => (
+                        <tr key={e.p} style={atraso(i * 140)} className="print border-t border-line">
+                          <td className="px-4 py-2.5">{e.p}</td>
+                          <td className="px-4 py-2.5 text-right">{e.cheio}</td>
+                          <td className="px-4 py-2.5 text-right text-muted">{e.vazio}</td>
+                          <td className="px-4 py-2.5 text-right text-muted">{e.rua}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </InView>
               </article>
 
               <article className="reveal panel overflow-hidden lg:col-span-4">

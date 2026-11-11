@@ -25,12 +25,12 @@ export default async function Painel() {
       <section className="panel mb-6 grid divide-line sm:grid-cols-3 sm:divide-x">
         <div className="p-5">
           <p className="text-muted">Vendido hoje</p>
-          <LiveNumber value={d.revenue} cents fromZero className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
+          <LiveNumber value={d.revenue} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
           <p className="mt-1 text-sm text-muted">{d.deliveredCount} pedidos entregues</p>
         </div>
         <div className="border-t border-line p-5 sm:border-t-0">
           <p className="text-muted">Dinheiro na rua</p>
-          <LiveNumber value={d.cashInStreet} cents fromZero className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
+          <LiveNumber value={d.cashInStreet} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
           <p className="mt-1 text-sm text-muted">
             com {d.openShifts.length} {d.openShifts.length === 1 ? "entregador" : "entregadores"}, a acertar
           </p>
@@ -38,7 +38,7 @@ export default async function Painel() {
         <div className="border-t border-line p-5 sm:border-t-0">
           <p className="text-muted">Fila agora</p>
           <p className="num text-[2rem] leading-tight font-semibold tracking-[-0.03em]">
-            <LiveNumber value={d.pending} fromZero /> <span className="text-xl font-medium text-muted">aguardando</span>
+            <LiveNumber value={d.pending} fromZero="once" /> <span className="text-xl font-medium text-muted">aguardando</span>
           </p>
           <p className="mt-1 text-sm text-muted">{d.inRoute} em rota</p>
         </div>

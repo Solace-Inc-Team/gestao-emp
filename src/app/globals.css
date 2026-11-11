@@ -339,6 +339,12 @@ details[open] > :not(summary) {
   animation-delay: 250ms;
 }
 
+/* quantidade que acabou de mudar */
+.bump {
+  display: inline-block;
+  animation: pop var(--dur-slow) var(--ease-spring);
+}
+
 /* item que entra numa lista curta (resumo do pedido) */
 .enter {
   animation:
@@ -355,12 +361,12 @@ details[open] > :not(summary) {
   animation: none;
 }
 ::view-transition-old(.page) {
-  animation: var(--dur-fast) ease-in both fade-out;
+  animation: 100ms ease-in both fade-out;
 }
 ::view-transition-new(.page) {
   animation:
-    var(--dur) var(--ease-out) var(--dur-fast) both fade-in,
-    var(--dur-slow) var(--ease-out) var(--dur-fast) both rise;
+    180ms var(--ease-out) 40ms both fade-in,
+    240ms var(--ease-out) both rise;
 }
 /* cartão de pedido: entra subindo, sai encolhendo, e muda de coluna deslizando */
 ::view-transition-new(.item-in) {
@@ -372,11 +378,16 @@ details[open] > :not(summary) {
   animation: var(--dur) ease-in both shrink-out;
 }
 ::view-transition-group(.morph) {
-  animation-duration: 420ms;
+  animation-duration: 360ms;
   animation-timing-function: var(--ease-out);
 }
 ::view-transition-image-pair(.morph) {
   animation-name: via-blur;
+}
+/* cartões que só mudam de lugar porque outro saiu: deslizam sem desfoque */
+::view-transition-group(.move) {
+  animation-duration: 300ms;
+  animation-timing-function: var(--ease-out);
 }
 
 /* entregador: cartão entregue sai pela direita */
@@ -390,11 +401,6 @@ details[open] > :not(summary) {
   animation: undo linear both;
 }
 
-/* marcador do item ativo no menu desliza até o próximo */
-::view-transition-group(.nav-pill) {
-  animation-duration: var(--dur-slow);
-  animation-timing-function: var(--ease-out);
-}
 
 @keyframes draw {
   from {
@@ -485,7 +491,10 @@ details[open] > :not(summary) {
   }
   .pulse-dot::after,
   .skeleton,
-  .row-new {
+  .row-new,
+  .check-draw circle,
+  .check-draw path,
+  .bump {
     animation: none;
   }
   .popover,
@@ -495,8 +504,10 @@ details[open] > :not(summary) {
       translate: 0;
     }
   }
-  ::view-transition-group(*) {
-    animation-duration: 0s !important;
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 }
 
@@ -596,10 +607,12 @@ body[data-confirmando] .deliver-btn {
   animation: 1.2s var(--ease-out) 100ms both line-run;
 }
 /* o conteúdo do passo é que entra: o fundo branco fica, senão a grade cinza aparece no buraco */
-[data-inview="false"] .step > *,
-[data-inview="false"] .print,
-[data-inview="false"] .stamp {
-  opacity: 0;
+@media (scripting: enabled) {
+  [data-inview="false"] .step > *,
+  [data-inview="false"] .print,
+  [data-inview="false"] .stamp {
+    opacity: 0;
+  }
 }
 [data-inview="true"] .step > * {
   animation: 600ms var(--ease-out) var(--d, 0ms) both hero-up;
@@ -622,14 +635,23 @@ body[data-confirmando] .deliver-btn {
 }
 
 /* com rolagem: painel inclinado que se endireita, blocos que sobem ao entrar e cabeçalho que ganha fundo */
+/* o fundo do cabeçalho é uma camada pronta que só muda de opacidade: animar o desfoque em si pesa em celular fraco */
 .site-header {
+  isolation: isolate;
+  border-color: transparent;
+}
+.site-header::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 -1px;
+  z-index: -1;
   background: color-mix(in srgb, var(--bg) 80%, transparent);
-  border-color: color-mix(in srgb, var(--line) 70%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
   backdrop-filter: blur(12px);
 }
 @supports (animation-timeline: scroll()) {
-  .site-header {
-    animation: header-solid linear both;
+  .site-header::before {
+    animation: fade-in linear both;
     animation-timeline: scroll();
     animation-range: 0 80px;
   }
@@ -695,13 +717,6 @@ body[data-confirmando] .deliver-btn {
     opacity: 0;
     scale: 1.8;
     rotate: -8deg;
-  }
-}
-@keyframes header-solid {
-  from {
-    background: transparent;
-    border-color: transparent;
-    backdrop-filter: blur(0);
   }
 }
 @keyframes tilt {

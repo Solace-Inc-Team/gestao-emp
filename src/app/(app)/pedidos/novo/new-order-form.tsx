@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useDeferredValue, useEffect, useRef, useState } from "react";
 import { ActionForm } from "@/components/action-form";
 import { createOrderAction } from "@/app/actions";
 import { formatBRL, parseBRL } from "@/lib/money";
@@ -94,6 +94,8 @@ export function NewOrderForm({
   const overLimit = discountLimitPct !== null && discountCents > Math.floor((subtotal * discountLimitPct) / 100);
   // só pra exibir, o total que vale é calculado no servidor
   const total = subtotal + feeCents - discountCents;
+  // o total animado vem num segundo momento: o número do + aparece na hora mesmo em celular fraco
+  const shownTotal = useDeferredValue(total);
   const step = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, Math.min(99, (q[id] ?? 0) + d)) }));
 
   return (
@@ -214,7 +216,8 @@ export function NewOrderForm({
                     </div>
                     <div className="flex items-center gap-1" role="group" aria-label={`Quantidade de ${p.name}`}>
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, -1)} aria-label="Diminuir">−</button>
-                      <LiveNumber value={n} className="w-10 text-center text-2xl font-semibold" />
+                      {/* a chave muda a cada clique e o número dá um pulinho (CSS): mais leve que rolar a cada toque */}
+                      <span key={n} aria-live="polite" className="bump num w-10 text-center text-2xl font-semibold">{n}</span>
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, 1)} aria-label="Aumentar">+</button>
                     </div>
                   </div>
@@ -326,7 +329,7 @@ export function NewOrderForm({
                   return (
                     <li key={i.productId} className="enter flex justify-between gap-2">
                       <span>{i.quantity}× {p.name}</span>
-                      <LiveNumber value={i.quantity * priceOf(p)} cents />
+                      <span className="num">{formatBRL(i.quantity * priceOf(p))}</span>
                     </li>
                   );
                 })}
@@ -340,7 +343,7 @@ export function NewOrderForm({
             )}
             <p className="flex items-baseline justify-between">
               <span className="font-semibold">Total</span>
-              <LiveNumber value={total} cents className="text-4xl font-semibold" />
+              <LiveNumber value={shownTotal} cents className="text-4xl font-semibold" />
             </p>
             <button className="btn btn-primary mt-4 h-12 w-full text-lg" disabled={!items.length}>
               {mode === "balcao" ? "Registrar venda" : "Lançar pedido"}

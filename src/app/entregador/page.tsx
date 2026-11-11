@@ -71,7 +71,7 @@ export default async function Entregador() {
               {details.map((o) =>
                 o ? (
                   // entregue: o cartão sai pela lateral e os de baixo sobem para o lugar
-                  <ViewTransition key={o.id} name={`entrega-${o.id}`} update="morph" exit="slide-out" default="none">
+                  <ViewTransition key={o.id} name={`entrega-${o.id}`} update="move" exit="slide-out" default="none">
                     <li className="panel overflow-hidden">
                       <div className="p-4">
                         <div className="flex items-baseline justify-between gap-2">

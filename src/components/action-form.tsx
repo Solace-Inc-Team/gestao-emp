@@ -108,7 +108,9 @@ export function Toaster() {
     };
     const show = (e: Event) => {
       const id = ++seq;
-      setToasts((list) => [...list.slice(-2), { id, message: (e as CustomEvent<string>).detail }]);
+      const message = (e as CustomEvent<string>).detail;
+      // a mesma mensagem de novo (despachos seguidos) substitui a anterior em vez de empilhar
+      setToasts((list) => [...list.filter((t) => t.message !== message).slice(-2), { id, message }]);
       // marca a saída, espera a animação e só então tira da lista
       later(3500, () => setToasts((list) => list.map((t) => (t.id === id ? { ...t, leaving: true } : t))));
       later(3700, () => setToasts((list) => list.filter((t) => t.id !== id)));
@@ -120,12 +122,12 @@ export function Toaster() {
     };
   }, []);
   return (
-    <div role="status" aria-live="polite" className="fixed right-4 bottom-4 z-50 flex flex-col items-end gap-2">
+    <div role="status" aria-live="polite" className="pointer-events-none fixed right-4 bottom-4 left-4 z-50 flex flex-col items-end gap-2 sm:left-auto">
       {toasts.map((current) => (
         <p
           key={current.id}
           data-leaving={current.leaving || undefined}
-          className="toast flex items-center gap-2 rounded-lg border border-line bg-surface px-4 py-3 text-[13px] font-medium shadow-[0_8px_30px_rgb(0_0_0/0.12)]"
+          className="toast flex max-w-sm items-center gap-2 rounded-lg border border-line bg-surface px-4 py-3 text-[13px] font-medium shadow-[0_8px_30px_rgb(0_0_0/0.12)]"
         >
           <CircleCheck size={16} strokeWidth={2} className="text-ok" aria-hidden="true" />
           {current.message}

@@ -6,14 +6,13 @@ import { getSettings, listDrivers, listOrders, listShifts } from "@/domain/queri
 import { ActionForm } from "@/components/action-form";
 import { dispatchAction } from "@/app/actions";
 import { Empty, Money, PageHeader, SiteBadge, paymentLabel } from "@/components/ui";
-import { LiveNumber } from "@/components/live-number";
 
 export const metadata = { title: "Entregas" };
 
 const minutesSince = (d: Date | null) => (d ? Math.floor((Date.now() - d.getTime()) / 60000) : 0);
 // o mesmo nome na fila e na rua: quando o pedido sai, o cartão desliza de uma coluna para a outra
 const Card = ({ id, children }: { id: string; children: React.ReactElement }) => (
-  <ViewTransition name={`pedido-${id}`} share="morph" update="morph" enter="item-in" exit="item-out" default="none">
+  <ViewTransition name={`pedido-${id}`} share="morph" update="move" enter="item-in" exit="item-out" default="none">
     {children}
   </ViewTransition>
 );
@@ -52,7 +51,7 @@ export default async function Entregas() {
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="panel">
           <h2 className="h2 border-b border-line px-4 py-3">
-            Aguardando saída <span className="font-normal text-muted">(<LiveNumber value={queue.length} />)</span>
+            Aguardando saída <span className="font-normal text-muted">({queue.length})</span>
           </h2>
           {queue.length ? (
             <ul>
@@ -99,7 +98,7 @@ export default async function Entregas() {
 
         <section className="panel">
           <h2 className="h2 border-b border-line px-4 py-3">
-            Na rua <span className="font-normal text-muted">(<LiveNumber value={inRoute.length} />)</span>
+            Na rua <span className="font-normal text-muted">({inRoute.length})</span>
           </h2>
           {onShift.length ? (
             onShift.map((d) => {
