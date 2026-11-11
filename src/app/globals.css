@@ -362,6 +362,23 @@ details[open] > :not(summary) {
     var(--dur) var(--ease-out) var(--dur-fast) both fade-in,
     var(--dur-slow) var(--ease-out) var(--dur-fast) both rise;
 }
+/* cartão de pedido: entra subindo, sai encolhendo, e muda de coluna deslizando */
+::view-transition-new(.item-in) {
+  animation:
+    var(--dur) var(--ease-out) both fade-in,
+    var(--dur-slow) var(--ease-out) both rise;
+}
+::view-transition-old(.item-out) {
+  animation: var(--dur) ease-in both shrink-out;
+}
+::view-transition-group(.morph) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-out);
+}
+::view-transition-image-pair(.morph) {
+  animation-name: via-blur;
+}
+
 /* marcador do item ativo no menu desliza até o próximo */
 ::view-transition-group(.nav-pill) {
   animation-duration: var(--dur-slow);
@@ -407,6 +424,17 @@ details[open] > :not(summary) {
 @keyframes shimmer {
   to {
     background-position: -150% 0;
+  }
+}
+@keyframes shrink-out {
+  to {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+@keyframes via-blur {
+  40% {
+    filter: blur(2px);
   }
 }
 @keyframes fade-in {

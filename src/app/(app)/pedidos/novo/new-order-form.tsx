@@ -170,8 +170,9 @@ export function NewOrderForm({
               <input id="busca" ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} className="input" autoComplete="off" />
               {shown.length > 0 && (
                 <ul className="mt-2 divide-y divide-line rounded-md border border-line">
-                  {shown.map((c) => (
-                    <li key={c.id}>
+                  {shown.map((c, i) => (
+                    // resultados chegam em sequência rápida; quem já estava na lista não anima de novo
+                    <li key={c.id} className="enter" style={{ animationDelay: `${i * 30}ms` }}>
                       <button
                         type="button"
                         onClick={() => { setCustomer(c); setSearch(""); }}
