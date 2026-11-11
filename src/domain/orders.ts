@@ -312,7 +312,8 @@ export async function deliverOrder(ctx: Ctx, orderId: string, partial?: { delive
         discountCents: discount,
         // a conta mudou: troco e divisão do pagamento combinados antes deixam de valer
         changeForCents: null,
-        cashPartCents: Math.min(o.cashPartCents, total),
+        // se a parte em dinheiro cobre o novo total, o pedido passou a ser todo em dinheiro
+        ...(o.cashPartCents >= total && o.cashPartCents > 0 ? { paymentMethod: "dinheiro" as const, cashPartCents: 0 } : {}),
         notes: [o.notes, `Entrega parcial: ${partial!.note.trim()}`].filter(Boolean).join(" | "),
       });
     }

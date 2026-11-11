@@ -63,12 +63,16 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
     };
   }, [waitingNetwork, send]);
 
-  // fechar a tela no meio da contagem perderia a confirmação
+  // fechar a tela no meio da contagem perderia a confirmação; e os outros cards ficam travados para não confirmar dois de uma vez
   useEffect(() => {
     if (!left) return;
     const warn = (e: BeforeUnloadEvent) => e.preventDefault();
     window.addEventListener("beforeunload", warn);
-    return () => window.removeEventListener("beforeunload", warn);
+    document.body.dataset.confirmando = "1";
+    return () => {
+      window.removeEventListener("beforeunload", warn);
+      delete document.body.dataset.confirmando;
+    };
   }, [left]);
 
   useEffect(() => {
@@ -107,7 +111,7 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
           setError(undefined);
           setLeft(WAIT);
         }}
-        className="btn btn-primary h-12 w-full text-[15px]"
+        className="btn btn-primary deliver-btn h-12 w-full text-[15px]"
       >
         {pending || left === 0 ? "Confirmando…" : label}
       </button>

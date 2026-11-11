@@ -522,7 +522,9 @@ test("pedido: desconto com limite, pagamento misto, entrega parcial, ocorrência
   const after = (await m.q.getOrder(A.t.id, o.id))!;
   assert.equal(after.totalCents, 10000);
   assert.equal(after.discountCents, 1000);
-  assert.equal(after.cashPartCents, 10000);
+  // os 100,00 em dinheiro combinados cobrem o novo total: o pedido vira todo em dinheiro
+  assert.equal(after.cashPartCents, 0);
+  assert.equal(after.paymentMethod, "dinheiro");
   assert.equal(after.items[0].deliveredQuantity, 1);
   assert.equal(await held(d1.id), 2);
   // no acerto, só a parte em dinheiro é cobrada do entregador

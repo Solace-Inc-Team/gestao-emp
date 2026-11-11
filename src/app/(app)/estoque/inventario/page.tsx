@@ -3,6 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { stockOverview } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
 import { inventoryAction } from "@/app/actions";
+import { CountInput } from "./count-input";
 
 export const metadata = { title: "Inventário" };
 
@@ -67,18 +68,7 @@ export default async function Inventario() {
 function Count({ id, state, name, expected }: { id: string; state: string; name: string; expected: number }) {
   return (
     <td className="text-right">
-      <div className="flex items-center justify-end gap-2">
-        <span className="text-[13px] text-muted">sistema: {expected}</span>
-        <input
-          name={`c:${state}:${id}`}
-          type="number"
-          inputMode="numeric"
-          min={0}
-          max={100000}
-          aria-label={`${name}, ${state}s contados`}
-          className="input num w-20 text-right"
-        />
-      </div>
+      <CountInput name={`c:${state}:${id}`} label={`${name}, ${state}s contados`} expected={expected} />
     </td>
   );
 }

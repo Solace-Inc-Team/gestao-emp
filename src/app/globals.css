@@ -252,6 +252,12 @@ body {
   font-weight: 600;
 }
 
+/* enquanto uma entrega está na contagem do "Desfazer", as outras não podem ser confirmadas */
+body[data-confirmando] .deliver-btn {
+  pointer-events: none;
+  opacity: 0.4;
+}
+
 /* impressão (fechamento do dia): só o conteúdo, em preto no branco */
 @media print {
   aside,

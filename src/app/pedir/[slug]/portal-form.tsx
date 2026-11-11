@@ -42,7 +42,15 @@ export function PortalForm({
   const total = products.reduce((s, p) => s + (qty[p.id] ?? 0) * price(p), 0);
   const step = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, Math.min(20, (q[id] ?? 0) + d)) }));
 
-  if (result?.number) return <Done number={result.number} totalCents={result.totalCents!} pix={result.pix ?? null} />;
+  if (result?.number)
+    return (
+      <Done
+        number={result.number}
+        totalCents={result.totalCents!}
+        pix={result.pix ?? null}
+        lines={products.filter((p) => qty[p.id] > 0).map((p) => `${qty[p.id]} x ${p.name}`)}
+      />
+    );
 
   return (
     <form
@@ -164,7 +172,7 @@ export function PortalForm({
   );
 }
 
-function Done({ number, totalCents, pix }: { number: number; totalCents: number; pix: string | null }) {
+function Done({ number, totalCents, pix, lines }: { number: number; totalCents: number; pix: string | null; lines: string[] }) {
   const [qr, setQr] = useState<string>();
   useEffect(() => {
     if (pix) QRCode.toString(pix, { type: "svg", margin: 1, width: 200 }).then(setQr);
@@ -175,6 +183,11 @@ function Done({ number, totalCents, pix }: { number: number; totalCents: number;
         <CircleCheck size={22} strokeWidth={2} className="text-ok" aria-hidden="true" />
         Pedido #{number} recebido
       </p>
+      <ul className="text-muted">
+        {lines.map((l) => (
+          <li key={l}>{l}</li>
+        ))}
+      </ul>
       <p>
         Total de <b className="num">{formatBRL(totalCents)}</b>. A loja já está vendo seu pedido e vai separar para entrega.
       </p>

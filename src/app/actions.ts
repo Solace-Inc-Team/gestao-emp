@@ -450,7 +450,8 @@ export async function saveProductAction(fd: FormData) {
           priceCents: money(fd, "price"),
           returnable: fd.get("returnable") === "on",
           minStock: int(fd, "minStock"),
-          containerPriceCents: money(fd, "containerPrice", false) ?? 0,
+          // produto que não retorna não tem vasilhame para cobrar
+          containerPriceCents: fd.get("returnable") === "on" ? (money(fd, "containerPrice", false) ?? 0) : 0,
           active: id ? fd.get("active") === "on" : true,
         }),
         id,

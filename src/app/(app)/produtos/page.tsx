@@ -44,7 +44,7 @@ export default async function Produtos() {
       <PageHeader title="Produtos e preços" />
       <p className="-mt-3 mb-6 max-w-2xl text-muted">
         Mudar o preço vale para os próximos pedidos. Pedidos já lançados guardam o preço da época, e toda alteração fica registrada.
-        O valor do vasilhame é somado quando o cliente não tem um vazio para trocar.
+        O valor do vasilhame é somado quando o cliente não tem um vazio para trocar; em produto não retornável ele é ignorado.
       </p>
       <section className="panel mb-6">
         {products.map((p) => (
