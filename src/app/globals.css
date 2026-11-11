@@ -569,3 +569,163 @@ body[data-confirmando] .deliver-btn {
 .hero-shot {
   mask-image: linear-gradient(to bottom, #000 70%, transparent);
 }
+
+/* página inicial: entrada do topo em sequência */
+.hero-in {
+  animation: 700ms var(--ease-out) var(--d, 0ms) both hero-up;
+}
+.hero-word {
+  display: inline-block;
+  animation: 800ms var(--ease-out) var(--d, 0ms) both word-in;
+}
+.hero-grid {
+  animation: 1.4s var(--ease-out) both grid-in;
+}
+
+/* celulares respirando devagar */
+.float {
+  animation: float 6s ease-in-out var(--d, 0ms) infinite;
+}
+
+/* passos acendem um depois do outro, com a linha correndo por cima */
+.steps-line {
+  transform-origin: left;
+  scale: 0 1;
+}
+[data-inview="true"] .steps-line {
+  animation: 1.2s var(--ease-out) 100ms both line-run;
+}
+/* o conteúdo do passo é que entra: o fundo branco fica, senão a grade cinza aparece no buraco */
+[data-inview="false"] .step > *,
+[data-inview="false"] .print,
+[data-inview="false"] .stamp {
+  opacity: 0;
+}
+[data-inview="true"] .step > * {
+  animation: 600ms var(--ease-out) var(--d, 0ms) both hero-up;
+}
+[data-inview="true"] .step-n {
+  animation:
+    600ms var(--ease-out) var(--d, 0ms) both hero-up,
+    1s ease var(--d, 0ms) both step-glow;
+}
+
+/* recibo do acerto imprime linha por linha e o selo é carimbado no fim */
+[data-inview="true"] .print {
+  animation: 420ms var(--ease-out) var(--d, 0ms) both print-in;
+}
+.stamp {
+  display: inline-block;
+}
+[data-inview="true"] .stamp {
+  animation: 520ms var(--ease-spring) var(--d, 0ms) both stamp;
+}
+
+/* com rolagem: painel inclinado que se endireita, blocos que sobem ao entrar e cabeçalho que ganha fundo */
+.site-header {
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  border-color: color-mix(in srgb, var(--line) 70%, transparent);
+  backdrop-filter: blur(12px);
+}
+@supports (animation-timeline: scroll()) {
+  .site-header {
+    animation: header-solid linear both;
+    animation-timeline: scroll();
+    animation-range: 0 80px;
+  }
+  .hero-stage {
+    perspective: 1400px;
+  }
+  .hero-tilt {
+    transform-origin: 50% 0;
+    animation: tilt linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 45%;
+  }
+  .reveal {
+    animation: hero-up linear both;
+    animation-timeline: view();
+    animation-range: entry 0% entry 70%;
+  }
+}
+
+@keyframes hero-up {
+  from {
+    opacity: 0;
+    translate: 0 16px;
+  }
+}
+@keyframes word-in {
+  from {
+    opacity: 0;
+    translate: 0 0.35em;
+    filter: blur(8px);
+  }
+}
+@keyframes grid-in {
+  from {
+    opacity: 0;
+    scale: 1.06;
+  }
+}
+@keyframes float {
+  50% {
+    transform: translateY(-8px);
+  }
+}
+@keyframes line-run {
+  to {
+    scale: 1 1;
+  }
+}
+@keyframes step-glow {
+  30% {
+    color: var(--accent);
+  }
+}
+@keyframes print-in {
+  from {
+    opacity: 0;
+    translate: 0 -4px;
+    clip-path: inset(0 0 100% 0);
+  }
+}
+@keyframes stamp {
+  from {
+    opacity: 0;
+    scale: 1.8;
+    rotate: -8deg;
+  }
+}
+@keyframes header-solid {
+  from {
+    background: transparent;
+    border-color: transparent;
+    backdrop-filter: blur(0);
+  }
+}
+@keyframes tilt {
+  from {
+    transform: rotateX(20deg) scale(0.93);
+  }
+}
+
+/* menos movimento: tudo já no lugar final */
+@media (prefers-reduced-motion: reduce) {
+  .hero-in,
+  .hero-word,
+  .hero-grid,
+  .hero-tilt,
+  .reveal,
+  .float,
+  [data-inview] .step > *,
+  [data-inview] .print,
+  [data-inview] .stamp,
+  [data-inview] .steps-line {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+  .steps-line {
+    display: none;
+  }
+}

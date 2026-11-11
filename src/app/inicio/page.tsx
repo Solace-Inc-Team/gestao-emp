@@ -1,7 +1,10 @@
+import { Fragment } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Building2, FileSpreadsheet, KeyRound, WifiOff } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { InView } from "@/components/in-view";
+import { LiveNumber } from "@/components/live-number";
 import painel from "../../../public/telas/painel.png";
 import painelEscuro from "../../../public/telas/painel-escuro.png";
 import entregador from "../../../public/telas/entregador.png";
@@ -20,6 +23,9 @@ const passos = [
   { n: "04", t: "Acerto", d: "No fim do turno o caixa conta o dinheiro. Diferença fica pendente até o dono decidir." },
 ];
 
+const titulo = "Do pedido ao acerto, sem conta de cabeça.".split(" ");
+const atraso = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
+
 const estoque = [
   { p: "Gás P13", cheio: 42, vazio: 18, rua: 6 },
   { p: "Galão 20L", cheio: 75, vazio: 31, rua: 12 },
@@ -36,7 +42,7 @@ const extras = [
 export default function Inicio() {
   return (
     <div className="overflow-x-clip">
-      <header className="sticky top-0 z-20 border-b border-line/70 bg-bg/80 backdrop-blur-md">
+      <header className="site-header sticky top-0 z-20 border-b">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link href="/" aria-label="Depósito, início">
             <Logo />
@@ -53,17 +59,24 @@ export default function Inicio() {
         <section className="relative">
           <div aria-hidden="true" className="hero-grid pointer-events-none absolute inset-0 -z-10" />
           <div className="mx-auto max-w-6xl px-4 pt-20 text-center sm:px-6 sm:pt-28">
-            <p className="inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[12px] text-muted">
+            <p style={atraso(0)} className="hero-in inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[12px] text-muted">
               <span className="size-1.5 rounded-full bg-ok" />
               Para revendas de água e gás
             </p>
             <h1 className="mx-auto mt-6 max-w-[15ch] text-[2.6rem] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-[4.25rem]">
-              Do pedido ao acerto, sem conta de cabeça.
+              {/* cada palavra entra sozinha; o espaço fica fora para não ser comido pelo inline-block */}
+              {titulo.map((w, i) => (
+                <Fragment key={i}>
+                  <span style={atraso(120 + i * 60)} className="hero-word">
+                    {w}
+                  </span>{" "}
+                </Fragment>
+              ))}
             </h1>
-            <p className="mx-auto mt-5 max-w-[34rem] text-[16px] leading-relaxed text-muted sm:text-[17px]">
+            <p style={atraso(560)} className="hero-in mx-auto mt-5 max-w-[34rem] text-[16px] leading-relaxed text-muted sm:text-[17px]">
               Pedidos, entregas, botijões cheios e vazios e o dinheiro de cada entregador, registrados com quem fez e quando.
             </p>
-            <div className="mt-8 flex flex-wrap justify-center gap-3">
+            <div style={atraso(680)} className="hero-in mt-8 flex flex-wrap justify-center gap-3">
               <Link href="/login" className="btn btn-primary h-11 px-5 text-[15px]">
                 Entrar no sistema <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
@@ -71,8 +84,8 @@ export default function Inicio() {
             </div>
           </div>
 
-          <div className="mx-auto mt-16 max-w-6xl px-4 sm:mt-20 sm:px-6">
-            <div className="hero-shot rounded-2xl border border-line bg-surface p-1.5 shadow-[0_30px_80px_-30px_rgb(0_0_0/0.35)] sm:p-2">
+          <div style={atraso(820)} className="hero-in hero-stage mx-auto mt-16 max-w-6xl px-4 sm:mt-20 sm:px-6">
+            <div className="hero-tilt hero-shot rounded-2xl border border-line bg-surface p-1.5 shadow-[0_30px_80px_-30px_rgb(0_0_0/0.35)] sm:p-2">
               {[
                 { src: painel, cls: "dark:hidden" },
                 { src: painelEscuro, cls: "hidden dark:block" },
@@ -92,53 +105,59 @@ export default function Inicio() {
 
         <section id="como-funciona" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6 sm:py-32">
           <p className="text-[13px] font-medium text-accent">Como funciona</p>
-          <h2 className="mt-2 max-w-[22ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] sm:text-[2.5rem]">
+          <h2 className="reveal mt-2 max-w-[22ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] sm:text-[2.5rem]">
             O caminho de um botijão, do telefone até o caixa.
           </h2>
-          <ol className="mt-12 grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
-            {passos.map((s) => (
-              <li key={s.n} className="bg-surface p-6">
-                <span className="num text-[13px] text-muted">{s.n}</span>
-                <h3 className="mt-8 text-[17px] font-semibold tracking-tight">{s.t}</h3>
-                <p className="mt-2 text-muted">{s.d}</p>
-              </li>
-            ))}
-          </ol>
+          <InView className="steps relative mt-12">
+            {/* linha que corre por cima dos passos quando eles aparecem */}
+            <div aria-hidden="true" className="steps-line absolute inset-x-0 -top-px z-10 h-0.5 rounded-full bg-accent" />
+            <ol className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
+              {passos.map((s, i) => (
+                <li key={s.n} style={atraso(i * 160)} className="step bg-surface p-6">
+                  <span className="step-n num text-[13px] text-muted">{s.n}</span>
+                  <h3 className="mt-8 text-[17px] font-semibold tracking-tight">{s.t}</h3>
+                  <p className="mt-2 text-muted">{s.d}</p>
+                </li>
+              ))}
+            </ol>
+          </InView>
         </section>
 
         <section id="recursos" className="scroll-mt-20 border-y border-line bg-surface/60">
           <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
             <p className="text-[13px] font-medium text-accent">Recursos</p>
-            <h2 className="mt-2 max-w-[24ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] sm:text-[2.5rem]">
+            <h2 className="reveal mt-2 max-w-[24ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] sm:text-[2.5rem]">
               Feito em cima do que dá errado numa revenda.
             </h2>
 
             <div className="mt-12 grid gap-4 lg:grid-cols-6">
-              <article className="panel flex flex-col p-6 sm:p-8 lg:col-span-3">
+              <article className="reveal panel flex flex-col p-6 sm:p-8 lg:col-span-3">
                 <h3 className="text-[17px] font-semibold tracking-tight">Acerto que fecha no centavo</h3>
                 <p className="mt-2 text-muted">
                   O sistema sabe quanto cada entregador deve ter em mãos. Pagamento misto, repasse no meio do dia e gasto
                   autorizado entram na conta.
                 </p>
-                <dl className="num mt-8 rounded-xl border border-line bg-bg p-5 text-[14px]">
-                  <div className="flex justify-between py-1"><dt className="text-muted">Troco inicial</dt><dd>R$ 30,00</dd></div>
-                  <div className="flex justify-between py-1"><dt className="text-muted">Recebido em dinheiro</dt><dd>R$ 385,00</dd></div>
-                  <div className="flex justify-between py-1"><dt className="text-muted">Repasse ao caixa</dt><dd>− R$ 200,00</dd></div>
-                  <div className="flex justify-between py-1"><dt className="text-muted">Gasolina autorizada</dt><dd>− R$ 50,00</dd></div>
-                  <div className="mt-2 flex justify-between border-t border-dashed border-line pt-3 font-semibold">
-                    <dt>Deve apresentar</dt><dd>R$ 165,00</dd>
-                  </div>
-                  <div className="flex items-center justify-between py-1">
-                    <dt className="text-muted">Contado</dt>
-                    <dd className="flex items-center gap-2">
-                      R$ 165,00
-                      <span className="rounded-full bg-ok-soft px-2 py-0.5 text-[12px] font-medium text-ok">sem diferença</span>
-                    </dd>
-                  </div>
-                </dl>
+                <InView className="mt-8">
+                  <dl className="receipt num rounded-xl border border-line bg-bg p-5 text-[14px]">
+                    <div style={atraso(0)} className="print flex justify-between py-1"><dt className="text-muted">Troco inicial</dt><dd>R$ 30,00</dd></div>
+                    <div style={atraso(140)} className="print flex justify-between py-1"><dt className="text-muted">Recebido em dinheiro</dt><dd>R$ 385,00</dd></div>
+                    <div style={atraso(280)} className="print flex justify-between py-1"><dt className="text-muted">Repasse ao caixa</dt><dd>− R$ 200,00</dd></div>
+                    <div style={atraso(420)} className="print flex justify-between py-1"><dt className="text-muted">Gasolina autorizada</dt><dd>− R$ 50,00</dd></div>
+                    <div style={atraso(560)} className="print mt-2 flex justify-between border-t border-dashed border-line pt-3 font-semibold">
+                      <dt>Deve apresentar</dt><dd><LiveNumber value={16500} cents fromZero="visible" /></dd>
+                    </div>
+                    <div style={atraso(700)} className="print flex items-center justify-between py-1">
+                      <dt className="text-muted">Contado</dt>
+                      <dd className="flex items-center gap-2">
+                        R$ 165,00
+                        <span style={atraso(1040)} className="stamp rounded-full bg-ok-soft px-2 py-0.5 text-[12px] font-medium text-ok">sem diferença</span>
+                      </dd>
+                    </div>
+                  </dl>
+                </InView>
               </article>
 
-              <article className="panel flex flex-col p-6 sm:p-8 lg:col-span-3">
+              <article className="reveal panel flex flex-col p-6 sm:p-8 lg:col-span-3">
                 <h3 className="text-[17px] font-semibold tracking-tight">Estoque de retornáveis</h3>
                 <p className="mt-2 text-muted">
                   Cheios, vazios e avariados, na loja e na rua. Saldo é a soma dos lançamentos; erro se corrige com estorno,
@@ -157,16 +176,16 @@ export default function Inicio() {
                     {estoque.map((e) => (
                       <tr key={e.p} className="border-t border-line">
                         <td className="px-4 py-2.5">{e.p}</td>
-                        <td className="px-4 py-2.5 text-right">{e.cheio}</td>
-                        <td className="px-4 py-2.5 text-right text-muted">{e.vazio}</td>
-                        <td className="px-4 py-2.5 text-right text-muted">{e.rua}</td>
+                        <td className="px-4 py-2.5 text-right"><LiveNumber value={e.cheio} fromZero="visible" /></td>
+                        <td className="px-4 py-2.5 text-right text-muted"><LiveNumber value={e.vazio} fromZero="visible" /></td>
+                        <td className="px-4 py-2.5 text-right text-muted"><LiveNumber value={e.rua} fromZero="visible" /></td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </article>
 
-              <article className="panel overflow-hidden lg:col-span-4">
+              <article className="reveal panel overflow-hidden lg:col-span-4">
                 <div className="grid h-full sm:grid-cols-2">
                   <div className="p-6 sm:p-8">
                     <h3 className="text-[17px] font-semibold tracking-tight">No celular do entregador</h3>
@@ -180,13 +199,13 @@ export default function Inicio() {
                       src={entregador}
                       alt="Tela do entregador no celular"
                       sizes="(min-width: 640px) 260px, 70vw"
-                      className="absolute top-6 left-1/2 w-[62%] max-w-[240px] -translate-x-1/2 rounded-[1.75rem] border-[6px] border-fg/90 shadow-xl"
+                      className="float absolute top-6 left-1/2 w-[62%] max-w-[240px] -translate-x-1/2 rounded-[1.75rem] border-[6px] border-fg/90 shadow-xl"
                     />
                   </div>
                 </div>
               </article>
 
-              <article className="panel overflow-hidden lg:col-span-2">
+              <article className="reveal panel overflow-hidden lg:col-span-2">
                 <div className="p-6 sm:p-8">
                   <h3 className="text-[17px] font-semibold tracking-tight">Pedido pelo link da loja</h3>
                   <p className="mt-2 text-muted">O cliente pede sozinho e já recebe o QR do Pix.</p>
@@ -196,7 +215,8 @@ export default function Inicio() {
                     src={portal}
                     alt="Pedido pelo site, no celular do cliente"
                     sizes="240px"
-                    className="absolute top-6 left-1/2 w-[62%] max-w-[220px] -translate-x-1/2 rounded-[1.75rem] border-[6px] border-fg/90 shadow-xl"
+                    style={atraso(-2500)}
+                    className="float absolute top-6 left-1/2 w-[62%] max-w-[220px] -translate-x-1/2 rounded-[1.75rem] border-[6px] border-fg/90 shadow-xl"
                   />
                 </div>
               </article>
