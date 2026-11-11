@@ -278,3 +278,17 @@ body[data-confirmando] .deliver-btn {
     background: #fff;
   }
 }
+
+/* página inicial: grade fina atrás do título, sumindo nas bordas */
+.hero-grid {
+  background-image:
+    linear-gradient(to right, var(--line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 20%, #000 30%, transparent 75%);
+}
+
+/* a captura do painel some embaixo, como se continuasse */
+.hero-shot {
+  mask-image: linear-gradient(to bottom, #000 70%, transparent);
+}

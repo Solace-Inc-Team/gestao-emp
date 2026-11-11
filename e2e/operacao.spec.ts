@@ -102,3 +102,13 @@ test("cada perfil só entra no que é seu", async ({ page }) => {
   expect((await page.goto("/admin"))?.status()).toBe(404);
   expect((await page.request.get("/exportar")).status()).toBe(401);
 });
+
+test("na raiz, visitante vê a apresentação e quem está logado cai no painel", async ({ page }) => {
+  await page.context().clearCookies();
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Do pedido ao acerto");
+
+  await entrar(page, "dono@demo.com");
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Painel do dia" })).toBeVisible();
+});
