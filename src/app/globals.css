@@ -327,6 +327,25 @@ details[open] > :not(summary) {
   animation: shimmer 1.4s linear infinite;
 }
 
+/* ✓ do acerto que bateu: o círculo fecha e o traço se desenha */
+.check-draw circle,
+.check-draw path {
+  stroke-dasharray: 64;
+  stroke-dashoffset: 0;
+  animation: draw 500ms var(--ease-out) both;
+}
+.check-draw path {
+  stroke-dasharray: 16;
+  animation-delay: 250ms;
+}
+
+/* item que entra numa lista curta (resumo do pedido) */
+.enter {
+  animation:
+    var(--dur) var(--ease-out) both fade-in,
+    var(--dur-slow) var(--ease-out) both rise;
+}
+
 /* troca de tela: a anterior some rápido, a nova sobe devagar; a barra lateral não participa */
 ::view-transition {
   pointer-events: none;
@@ -349,6 +368,19 @@ details[open] > :not(summary) {
   animation-timing-function: var(--ease-out);
 }
 
+@keyframes draw {
+  from {
+    stroke-dashoffset: 64;
+  }
+}
+.check-draw path {
+  animation-name: draw-short;
+}
+@keyframes draw-short {
+  from {
+    stroke-dashoffset: 16;
+  }
+}
 @keyframes spin {
   to {
     rotate: 360deg;

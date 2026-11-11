@@ -26,6 +26,16 @@ export function Money({ cents, className = "" }: { cents: number; className?: st
   return <span className={`num ${className}`}>{formatBRL(cents)}</span>;
 }
 
+/** ✓ que se desenha ao aparecer (acerto que bateu). */
+export function CheckDrawn({ className = "" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={`check-draw shrink-0 ${className}`}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="m7.5 12.5 3 3 6-6.5" />
+    </svg>
+  );
+}
+
 export function Difference({ cents, className = "" }: { cents: number; className?: string }) {
   const color = cents < 0 ? "text-danger" : cents > 0 ? "text-ok" : "text-muted";
   const label = cents < 0 ? "falta " : cents > 0 ? "sobra " : "";

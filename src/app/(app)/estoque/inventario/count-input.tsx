@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import NumberFlow from "@number-flow/react";
 
 /** Campo de contagem que já mostra a diferença para o sistema, antes de pedir a senha. */
 export function CountInput({ name, label, expected }: { name: string; label: string; expected: number }) {
@@ -21,7 +22,7 @@ export function CountInput({ name, label, expected }: { name: string; label: str
         className="input num w-20 text-right"
       />
       <span aria-live="polite" className={`num w-10 text-left text-[13px] font-semibold ${diff < 0 ? "text-danger" : "text-ok"}`}>
-        {diff ? (diff > 0 ? `+${diff}` : diff) : ""}
+        {diff !== 0 && <NumberFlow value={diff} locales="pt-BR" format={{ signDisplay: "always" }} />}
       </span>
     </div>
   );

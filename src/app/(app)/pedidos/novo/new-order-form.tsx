@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { ActionForm } from "@/components/action-form";
 import { createOrderAction } from "@/app/actions";
 import { formatBRL, parseBRL } from "@/lib/money";
+import { LiveNumber } from "@/components/live-number";
 
 type Product = { id: string; name: string; priceCents: number; containerPriceCents: number; returnable: boolean; available: number; reserved: number };
 type Customer = { id: string; name: string; phone: string; address: string; addresses?: { id: string; label: string; address: string }[] };
@@ -197,7 +198,7 @@ export function NewOrderForm({
             {products.map((p) => {
               const n = qty[p.id] ?? 0;
               return (
-                <li key={p.id} className={`border-b border-line px-4 py-3 last:border-0 ${n ? "bg-accent-soft/40" : ""}`}>
+                <li key={p.id} className={`border-b border-line px-4 py-3 transition-colors duration-300 last:border-0 ${n ? "bg-accent-soft/40" : ""}`}>
                   <div className="flex items-center gap-3">
                     <div className="min-w-0 flex-1">
                       <p className="font-semibold">{p.name}</p>
@@ -212,7 +213,7 @@ export function NewOrderForm({
                     </div>
                     <div className="flex items-center gap-1" role="group" aria-label={`Quantidade de ${p.name}`}>
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, -1)} aria-label="Diminuir">−</button>
-                      <span className="num w-10 text-center text-2xl font-semibold" aria-live="polite">{n}</span>
+                      <LiveNumber value={n} className="w-10 text-center text-2xl font-semibold" />
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, 1)} aria-label="Aumentar">+</button>
                     </div>
                   </div>
@@ -322,9 +323,9 @@ export function NewOrderForm({
                 {items.map((i) => {
                   const p = products.find((x) => x.id === i.productId)!;
                   return (
-                    <li key={i.productId} className="flex justify-between gap-2">
+                    <li key={i.productId} className="enter flex justify-between gap-2">
                       <span>{i.quantity}× {p.name}</span>
-                      <span className="num">{formatBRL(i.quantity * priceOf(p))}</span>
+                      <LiveNumber value={i.quantity * priceOf(p)} cents />
                     </li>
                   );
                 })}
@@ -338,7 +339,7 @@ export function NewOrderForm({
             )}
             <p className="flex items-baseline justify-between">
               <span className="font-semibold">Total</span>
-              <span className="num text-4xl font-semibold">{formatBRL(total)}</span>
+              <LiveNumber value={total} cents className="text-4xl font-semibold" />
             </p>
             <button className="btn btn-primary mt-4 h-12 w-full text-lg" disabled={!items.length}>
               {mode === "balcao" ? "Registrar venda" : "Lançar pedido"}

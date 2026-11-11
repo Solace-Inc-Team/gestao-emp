@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ActionForm } from "./action-form";
 import { partialDeliveryAction } from "@/app/actions";
-import { formatBRL } from "@/lib/money";
+import { LiveNumber } from "@/components/live-number";
 import { partialDiscount } from "@/lib/cash";
 
 type Item = { id: string; name: string; quantity: number; unitPriceCents: number };
@@ -51,8 +51,12 @@ export function PartialDeliveryForm({ order, items, forDriver }: { order: Partia
       ))}
       {filled && (
         <p aria-live="polite" className="rounded-md bg-surface px-3 py-2 font-medium">
-          Novo total {formatBRL(total)}
-          {change > 0 && <span className="text-muted">, troco {formatBRL(change)}</span>}
+          Novo total <LiveNumber value={total} cents />
+          {change > 0 && (
+            <span className="text-muted">
+              , troco <LiveNumber value={change} cents />
+            </span>
+          )}
         </p>
       )}
       <div>

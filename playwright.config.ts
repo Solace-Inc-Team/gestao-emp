@@ -7,7 +7,7 @@ export default defineConfig({
   fullyParallel: false,
   timeout: 60_000,
   // movimento reduzido: as animações não atrasam nem atrapalham os cliques
-  use: { baseURL: "http://localhost:3100", locale: "pt-BR", timezoneId: "America/Sao_Paulo", reducedMotion: "reduce" },
+  use: { baseURL: "http://localhost:3100", locale: "pt-BR", timezoneId: "America/Sao_Paulo", contextOptions: { reducedMotion: "reduce" } },
   webServer: {
     command: "node scripts/e2e-server.mjs",
     url: "http://localhost:3100/api/health",

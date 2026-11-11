@@ -4,7 +4,8 @@ import { useState } from "react";
 import { ActionForm } from "@/components/action-form";
 import { closeShiftAction } from "@/app/actions";
 import { formatBRL, parseBRL } from "@/lib/money";
-import { Difference } from "@/components/ui";
+import { LiveNumber } from "@/components/live-number";
+import { CheckDrawn } from "@/components/ui";
 
 export function CloseShiftForm({ shiftId, expectedCents }: { shiftId: string; expectedCents: number }) {
   const [counted, setCounted] = useState("");
@@ -30,8 +31,25 @@ export function CloseShiftForm({ shiftId, expectedCents }: { shiftId: string; ex
           placeholder="0,00"
         />
       </div>
-      <p aria-live="polite" className="min-h-7 text-lg">
-        {diff !== null && <Difference cents={diff} />}
+      <p aria-live="polite" className="min-h-9 text-lg">
+        {diff !== null && (
+          // a cor acompanha: verde quando bate, amarelo se sobra, vermelho se falta
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold transition-colors duration-300 ${
+              diff === 0 ? "bg-ok-soft text-ok" : diff < 0 ? "bg-danger-soft text-danger" : "bg-warn-soft text-warn-fg"
+            }`}
+          >
+            {diff === 0 ? (
+              <>
+                <CheckDrawn className="size-5" /> bateu, sem diferença
+              </>
+            ) : (
+              <>
+                {diff < 0 ? "falta" : "sobra"} <LiveNumber value={Math.abs(diff)} cents />
+              </>
+            )}
+          </span>
+        )}
       </p>
       <div>
         <label className="label" htmlFor="notes">Observação {diff ? "(obrigatória quando há diferença)" : "(opcional)"}</label>
