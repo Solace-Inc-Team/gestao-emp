@@ -30,7 +30,7 @@ export function Prateleira({ quantos = 14, className = "" }: { quantos?: number;
         return (
           <svg key={i} viewBox="0 0 22 32" className="vasilhame h-11 w-[30px] shrink-0" style={{ "--i": i } as React.CSSProperties}>
             {/* o nível é o que esvazia e enche; fica atrás do contorno, preso ao fundo */}
-            <rect className="nivel" x="4" y={galao ? 9 : 10} width="14" height={galao ? 20.5 : 17} rx="3" data-parado={i % 3 === 1 ? "vazio" : undefined} />
+            <rect className="nivel" x="4" y={galao ? 7.5 : 9} width="14" height={galao ? 22 : 18} rx={galao ? 3.2 : 5.6} data-parado={i % 3 === 1 ? "vazio" : undefined} />
             {galao ? <ContornoGalao /> : <ContornoBotijao />}
           </svg>
         );

@@ -1548,27 +1548,27 @@ details[open] > summary.desvio .desvio-seta {
   stroke-linejoin: round;
   stroke-linecap: round;
 }
+/* o líquido tem a mesma forma de dentro do vasilhame (cantos redondos do botijão, retos do galão);
+   o nível é um corte por cima, então a superfície fica reta e o fundo acompanha o vasilhame */
 .prateleira .nivel {
   fill: currentColor;
   stroke: none;
   opacity: 0.32;
-  transform-box: fill-box;
-  transform-origin: bottom;
   /* a onda percorre a fileira: cada vasilhame esvazia um pouco depois do vizinho e volta a encher */
   animation: prateleira-nivel 7s var(--ease-trajeto) calc(var(--i) * 0.28s) infinite both;
 }
 @keyframes prateleira-nivel {
   0%,
   30% {
-    scale: 1 1;
+    clip-path: inset(0 0 0 0);
   }
   45%,
   70% {
-    scale: 1 0;
+    clip-path: inset(100% 0 0 0);
   }
   85%,
   100% {
-    scale: 1 1;
+    clip-path: inset(0 0 0 0);
   }
 }
 /* só anda enquanto está na tela */
@@ -1580,7 +1580,7 @@ details[open] > summary.desvio .desvio-seta {
     animation: none;
   }
   .prateleira .nivel[data-parado="vazio"] {
-    scale: 1 0;
+    clip-path: inset(100% 0 0 0);
   }
 }
 /* ponto de chegada de cada esquema, no azul do próprio traço: aparece depois que o traço termina */
@@ -1754,9 +1754,7 @@ details[open] > summary.desvio .desvio-seta {
   fill: var(--marca);
   stroke: none;
   opacity: 0.35;
-  transform-box: fill-box;
-  transform-origin: bottom;
-  scale: 1 var(--nivel);
+  clip-path: inset(calc((1 - var(--nivel)) * 100%) 0 0 0);
   animation: vasilhame-enche 700ms var(--ease-chegada) calc(120ms + var(--i, 0) * 80ms) both;
 }
 .nivel-vasilhame.text-danger .nivel {
@@ -1764,7 +1762,7 @@ details[open] > summary.desvio .desvio-seta {
 }
 @keyframes vasilhame-enche {
   from {
-    scale: 1 0;
+    clip-path: inset(100% 0 0 0);
   }
 }
 @media (prefers-reduced-motion: reduce) {

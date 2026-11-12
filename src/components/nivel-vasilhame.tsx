@@ -19,7 +19,8 @@ export function NivelVasilhame({ nome, cheios, vazios, baixo, ordem = 0 }: { nom
       className={`nivel-vasilhame h-9 w-[25px] shrink-0 ${baixo ? "text-danger" : "text-muted"}`}
       style={{ "--nivel": nivel, "--i": ordem } as React.CSSProperties}
     >
-      <rect className="nivel" x="4" y={gas ? 10 : 9} width="14" height={gas ? 17 : 20.5} rx="3" />
+      {/* líquido com a forma de dentro do vasilhame; o CSS corta por cima até o nível */}
+      <rect className="nivel" x="4" y={gas ? 9 : 7.5} width="14" height={gas ? 18 : 22} rx={gas ? 5.6 : 3.2} />
       {gas ? <ContornoBotijao /> : <ContornoGalao />}
     </svg>
   );
