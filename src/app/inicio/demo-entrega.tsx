@@ -9,7 +9,7 @@ import "./demo-entrega.css";
 // Roda como esteira: cada volta entrega um pedido e o próximo chega, então os valores
 // nunca voltam para trás na frente de quem assiste. Fora da tela o palco reinicia.
 
-type Pedido = { numero: number; cliente: string; rua: string; item: string; valor: number; pix: boolean; hora: string };
+export type Pedido = { numero: number; cliente: string; rua: string; item: string; valor: number; pix: boolean; hora: string };
 
 const BASE: Omit<Pedido, "numero" | "hora">[] = [
   { cliente: "Marta Ribeiro", rua: "Rua XV de Novembro, 300", item: "1× Gás P13", valor: 11500, pix: false },
@@ -18,13 +18,13 @@ const BASE: Omit<Pedido, "numero" | "hora">[] = [
   { cliente: "Padaria Estrela", rua: "Rua Sete de Setembro, 42", item: "2× Galão 20L", valor: 3000, pix: false },
 ];
 
-const pedido = (i: number): Pedido => {
+export const pedido = (i: number): Pedido => {
   const b = BASE[((i % BASE.length) + BASE.length) % BASE.length];
   const min = 10 * 60 + 12 + i * 9;
   return { ...b, numero: 58 + i, hora: `${Math.floor(min / 60)}:${String(min % 60).padStart(2, "0")}` };
 };
 
-type Fase = "rota" | "confirmando" | "entregue";
+export type Fase = "rota" | "confirmando" | "entregue";
 type S = { atual: number; fase: Fase; resta: number; vendido: number; rua: number; entregues: number };
 
 const INICIO: S = { atual: 0, fase: "rota", resta: 5, vendido: 106300, rua: 24800, entregues: 15 };
@@ -70,8 +70,8 @@ function Status({ entregue }: { entregue: boolean }) {
   );
 }
 
-function Cartao({ p, s, topo }: { p: Pedido; s: S; topo: boolean }) {
-  const fase: Fase = topo ? s.fase : "rota";
+/** O cartão de uma entrega no celular do entregador; também usado na FIG. 03. */
+export function Cartao({ p, fase, resta, topo }: { p: Pedido; fase: Fase; resta: number; topo: boolean }) {
   return (
     <div className="de-card">
       <div className="de-card__head">
@@ -101,9 +101,9 @@ function Cartao({ p, s, topo }: { p: Pedido; s: S; topo: boolean }) {
             <span className="de-confirma">
               <span className="de-confirma__linha">
                 <span>
-                  Confirmando em <Roll>{String(s.resta)}</Roll>s…
+                  Confirmando em <Roll>{String(resta)}</Roll>s…
                 </span>
-                <Button size="large">Desfazer</Button>
+                <Button size="large" data-target={topo ? "desfazer" : undefined}>Desfazer</Button>
               </span>
               <span className="de-confirma__barra" data-on={fase !== "rota" || undefined} />
             </span>
@@ -211,7 +211,7 @@ export function DemoEntrega() {
                   const fica = !(k === 0 && s.fase === "entregue");
                   return (
                     <Collapse key={p.numero} open={k === 3 ? s.fase === "entregue" : fica} reveal="drop">
-                      <Cartao p={p} s={s} topo={k === 0} />
+                      <Cartao p={p} fase={k === 0 ? s.fase : "rota"} resta={s.resta} topo={k === 0} />
                     </Collapse>
                   );
                 })}

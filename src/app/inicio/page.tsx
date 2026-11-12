@@ -1,5 +1,4 @@
 import { Fragment } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Building2, FileSpreadsheet, KeyRound, WifiOff } from "lucide-react";
 import { Logo } from "@/components/logo";
@@ -7,9 +6,9 @@ import { InView } from "@/components/in-view";
 import { LiveNumber } from "@/components/live-number";
 import { BairroRota, Botijao, Galao, Registro, Regua } from "./prancha";
 import { DemoAcerto } from "./demo-acerto";
+import { DemoCelular } from "./demo-celular";
 import { DemoEntrega } from "./demo-entrega";
 import { DemoPortal } from "./demo-portal";
-import entregador from "../../../public/telas/entregador.png";
 
 export const metadata = {
   title: { absolute: "Depósito: gestão para revendas de água e gás" },
@@ -232,18 +231,12 @@ export default function Inicio() {
                       desfazer.
                     </p>
                   </div>
-                  <div className="relative min-h-72 bg-subtle">
-                    <div className="float absolute top-6 left-1/2 w-[62%] max-w-[240px] -translate-x-1/2">
-                      <Image
-                        src={entregador}
-                        alt="Tela do entregador no celular"
-                        sizes="(min-width: 640px) 260px, 70vw"
-                        className="w-full rounded-[1.75rem] border-[6px] border-fg/90 shadow-xl"
-                      />
-                      <Chamada x={14} y={24} lado="esq">Em mãos</Chamada>
-                      <Chamada x={10} y={49} lado="esq" largo>Abre o mapa</Chamada>
-                      <Chamada x={70} y={38.5} lado="dir">Só as dele</Chamada>
-                    </div>
+                  <div
+                    role="img"
+                    aria-label="No celular, o João toca em Entreguei e recebi, desfaz dentro dos 5 segundos, toca de novo e o dinheiro que ele deve ter sobe de R$ 248,00 para R$ 363,00"
+                    className="bg-subtle"
+                  >
+                    <DemoCelular />
                   </div>
                 </div>
               </article>
@@ -305,19 +298,5 @@ export default function Inicio() {
         </div>
       </footer>
     </div>
-  );
-}
-
-/**
- * Chamada técnica sobre uma captura: ponto no alvo (x/y em % da tela), traço e o texto do lado escolhido.
- * `largo`: só aparece a partir do tablet, quando sobra margem ao lado do celular.
- */
-function Chamada({ x, y, lado, largo = false, children }: { x: number; y: number; lado: "esq" | "dir"; largo?: boolean; children: string }) {
-  return (
-    <span aria-hidden="true" data-lado={lado} className={`chamada-tec ${largo ? "max-sm:hidden" : ""}`} style={{ left: `${x}%`, top: `${y}%` }}>
-      <span className="chamada-tec-texto">{children}</span>
-      <span className="chamada-tec-traco" />
-      <span className="chamada-tec-ponto" />
-    </span>
   );
 }
