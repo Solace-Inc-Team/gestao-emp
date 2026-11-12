@@ -18,41 +18,46 @@ export default async function LoginPage() {
         <Registro className="absolute top-6 right-6 size-6" />
         <Registro className="absolute bottom-6 left-6 size-6" />
         <Registro className="absolute right-6 bottom-6 size-6" />
-        <Galao id="galao-login" className="absolute top-1/2 right-[6vw] hidden w-[20rem] -translate-y-1/2 opacity-60 xl:block" />
       </div>
-      <div className="stagger w-full max-w-[22rem]">
-        <MarcaDaSessao size={28} />
-        <h1 className="mt-8 text-[1.75rem] leading-tight font-semibold tracking-[-0.03em]">Entrar</h1>
-        <p className="mt-1.5 text-muted">Pedidos, entregas, estoque e acerto de caixa da sua distribuidora.</p>
-        <ActionForm action={login} className="mt-8 space-y-4">
-          <div>
-            <label className="label" htmlFor="email">E-mail</label>
-            <input id="email" name="email" type="email" autoComplete="username" required className="input h-11" />
-          </div>
-          <div>
-            <label className="label" htmlFor="password">Senha</label>
-            <input id="password" name="password" type="password" autoComplete="current-password" required className="input h-11" />
-          </div>
-          <button className="btn btn-primary h-11 w-full">Entrar</button>
-        </ActionForm>
-        <p className="mt-4 text-[13px] text-muted">Esqueceu a senha? Peça ao dono da empresa para redefinir. Se você é o dono, fale com a Solace.</p>
-        {process.env.SEED_DEMO === "true" && (
-          <div className="mt-10 border-t border-line pt-6 text-[13px] text-muted">
-            <p className="mb-2 font-medium text-fg">Acessos de demonstração</p>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
-              <dt>Dono</dt>
-              <dd className="text-fg">dono@demo.com</dd>
-              <dt>Atendente</dt>
-              <dd className="text-fg">atendente@demo.com</dd>
-              <dt>Caixa</dt>
-              <dd className="text-fg">caixa@demo.com</dd>
-              <dt>Entregador</dt>
-              <dd className="text-fg">joao@demo.com</dd>
-              <dt>Senha</dt>
-              <dd className="text-fg">demo1234</dd>
-            </dl>
-          </div>
-        )}
+      {/* o galão fica preso ao formulário, centrado na altura dele e a uma distância fixa, como figura ao lado do texto */}
+      <div className="relative w-full max-w-[22rem]">
+        <div aria-hidden="true" className="pointer-events-none absolute top-1/2 left-[calc(100%+6rem)] hidden w-[18rem] -translate-y-1/2 opacity-60 xl:block">
+          <Galao id="galao-login" className="w-full" />
+        </div>
+        <div className="stagger">
+          <MarcaDaSessao size={28} />
+          <h1 className="mt-8 text-[1.75rem] leading-tight font-semibold tracking-[-0.03em]">Entrar</h1>
+          <p className="mt-1.5 text-muted">Pedidos, entregas, estoque e acerto de caixa da sua distribuidora.</p>
+          <ActionForm action={login} className="mt-8 space-y-4">
+            <div>
+              <label className="label" htmlFor="email">E-mail</label>
+              <input id="email" name="email" type="email" autoComplete="username" required className="input h-11" />
+            </div>
+            <div>
+              <label className="label" htmlFor="password">Senha</label>
+              <input id="password" name="password" type="password" autoComplete="current-password" required className="input h-11" />
+            </div>
+            <button className="btn btn-primary h-11 w-full">Entrar</button>
+          </ActionForm>
+          <p className="mt-4 text-[13px] text-muted">Esqueceu a senha? Peça ao dono da empresa para redefinir. Se você é o dono, fale com a Solace.</p>
+          {process.env.SEED_DEMO === "true" && (
+            <div className="mt-10 border-t border-line pt-6 text-[13px] text-muted">
+              <p className="mb-2 font-medium text-fg">Acessos de demonstração</p>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+                <dt>Dono</dt>
+                <dd className="text-fg">dono@demo.com</dd>
+                <dt>Atendente</dt>
+                <dd className="text-fg">atendente@demo.com</dd>
+                <dt>Caixa</dt>
+                <dd className="text-fg">caixa@demo.com</dd>
+                <dt>Entregador</dt>
+                <dd className="text-fg">joao@demo.com</dd>
+                <dt>Senha</dt>
+                <dd className="text-fg">demo1234</dd>
+              </dl>
+            </div>
+          )}
+        </div>
       </div>
       <footer className="mt-16 flex gap-4 text-xs text-muted">
         <span>Solace</span>

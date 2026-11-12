@@ -7,7 +7,7 @@ import { orderPix } from "@/domain/portal";
 import { PixBox } from "@/components/pix-box";
 import { logout } from "@/app/actions";
 import { MarcaDaSessao } from "@/components/logo";
-import { Money, paymentLabel } from "@/components/ui";
+import { Empty, Money, paymentLabel } from "@/components/ui";
 import { DeliverButton } from "./deliver-button";
 import { DeliveryExceptions } from "@/components/delivery-forms";
 import { LiveNumber } from "@/components/live-number";
@@ -144,6 +144,11 @@ export default async function Entregador() {
                 ) : null,
               )}
             </ul>
+            {!route.length && (
+              <div className="panel">
+                <Empty>Quando a loja te mandar um pedido, ele aparece aqui.</Empty>
+              </div>
+            )}
 
             {done.length > 0 && (
               <section className="mt-8">

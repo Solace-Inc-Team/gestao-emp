@@ -105,9 +105,17 @@ export default async function Entregas() {
               const mine = inRoute.filter((o) => o.driverId === d.id).reverse();
               return (
                 <div key={d.id} className="border-b border-line last:border-0">
-                  <p className="flex justify-between bg-subtle px-4 py-2 text-[13px] font-medium">
+                  {/* com pedidos, o nome é cabeçalho do grupo; livre, é uma linha comum: está pronto para sair */}
+                  <p className={`flex justify-between px-4 text-[13px] font-medium ${mine.length ? "bg-subtle py-2" : "py-3"}`}>
                     <span>{d.name}</span>
-                    <span className="text-muted">{mine.length ? `${mine.length} em rota` : "livre"}</span>
+                    {mine.length ? (
+                      <span className="text-muted">{mine.length} em rota</span>
+                    ) : (
+                      <span className="flex items-center gap-1.5 text-ok">
+                        <span className="size-1.5 rounded-full bg-ok" aria-hidden="true" />
+                        livre
+                      </span>
+                    )}
                   </p>
                   {mine.map((o) => (
                     <Card key={o.id} id={o.id}>

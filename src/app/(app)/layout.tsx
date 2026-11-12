@@ -72,7 +72,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             {initials(user.name)}
           </span>
           <div className="min-w-0 flex-1 leading-tight">
-            <p className="truncate text-[13px] font-medium">{user.name}</p>
+            <p className="line-clamp-2 text-[13px] font-medium break-words">{user.name}</p>
             <p className="text-xs text-muted">{roleLabel[user.role]}</p>
           </div>
           <Link href="/senha" title="Trocar senha" aria-label="Trocar senha" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg lg:size-8">

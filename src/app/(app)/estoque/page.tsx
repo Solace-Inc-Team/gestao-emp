@@ -49,9 +49,10 @@ export default async function Estoque() {
                   {p.reserved > 0 && <span className="block text-sm font-normal text-muted">{p.reserved} em pedidos aguardando</span>}
                 </td>
                 <td className="num text-right text-xl">{p.returnable ? p.emptyStore : "-"}</td>
-                <td className="num text-right text-xl text-accent">{p.fullTransit}</td>
-                <td className="num text-right text-xl text-accent">{p.returnable ? p.emptyTransit : "-"}</td>
-                <td className={`num text-right text-xl ${p.damaged ? "text-warn-fg" : "text-muted"}`}>{p.damaged || "-"}</td>
+                <td className="num text-right text-xl">{p.fullTransit}</td>
+                <td className="num text-right text-xl">{p.returnable ? p.emptyTransit : "-"}</td>
+                {/* traço só quando não se aplica (produto que não volta); zero é zero */}
+                <td className={`num text-right text-xl ${p.damaged ? "text-warn-fg" : "text-muted"}`}>{p.damaged}</td>
                 <td className="num text-right text-xl text-muted">
                   {p.returnable ? p.fullStore + p.emptyStore + p.fullTransit + p.emptyTransit + p.damaged : "-"}
                 </td>
