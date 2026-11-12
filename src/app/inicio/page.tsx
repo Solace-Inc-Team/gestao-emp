@@ -182,6 +182,7 @@ export default function Inicio() {
 
             <div className="mt-12 grid gap-4 lg:grid-cols-6">
               <article className="reveal panel flex flex-col p-6 sm:p-8 lg:col-span-3">
+                <p className="fig">FIG. 01 · ACERTO</p>
                 <h3 className="text-[17px] font-semibold tracking-tight">Acerto que fecha no centavo</h3>
                 <p className="mt-2 text-muted">
                   O sistema sabe quanto cada entregador deve ter em mãos. Pagamento misto, repasse no meio do dia e gasto
@@ -208,6 +209,7 @@ export default function Inicio() {
               </article>
 
               <article className="reveal panel flex flex-col p-6 sm:p-8 lg:col-span-3">
+                <p className="fig">FIG. 02 · ESTOQUE</p>
                 <h3 className="text-[17px] font-semibold tracking-tight">Estoque de retornáveis</h3>
                 <p className="mt-2 text-muted">
                   Cheios, vazios e avariados, na loja e na rua. Saldo é a soma dos lançamentos; erro se corrige com estorno,
@@ -241,6 +243,7 @@ export default function Inicio() {
               <article className="reveal panel overflow-hidden lg:col-span-4">
                 <div className="grid h-full sm:grid-cols-2">
                   <div className="p-6 sm:p-8">
+                    <p className="fig">FIG. 03 · ENTREGADOR</p>
                     <h3 className="text-[17px] font-semibold tracking-tight">No celular do entregador</h3>
                     <p className="mt-2 text-muted">
                       Só as entregas dele, quanto deve ter em dinheiro e um botão grande pra confirmar, com 5 segundos pra
@@ -248,37 +251,49 @@ export default function Inicio() {
                     </p>
                   </div>
                   <div className="relative min-h-72 bg-subtle">
-                    <Image
-                      src={entregador}
-                      alt="Tela do entregador no celular"
-                      sizes="(min-width: 640px) 260px, 70vw"
-                      className="float absolute top-6 left-1/2 w-[62%] max-w-[240px] -translate-x-1/2 rounded-[1.75rem] border-[6px] border-fg/90 shadow-xl"
-                    />
+                    <div className="float absolute top-6 left-1/2 w-[62%] max-w-[240px] -translate-x-1/2">
+                      <Image
+                        src={entregador}
+                        alt="Tela do entregador no celular"
+                        sizes="(min-width: 640px) 260px, 70vw"
+                        className="w-full rounded-[1.75rem] border-[6px] border-fg/90 shadow-xl"
+                      />
+                      <Chamada x={14} y={24} lado="esq">Em mãos</Chamada>
+                      <Chamada x={10} y={49} lado="esq" largo>Abre o mapa</Chamada>
+                      <Chamada x={70} y={38.5} lado="dir">Só as dele</Chamada>
+                    </div>
                   </div>
                 </div>
               </article>
 
               <article className="reveal panel overflow-hidden lg:col-span-2">
                 <div className="p-6 sm:p-8">
+                  <p className="fig">FIG. 04 · PORTAL</p>
                   <h3 className="text-[17px] font-semibold tracking-tight">Pedido pelo link da loja</h3>
                   <p className="mt-2 text-muted">O cliente pede sozinho e já recebe o QR do Pix.</p>
                 </div>
                 <div className="relative h-72 bg-subtle">
-                  <Image
-                    src={portal}
-                    alt="Pedido pelo site, no celular do cliente"
-                    sizes="240px"
-                    style={atraso(-2500)}
-                    className="float absolute top-6 left-1/2 w-[62%] max-w-[220px] -translate-x-1/2 rounded-[1.75rem] border-[6px] border-fg/90 shadow-xl"
-                  />
+                  <div style={atraso(-2500)} className="float absolute top-6 left-1/2 w-[62%] max-w-[220px] -translate-x-1/2">
+                    <Image
+                      src={portal}
+                      alt="Pedido pelo site, no celular do cliente"
+                      sizes="240px"
+                      className="w-full rounded-[1.75rem] border-[6px] border-fg/90 shadow-xl"
+                    />
+                    <Chamada x={72} y={8.5} lado="dir">Sua loja</Chamada>
+                    <Chamada x={88} y={26} lado="dir">1 toque</Chamada>
+                  </div>
                 </div>
               </article>
             </div>
 
             <ul className="mt-16 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-              {extras.map(({ icon: Icon, t, d }) => (
-                <li key={t}>
-                  <Icon className="size-5 text-muted" aria-hidden="true" />
+              {extras.map(({ icon: Icon, t, d }, i) => (
+                <li key={t} className="border-t border-line pt-5">
+                  <span className="flex items-center justify-between">
+                    <Icon className="size-5 text-muted" aria-hidden="true" />
+                    <span className="fig">{String(i + 1).padStart(2, "0")}</span>
+                  </span>
                   <h3 className="mt-4 font-semibold">{t}</h3>
                   <p className="mt-1 text-muted">{d}</p>
                 </li>
@@ -313,5 +328,19 @@ export default function Inicio() {
         </div>
       </footer>
     </div>
+  );
+}
+
+/**
+ * Chamada técnica sobre uma captura: ponto no alvo (x/y em % da tela), traço e o texto do lado escolhido.
+ * `largo`: só aparece a partir do tablet, quando sobra margem ao lado do celular.
+ */
+function Chamada({ x, y, lado, largo = false, children }: { x: number; y: number; lado: "esq" | "dir"; largo?: boolean; children: string }) {
+  return (
+    <span aria-hidden="true" data-lado={lado} className={`chamada-tec ${largo ? "max-sm:hidden" : ""}`} style={{ left: `${x}%`, top: `${y}%` }}>
+      <span className="chamada-tec-texto">{children}</span>
+      <span className="chamada-tec-traco" />
+      <span className="chamada-tec-ponto" />
+    </span>
   );
 }

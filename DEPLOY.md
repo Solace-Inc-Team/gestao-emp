@@ -72,6 +72,7 @@ Para a demonstração, crie um segundo banco, `gestao-demo-db`. Assim os dados f
 | Variável | Valor |
 | --- | --- |
 | `DATABASE_URL` | URL interna do `gestao-db`, com o usuário dono do banco (o padrão `postgres` do Coolify serve: a migração cria o papel `app_tenant` usado pelo isolamento) |
+| `APP_URL` | `https://app.meudominio.com.br` (prévia do link no WhatsApp e nas redes) |
 | `ADMIN_EMAIL` | seu e-mail da Solace |
 | `ADMIN_PASSWORD` | senha forte, só para o primeiro acesso |
 | `ALERT_TELEGRAM_BOT_TOKEN` e `ALERT_TELEGRAM_CHAT_ID` | opcionais, veja Monitoramento |
