@@ -4,6 +4,8 @@ import { requireUser } from "@/lib/auth";
 import { dashboard, listDrivers } from "@/domain/queries";
 import { todayISO } from "@/lib/period";
 import { LiveNumber } from "@/components/live-number";
+import { SemanaBarras } from "@/components/semana-barras";
+import { comparar } from "@/lib/comparativo";
 import { FiltroPainel } from "./filtro-painel";
 import { Money, StatusBadge, Empty, fmtTime, paymentLabel } from "@/components/ui";
 
@@ -24,6 +26,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
     new Date(`${dia}T12:00:00-03:00`),
   );
   const noDia = ehHoje ? "hoje" : `em ${dia.split("-").reverse().slice(0, 2).join("/")}`;
+  const comparativo = comparar(d.revenue, d.previous, d.emAndamento ? "andamento" : "fechado");
 
   // grave: dinheiro ou cliente esperando agora; aviso: precisa de conferência; dica: configuração
   const alertas: Alerta[] = [];
@@ -80,7 +83,16 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
         <div className="p-5">
           <p className="text-muted">Vendido {noDia}</p>
           <LiveNumber value={d.revenue} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
-          <p className="mt-1 text-sm text-muted">{d.deliveredCount} {d.deliveredCount === 1 ? "pedido entregue" : "pedidos entregues"}</p>
+          <p className="mt-1 text-sm text-muted">
+            {d.deliveredCount} {d.deliveredCount === 1 ? "pedido entregue" : "pedidos entregues"}
+            {comparativo && (
+              <>
+                {" · "}
+                <span className={comparativo.tom === "sobe" ? "text-ok" : comparativo.tom === "desce" ? "text-danger" : ""}>{comparativo.texto}</span>
+              </>
+            )}
+          </p>
+          <SemanaBarras semana={d.week} />
         </div>
         <div className="border-t border-line p-5 sm:border-t-0">
           <p className="text-muted">Dinheiro na rua agora</p>

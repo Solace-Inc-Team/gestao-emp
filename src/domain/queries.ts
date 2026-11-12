@@ -419,7 +419,48 @@ export const dashboard = scoped(async function dashboard(tenantId: string, f: { 
     )
     .groupBy(products.name)
     .orderBy(desc(sql`sum(coalesce(${orderItems.deliveredQuantity}, ${orderItems.quantity}))`));
+  // os 7 dias até o escolhido, para o número do dia ter com o que comparar
+  const weekStart = new Date(since.getTime() - 6 * 864e5);
+  const perDay = await db
+    .select({
+      day: sql<string>`to_char(${orders.deliveredAt} at time zone 'America/Sao_Paulo', 'YYYY-MM-DD')`,
+      cents: sql<number>`sum(${orders.totalCents})::int`,
+    })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.tenantId, tenantId),
+        eq(orders.status, "entregue"),
+        gte(orders.deliveredAt, weekStart),
+        lt(orders.deliveredAt, until),
+        f.driverId ? eq(orders.driverId, f.driverId) : undefined,
+      ),
+    )
+    .groupBy(sql`1`);
+  const week = Array.from({ length: 7 }, (_, i) => {
+    const day = new Date(weekStart.getTime() + i * 864e5 + 12 * 36e5).toLocaleDateString("en-CA", { timeZone: "America/Sao_Paulo" });
+    return { day, cents: perDay.find((d) => d.day === day)?.cents ?? 0 };
+  });
+  // dia em andamento compara com ontem até a mesma hora; dia fechado, com o dia anterior inteiro
+  const agora = Date.now();
+  const emAndamento = agora < until.getTime();
+  const prevUntil = new Date((emAndamento ? agora : until.getTime()) - 864e5);
+  const [{ previous }] = await db
+    .select({ previous: sql<number>`coalesce(sum(${orders.totalCents}), 0)::int` })
+    .from(orders)
+    .where(
+      and(
+        eq(orders.tenantId, tenantId),
+        eq(orders.status, "entregue"),
+        gte(orders.deliveredAt, new Date(since.getTime() - 864e5)),
+        lt(orders.deliveredAt, prevUntil),
+        f.driverId ? eq(orders.driverId, f.driverId) : undefined,
+      ),
+    );
   return {
+    week,
+    previous,
+    emAndamento,
     revenue: delivered.reduce((s, o) => s + o.totalCents, 0),
     deliveredCount: delivered.length,
     // a fila conta também o que sobrou de ontem

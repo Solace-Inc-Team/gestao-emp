@@ -752,3 +752,20 @@ test("backup restaurado sem as regras de isolamento: a subida recria", async () 
   assert.ok(visiveis.length > 0 && visiveis.every((o) => o.t === A.t.id));
   await assert.rejects(withTenant(A.t.id, () => db.execute(sql`insert into suppliers (tenant_id, name) values (${B.t.id}, 'x')`)));
 });
+
+test("painel: semana de 7 dias seguidos, terminando no vendido do dia", async () => {
+  const d = await m.q.dashboard(A.t.id);
+  assert.equal(d.week.length, 7);
+  for (let i = 1; i < 7; i++) {
+    const passo = new Date(`${d.week[i].day}T12:00:00Z`).getTime() - new Date(`${d.week[i - 1].day}T12:00:00Z`).getTime();
+    assert.equal(passo, 864e5, "dias consecutivos, sem pular nem repetir");
+  }
+  assert.equal(d.week[6].cents, d.revenue, "a última barra é o próprio dia");
+  assert.equal(d.emAndamento, true);
+  assert.ok(d.previous >= 0);
+  // dia fechado no passado: semana termina nele e compara com o dia anterior inteiro
+  const antigo = await m.q.dashboard(A.t.id, { day: "2020-01-08" });
+  assert.equal(antigo.week[6].day, "2020-01-08");
+  assert.equal(antigo.week[0].day, "2020-01-02");
+  assert.equal(antigo.emAndamento, false);
+});
