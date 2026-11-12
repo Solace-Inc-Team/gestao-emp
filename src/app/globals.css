@@ -103,6 +103,8 @@ body {
     letter-spacing: -0.01em;
   }
   .panel {
+    /* dentro de grade, o cartão pode encolher: texto comprido corta ou quebra em vez de alargar a página */
+    min-width: 0;
     background: var(--surface);
     border: 1px solid var(--line);
     border-radius: 12px;
@@ -1511,4 +1513,63 @@ input[type="date"].input::-webkit-calendar-picker-indicator {
 }
 input[type="date"].input:hover::-webkit-calendar-picker-indicator {
   background: var(--fg);
+}
+
+/* desvios da entrega (parcial, não entregue): botão que abre o formulário logo abaixo */
+summary.desvio {
+  list-style: none;
+  cursor: pointer;
+}
+summary.desvio::-webkit-details-marker {
+  display: none;
+}
+.desvio-seta {
+  margin-left: auto;
+  color: var(--muted);
+  transition: rotate var(--dur) var(--ease-chegada);
+}
+summary.desvio {
+  justify-content: flex-start;
+}
+details[open] > summary.desvio {
+  background: var(--subtle);
+}
+details[open] > summary.desvio .desvio-seta {
+  rotate: 180deg;
+}
+
+/* barra do novo pedido no celular: acima da barra de gestos do iPhone */
+.barra-pedido {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* tabela que no celular vira pilha de blocos (uma linha por bloco), sem duplicar formulários */
+@media (max-width: 639px) {
+  .tabela-pilha,
+  .tabela-pilha tbody,
+  .tabela-pilha tr,
+  .tabela-pilha td {
+    display: block;
+  }
+  .tabela-pilha thead {
+    display: none;
+  }
+  .tabela-pilha tr {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--line);
+  }
+  .tabela-pilha tr:last-child {
+    border-bottom: 0;
+  }
+  .tabela-pilha td {
+    padding: 0;
+    border: 0;
+    text-align: left;
+  }
+  .tabela-pilha td + td {
+    margin-top: 0.25rem;
+  }
+  .tabela-pilha td:empty {
+    display: none;
+  }
 }

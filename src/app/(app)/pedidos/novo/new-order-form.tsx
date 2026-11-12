@@ -96,10 +96,11 @@ export function NewOrderForm({
   const total = subtotal + feeCents - discountCents;
   // o total animado vem num segundo momento: o número do + aparece na hora mesmo em celular fraco
   const shownTotal = useDeferredValue(total);
+  const unidades = items.reduce((s, i) => s + i.quantity, 0);
   const step = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, Math.min(99, (q[id] ?? 0) + d)) }));
 
   return (
-    <ActionForm action={createOrderAction} className="grid gap-6 lg:grid-cols-[1fr_20rem]">
+    <ActionForm action={createOrderAction} className="grid gap-6 pb-24 lg:grid-cols-[1fr_20rem] lg:pb-0">
       <input type="hidden" name="mode" value={mode} ref={modeRef} />
       <input type="hidden" name="items" value={JSON.stringify(items)} />
       <input type="hidden" name="customerId" value={creating ? "" : (customer?.id ?? "")} />
@@ -358,6 +359,19 @@ export function NewOrderForm({
           </div>
         </div>
       </aside>
+
+      {/* no celular o total fica à vista enquanto se escolhe os produtos; o resumo completo segue no fim da página */}
+      <div className="barra-pedido fixed inset-x-0 bottom-0 z-20 flex items-center gap-3 border-t border-line bg-bg/95 px-4 pt-3 backdrop-blur lg:hidden">
+        <div className="min-w-0 flex-1">
+          <p className="text-[13px] text-muted">
+            {unidades ? `${unidades} ${unidades === 1 ? "item" : "itens"}` : "Nenhum produto"}
+          </p>
+          <LiveNumber value={shownTotal} cents className="text-xl font-semibold" />
+        </div>
+        <button className="btn btn-primary h-12 shrink-0 px-5" disabled={!items.length}>
+          {mode === "balcao" ? "Registrar venda" : "Lançar pedido"}
+        </button>
+      </div>
     </ActionForm>
   );
 }

@@ -77,6 +77,32 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
 
       <div className="panel overflow-x-auto">
         {orders.length ? (
+          <>
+          {/* no celular, cartão por pedido: o que importa na primeira linha, o resto embaixo */}
+          <ul className="sm:hidden">
+            {orders.map((o) => (
+              <li key={o.id} className={`border-b border-line last:border-0 ${isNew(o.createdAt) ? "row-new" : ""}`}>
+                <Link href={`/pedidos/${o.id}`} className="block px-4 py-3 active:bg-subtle">
+                  <span className="flex items-baseline justify-between gap-3">
+                    <span className="min-w-0 truncate font-medium">
+                      <span className="num font-normal text-muted">#{o.number}</span> {o.customerName ?? "Balcão"}
+                    </span>
+                    <Money cents={o.totalCents} className="shrink-0 font-medium" />
+                  </span>
+                  {o.customerAddress && <span className="mt-0.5 block truncate text-[13px] text-muted">{o.customerAddress}</span>}
+                  <span className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-muted">
+                    <StatusBadge status={o.status} />
+                    {o.origin === "portal" && <SiteBadge />}
+                    <span>
+                      {paymentLabel[o.paymentMethod]}
+                      {o.driverName ? `, ${o.driverName}` : ""}, {fmtDateTime(o.createdAt)}
+                    </span>
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden sm:block">
           <table className="table min-w-[46rem]">
             <thead>
               <tr>
@@ -108,6 +134,8 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
               ))}
             </tbody>
           </table>
+          </div>
+          </>
         ) : (
           <div className="flex flex-col items-center px-6 py-14 text-center">
             <ReceiptText size={28} strokeWidth={1.5} className="text-muted" aria-hidden="true" />

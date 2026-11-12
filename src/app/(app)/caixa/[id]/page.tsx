@@ -137,7 +137,8 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                 <tr key={o.id}>
                   <td className="num text-muted"><Link href={`/pedidos/${o.id}`} className="hover:text-accent">#{o.number}</Link></td>
                   <td>{o.customerName ?? "Balcão"}</td>
-                  <td>{paymentLabel[o.paymentMethod]}</td>
+                  {/* no celular a forma de pagamento sai para o total caber sem rolar */}
+                  <td className="hidden sm:table-cell">{paymentLabel[o.paymentMethod]}</td>
                   <td><StatusBadge status={o.status} /></td>
                   <td className="text-right"><Money cents={o.totalCents} className={o.status === "cancelado" ? "line-through text-muted" : ""} /></td>
                 </tr>
@@ -200,7 +201,8 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                   <input type="hidden" name="kind" value="saida" />
                   <h3 className="font-semibold">Gasto autorizado</h3>
                   <p className="text-[13px] text-muted">Pago com o dinheiro das entregas, com comprovante. Entra nas despesas.</p>
-                  <div className="grid grid-cols-2 gap-3">
+                  {/* em meia coluna, valor e tipo lado a lado cortavam "Combustível": um embaixo do outro */}
+                  <div className="grid gap-3">
                     <div>
                       <label className="label" htmlFor="out-amount">Valor</label>
                       <input id="out-amount" name="amount" inputMode="decimal" required maxLength={12} className="input num" placeholder="0,00" />

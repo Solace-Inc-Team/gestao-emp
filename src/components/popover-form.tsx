@@ -28,7 +28,7 @@ export function PopoverForm({
         if (e.key === "Escape") e.currentTarget.open = false;
       }}
     >
-      <summary className="tap cursor-pointer list-none text-[13px] text-muted hover:text-fg">{label}</summary>
+      <summary className="tap cursor-pointer list-none whitespace-nowrap text-[13px] text-muted hover:text-fg">{label}</summary>
       <ActionForm
         action={action}
         confirm={confirm}

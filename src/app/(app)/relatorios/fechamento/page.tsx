@@ -33,16 +33,17 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
 
   return (
     <div className="print-sheet mx-auto max-w-3xl">
-      <div className="no-print mb-6 flex flex-wrap items-end justify-between gap-3">
+      {/* o campo já mostra a data: o rótulo fica para leitor de tela e o cabeçalho alinha pelo centro */}
+      <div className="no-print mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
           <Link href="/relatorios" className="text-accent hover:underline">Relatórios</Link>
           <span className="text-muted">/</span>
           <h1 className="h1">Fechamento do dia</h1>
         </div>
-        <div className="flex flex-wrap items-end gap-2">
-          <form className="flex items-end gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <form className="flex items-center gap-2">
             <div>
-              <label className="label" htmlFor="dia">Dia</label>
+              <label className="sr-only" htmlFor="dia">Dia</label>
               <input id="dia" name="dia" type="date" defaultValue={day} max={todayISO()} className="input" />
             </div>
             <button className="btn">Ver</button>

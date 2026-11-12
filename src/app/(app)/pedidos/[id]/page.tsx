@@ -1,3 +1,4 @@
+import { Revelar } from "@/components/revelar";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/ctx";
@@ -115,7 +116,8 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
             <h2 className="h2 mb-3">Histórico</h2>
             <ol className="space-y-2">
               {o.history.map((h, i) => (
-                <li key={i} className="flex flex-wrap justify-between gap-2">
+                // no celular a data vai sempre para baixo; no computador, sempre à direita
+                <li key={i} className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-3">
                   <span>
                     {h.action === "pedido.criar" && o.origin === "portal" ? (
                       "Pedido feito pelo cliente no site"
@@ -131,7 +133,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                       </>
                     )}
                   </span>
-                  <span className="text-sm text-muted">{fmtDateTime(h.createdAt)}</span>
+                  <span className="shrink-0 text-sm whitespace-nowrap text-muted">{fmtDateTime(h.createdAt)}</span>
                 </li>
               ))}
             </ol>
@@ -238,22 +240,24 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                   O turno do entregador deste pedido ainda está aberto. <Link href={`/caixa/${o.shiftId}`} className="underline">Faça o acerto</Link> antes de estornar.
                 </p>
               ) : (
-              <ActionForm action={refundOrderAction} className="space-y-3" confirm="Estornar este pedido? Não dá para desfazer.">
-                <input type="hidden" name="orderId" value={o.id} />
-                <div>
-                  <label className="label" htmlFor="refund-reason">Motivo</label>
-                  <input id="refund-reason" name="reason" required minLength={3} className="input" />
-                </div>
-                <label className="flex items-center gap-2 text-[13px]">
-                  <input type="checkbox" name="restock" defaultChecked />
-                  Os produtos voltaram para a loja
-                </label>
-                <div>
-                  <label className="label" htmlFor="refund-pw">Sua senha, para confirmar</label>
-                  <input id="refund-pw" name="confirmPassword" type="password" autoComplete="current-password" required className="input" />
-                </div>
-                <button className="btn btn-danger">Estornar pedido</button>
-              </ActionForm>
+              <Revelar label="Estornar pedido" perigo>
+                <ActionForm action={refundOrderAction} className="space-y-3" confirm="Estornar este pedido? Não dá para desfazer.">
+                  <input type="hidden" name="orderId" value={o.id} />
+                  <div>
+                    <label className="label" htmlFor="refund-reason">Motivo</label>
+                    <input id="refund-reason" name="reason" required minLength={3} className="input" />
+                  </div>
+                  <label className="flex items-center gap-2 text-[13px]">
+                    <input type="checkbox" name="restock" defaultChecked />
+                    Os produtos voltaram para a loja
+                  </label>
+                  <div>
+                    <label className="label" htmlFor="refund-pw">Sua senha, para confirmar</label>
+                    <input id="refund-pw" name="confirmPassword" type="password" autoComplete="current-password" required className="input" />
+                  </div>
+                  <button className="btn btn-danger">Estornar pedido</button>
+                </ActionForm>
+              </Revelar>
               )}
             </section>
           )}

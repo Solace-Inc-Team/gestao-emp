@@ -1,4 +1,5 @@
 import { ActionForm } from "./action-form";
+import { Revelar } from "./revelar";
 import { occurrenceAction } from "@/app/actions";
 import { occurrenceKinds } from "@/domain/orders";
 import { PartialDeliveryForm, type PartialOrder } from "./partial-delivery-form";
@@ -9,14 +10,13 @@ type Item = { id: string; name: string; quantity: number; unitPriceCents: number
 export function DeliveryExceptions({ order, items, forDriver = false }: { order: PartialOrder; items: Item[]; forDriver?: boolean }) {
   const orderId = order.id;
   return (
-    <div className="space-y-1">
-      <details>
-        <summary className="tap cursor-pointer text-[13px] text-muted hover:text-fg">Entreguei só uma parte</summary>
+    // botões secundários de verdade: no celular do entregador são alvo de dedo, não texto solto
+    <div className="grid gap-2">
+      <Revelar label="Entreguei só uma parte">
         <PartialDeliveryForm order={order} items={items} forDriver={forDriver} />
-      </details>
-      <details>
-        <summary className="tap cursor-pointer text-[13px] text-muted hover:text-fg">Não consegui entregar</summary>
-        <ActionForm action={occurrenceAction} className="mt-2 space-y-3 rounded-lg bg-subtle p-3">
+      </Revelar>
+      <Revelar label="Não consegui entregar">
+        <ActionForm action={occurrenceAction} className="space-y-3 rounded-lg bg-subtle p-3">
           <input type="hidden" name="orderId" value={orderId} />
           <div>
             <label className="label" htmlFor={`okind-${orderId}`}>O que aconteceu</label>
@@ -36,7 +36,7 @@ export function DeliveryExceptions({ order, items, forDriver = false }: { order:
           </p>
           <button className="btn btn-danger w-full">Registrar e devolver à fila</button>
         </ActionForm>
-      </details>
+      </Revelar>
     </div>
   );
 }

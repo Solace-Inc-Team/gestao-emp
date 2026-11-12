@@ -42,7 +42,8 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
       </form>
 
       <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-        <div className="space-y-6">
+        {/* min-w-0: a tabela larga rola dentro do quadro em vez de alargar a coluna e a página */}
+        <div className="min-w-0 space-y-6">
           <section className="panel grid sm:grid-cols-[auto_1fr] sm:divide-x sm:divide-line">
             <div className="p-5 sm:pr-8">
               <p className="text-[13px] text-muted">Total no período</p>

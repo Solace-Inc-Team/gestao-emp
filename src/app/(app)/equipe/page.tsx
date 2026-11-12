@@ -15,20 +15,24 @@ export default async function Equipe() {
       <PageHeader title="Equipe" />
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <section className="panel overflow-x-auto">
-          <table className="table">
-            <thead><tr><th>Nome</th><th>Perfil</th><th>Situação</th><th></th></tr></thead>
+          {/* no celular cada pessoa vira um bloco: nome e perfil em cima, as ações embaixo */}
+          <table className="table tabela-pilha">
+            <thead><tr><th>Nome</th><th>Perfil</th><th></th></tr></thead>
             <tbody>
               {team.map((u) => (
                 <tr key={u.id} className={u.active ? "" : "text-muted"}>
                   <td>
-                    <p className="font-medium">{u.name}</p>
+                    {/* "ativo" é o normal; só quem saiu ganha a marca, e a tabela sobra espaço para as ações */}
+                    <p className="font-medium">
+                      {u.name}
+                      {!u.active && <span className="ml-2 rounded bg-subtle px-1.5 py-0.5 text-xs font-medium text-muted">desativado</span>}
+                    </p>
                     <p className="text-sm text-muted">{u.email}</p>
                   </td>
                   <td>{roleLabel[u.role]}</td>
-                  <td>{u.active ? "Ativo" : "Desativado"}</td>
                   <td className="text-right">
                     {u.id !== user.userId && (
-                      <div className="flex items-center justify-end gap-3">
+                      <div className="flex items-center justify-start gap-3 sm:justify-end">
                         <PopoverForm label="Redefinir senha" action={resetUserPasswordAction} submit="Salvar senha nova">
                           <input type="hidden" name="userId" value={u.id} />
                           <label className="label mb-0" htmlFor={`p-${u.id}`}>Senha nova</label>

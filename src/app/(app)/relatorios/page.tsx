@@ -32,6 +32,7 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
           <a href="/exportar" className="btn" title="Todos os dados da empresa em planilhas, num ZIP">Exportar todos os dados</a>
         )}
       </PageHeader>
+      <p className="-mt-3 mb-4 text-[13px] text-muted sm:hidden">No celular, arraste as tabelas para o lado para ver todas as colunas.</p>
       <form className="panel mb-6 flex flex-wrap items-end gap-3 p-4">
         <div>
           <label className="label" htmlFor="de">De</label>
@@ -109,7 +110,7 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
         <section className="panel overflow-x-auto">
           <h2 className="h2 border-b border-line px-4 py-3">Por entregador</h2>
           {breakdown.byDriver.length ? (
-            <table className="table">
+            <table className="table min-w-[32rem]">
               <thead>
                 <tr>
                   <th>Quem entregou</th><th className="text-right">Pedidos</th><th className="text-right">Itens</th><th className="text-right">Dinheiro</th>
@@ -138,7 +139,7 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
         <section className="panel overflow-x-auto">
           <h2 className="h2 border-b border-line px-4 py-3">Por produto</h2>
           {breakdown.byProduct.length ? (
-            <table className="table">
+            <table className="table min-w-[32rem]">
               <thead><tr><th>Produto</th><th className="text-right">Qtd.</th><th className="text-right">Sem troca de vasilhame</th><th className="text-right">Total</th></tr></thead>
               <tbody>
                 {breakdown.byProduct.map((r) => (

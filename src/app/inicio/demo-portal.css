@@ -31,7 +31,7 @@
 
 /* os dígitos têm largura reservada: o total cresce sem empurrar o R$ */
 .dp .dp-total__digitos {
-  min-width: 6ch;
+  min-width: 4.8ch;
   justify-content: flex-end;
   text-align: right;
 }

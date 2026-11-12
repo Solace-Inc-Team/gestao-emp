@@ -1,3 +1,4 @@
+import { Revelar } from "@/components/revelar";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/ctx";
@@ -161,20 +162,22 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                   <p className="mb-3 text-sm text-muted">
                     Quando o cliente pedir (LGPD). Apaga nome, telefone, endereço e observações, inclusive do histórico. Os pedidos ficam, sem identificar a pessoa. Não tem volta.
                   </p>
-                  <ActionForm action={anonymizeCustomerAction} confirm={`Apagar os dados pessoais de ${c.name}? Não tem volta.`}>
-                    <input type="hidden" name="customerId" value={c.id} />
-                    <div className="mb-3 max-w-xs">
-                      <label className="label" htmlFor="anon-pw">Sua senha, para confirmar</label>
-                      <input id="anon-pw" name="confirmPassword" type="password" autoComplete="current-password" required className="input" />
-                    </div>
-                    <button className="btn btn-danger">Apagar dados do cliente</button>
-                  </ActionForm>
+                  <Revelar label="Apagar dados do cliente" perigo>
+                    <ActionForm action={anonymizeCustomerAction} confirm={`Apagar os dados pessoais de ${c.name}? Não tem volta.`}>
+                      <input type="hidden" name="customerId" value={c.id} />
+                      <div className="mb-3 max-w-xs">
+                        <label className="label" htmlFor="anon-pw">Sua senha, para confirmar</label>
+                        <input id="anon-pw" name="confirmPassword" type="password" autoComplete="current-password" required className="input" />
+                      </div>
+                      <button className="btn btn-danger">Apagar dados do cliente</button>
+                    </ActionForm>
+                  </Revelar>
                 </section>
               )}
             </>
           )}
         </div>
-        <section className="panel">
+        <section className="panel self-start overflow-x-auto">
           <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line px-4 py-3">
             <h2 className="h2">Pedidos</h2>
           </div>
@@ -185,7 +188,8 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                   <tr key={o.id}>
                     <td className="num text-muted"><Link href={`/pedidos/${o.id}`} className="hover:text-accent">#{o.number}</Link></td>
                     <td>{fmtDateTime(o.createdAt)}</td>
-                    <td>{paymentLabel[o.paymentMethod]}</td>
+                    {/* no celular a forma de pagamento sai: o resto cabe sem rolar */}
+                    <td className="hidden sm:table-cell">{paymentLabel[o.paymentMethod]}</td>
                     <td><StatusBadge status={o.status} /></td>
                     <td className="text-right"><Money cents={o.totalCents} /></td>
                   </tr>
