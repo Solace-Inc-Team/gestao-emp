@@ -1,22 +1,6 @@
 /* Demo do hero: tudo escopado em .de, nas cores e na fonte do sistema. */
 .de .ss-stage {
   --g: 40px;
-  --ss-font: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
-  --ss-accent: var(--marca);
-  --ss-accent-soft: var(--accent-soft);
-  --ss-accent-text: var(--marca);
-  --ss-surface: var(--surface);
-  --ss-canvas: var(--subtle);
-  --ss-chrome: var(--surface);
-  --ss-line: var(--line);
-  --ss-text-strong: var(--fg);
-  --ss-text: var(--muted);
-  --ss-success: var(--ok);
-  --ss-success-soft: var(--ok-soft);
-  --ss-success-text: var(--ok);
-  /* a página é o fundo: nada de placa atrás da janela */
-  background: transparent;
-  overflow: hidden;
 }
 
 .de .de-janela {
@@ -274,12 +258,6 @@
 .de .de-card__acao {
   display: grid;
   margin-top: 10px;
-}
-
-/* o botão principal do sistema é da cor do texto, não azul */
-.de .de-entregar[data-variant="primary"] {
-  background: var(--fg);
-  color: var(--bg);
 }
 
 .de .de-entregar {

@@ -1,8 +1,8 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import { Badge, Bar, Button, Collapse, Count, Phone, Roll, Stage, States, Window, type Act } from "@/vendor/stageshow";
 import { LayoutDashboard, MapPin, Package, Truck, Users, Wallet } from "lucide-react";
+import { brl, useEscuro } from "./palco";
 import "./demo-entrega.css";
 
 // O hero da página: o entregador confirma no celular e o painel da loja muda sozinho.
@@ -30,7 +30,6 @@ type S = { atual: number; fase: Fase; resta: number; vendido: number; rua: numbe
 const INICIO: S = { atual: 0, fase: "rota", resta: 5, vendido: 106300, rua: 24800, entregues: 15 };
 const DEPOIS: S = { ...INICIO, fase: "entregue", vendido: INICIO.vendido + 11500, rua: INICIO.rua + 11500, entregues: 16 };
 
-const brl = (c: number) => `R$ ${(c / 100).toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`;
 const REPOUSO = { x: 930, y: 470 };
 
 async function script(a: Act<S>) {
@@ -54,16 +53,6 @@ async function script(a: Act<S>) {
     await a.wait(700);
   }
 }
-
-// o tema do palco acompanha o claro/escuro do sistema, como o resto da página
-const escuro = {
-  sub: (fn: () => void) => {
-    const m = matchMedia("(prefers-color-scheme: dark)");
-    m.addEventListener("change", fn);
-    return () => m.removeEventListener("change", fn);
-  },
-  get: () => matchMedia("(prefers-color-scheme: dark)").matches,
-};
 
 const NAV = [
   { icon: LayoutDashboard, nome: "Painel" },
@@ -126,7 +115,7 @@ function Cartao({ p, s, topo }: { p: Pedido; s: S; topo: boolean }) {
 }
 
 export function DemoEntrega() {
-  const dark = useSyncExternalStore(escuro.sub, escuro.get, () => false);
+  const dark = useEscuro();
   return (
     <Stage<S>
       width={1040}
@@ -137,7 +126,7 @@ export function DemoEntrega() {
       script={script}
       cursor={{ at: { wide: REPOUSO, compact: { x: 330, y: 540 } }, style: "touch" }}
       theme={dark ? "dark" : "light"}
-      className="de"
+      className="de palco"
     >
       {(s, _rect, layout) => {
         const linhas = [];

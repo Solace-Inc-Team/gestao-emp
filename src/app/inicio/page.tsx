@@ -6,6 +6,7 @@ import { Logo } from "@/components/logo";
 import { InView } from "@/components/in-view";
 import { LiveNumber } from "@/components/live-number";
 import { BairroRota, Botijao, Galao, Registro, Regua } from "./prancha";
+import { DemoAcerto } from "./demo-acerto";
 import { DemoEntrega } from "./demo-entrega";
 import entregador from "../../../public/telas/entregador.png";
 import portal from "../../../public/telas/portal.png";
@@ -171,31 +172,22 @@ export default function Inicio() {
             </h2>
 
             <div className="mt-12 grid gap-4 lg:grid-cols-6">
-              <article className="reveal panel flex flex-col p-6 sm:p-8 lg:col-span-3">
-                <p className="fig">FIG. 01 · ACERTO</p>
-                <h3 className="text-[17px] font-semibold tracking-tight">Acerto que fecha no centavo</h3>
-                <p className="mt-2 text-muted">
-                  O sistema sabe quanto cada entregador deve ter em mãos. Pagamento misto, repasse no meio do dia e gasto
-                  autorizado entram na conta.
-                </p>
-                <InView className="mt-8">
-                  <dl className="receipt num rounded-xl border border-line bg-bg p-5 text-[14px]">
-                    <div style={atraso(0)} className="print flex justify-between py-1"><dt className="text-muted">Troco inicial</dt><dd>R$ 30,00</dd></div>
-                    <div style={atraso(140)} className="print flex justify-between py-1"><dt className="text-muted">Recebido em dinheiro</dt><dd>R$ 385,00</dd></div>
-                    <div style={atraso(280)} className="print flex justify-between py-1"><dt className="text-muted">Repasse ao caixa</dt><dd>− R$ 200,00</dd></div>
-                    <div style={atraso(420)} className="print flex justify-between py-1"><dt className="text-muted">Gasolina autorizada</dt><dd>− R$ 50,00</dd></div>
-                    <div style={atraso(560)} className="print mt-2 flex justify-between border-t border-dashed border-line pt-3 font-semibold">
-                      <dt>Deve apresentar</dt><dd><LiveNumber value={16500} cents fromZero="visible" /></dd>
-                    </div>
-                    <div style={atraso(700)} className="print flex items-center justify-between py-1">
-                      <dt className="text-muted">Contado</dt>
-                      <dd className="flex items-center gap-2">
-                        R$ 165,00
-                        <span style={atraso(1040)} className="stamp rounded-full bg-ok-soft px-2 py-0.5 text-[12px] font-medium text-ok">sem diferença</span>
-                      </dd>
-                    </div>
-                  </dl>
-                </InView>
+              <article className="reveal panel flex flex-col overflow-hidden lg:col-span-3">
+                <div className="p-6 sm:p-8">
+                  <p className="fig">FIG. 01 · ACERTO</p>
+                  <h3 className="text-[17px] font-semibold tracking-tight">Acerto que fecha no centavo</h3>
+                  <p className="mt-2 text-muted">
+                    O sistema sabe quanto cada entregador deve ter em mãos. Pagamento misto, repasse no meio do dia e gasto
+                    autorizado entram na conta.
+                  </p>
+                </div>
+                <div
+                  role="img"
+                  aria-label="Acerto do João: deve apresentar R$ 165,00, o caixa digita 165,00, o sistema mostra bateu, sem diferença, e o acerto é fechado"
+                  className="mt-auto bg-subtle"
+                >
+                  <DemoAcerto />
+                </div>
               </article>
 
               <article className="reveal panel flex flex-col p-6 sm:p-8 lg:col-span-3">

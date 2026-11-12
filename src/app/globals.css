@@ -685,8 +685,7 @@ body[data-confirmando] .deliver-btn {
 /* o conteúdo do passo é que entra: o fundo branco fica, senão a grade cinza aparece no buraco */
 @media (scripting: enabled) {
   [data-inview="false"] .step > *,
-  [data-inview="false"] .print,
-  [data-inview="false"] .stamp {
+  [data-inview="false"] .print {
     opacity: 0;
   }
 }
@@ -699,15 +698,9 @@ body[data-confirmando] .deliver-btn {
     1s ease var(--d, 0ms) both step-glow;
 }
 
-/* recibo do acerto imprime linha por linha e o selo é carimbado no fim */
+/* linhas da tabela de estoque entram uma a uma */
 [data-inview="true"] .print {
   animation: 420ms var(--ease-out) var(--d, 0ms) both print-in;
-}
-.stamp {
-  display: inline-block;
-}
-[data-inview="true"] .stamp {
-  animation: 520ms var(--ease-spring) var(--d, 0ms) both stamp;
 }
 
 /* com rolagem: painel inclinado que se endireita, blocos que sobem ao entrar e cabeçalho que ganha fundo */
@@ -789,7 +782,6 @@ body[data-confirmando] .deliver-btn {
   .float,
   [data-inview] .step > *,
   [data-inview] .print,
-  [data-inview] .stamp,
   [data-inview] .steps-line {
     animation: none !important;
     opacity: 1 !important;

@@ -1,0 +1,150 @@
+/* FIG. 01: janela presa no alto, centrada, saindo por baixo do card */
+.da .ss-stage {
+  --g: 48px;
+}
+
+.da .da-janela {
+  position: absolute;
+  top: 28px;
+  left: var(--g);
+  right: var(--g);
+  height: 380px;
+  box-shadow: var(--ss-shadow-hero);
+}
+
+.da .da-corpo {
+  display: grid;
+  grid-template-columns: 196px minmax(0, 1fr);
+  column-gap: 24px;
+  align-content: start;
+  padding: 20px 20px 0;
+}
+
+.da .da-janela .ss-window__body {
+  background: var(--ss-surface);
+}
+
+.da .da-conta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+.da .da-termo {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.da .da-termo dt {
+  color: var(--ss-text);
+}
+
+.da .da-termo dd {
+  margin: 0;
+  color: var(--ss-text-strong);
+}
+
+.da .da-termo--total {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px dashed var(--ss-line);
+  font-weight: 600;
+}
+
+.da .da-termo--total dt {
+  color: var(--ss-text-strong);
+}
+
+.da .da-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.da .da-campo .ss-field__box {
+  height: 44px;
+}
+
+.da .da-campo .ss-field__value,
+.da .da-campo .ss-field__placeholder {
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.da .da-rs {
+  color: var(--ss-text);
+  font-size: 15px;
+}
+
+.da .da-faixa {
+  display: grid;
+  min-height: 32px;
+  margin: 10px 0 12px;
+  align-items: center;
+}
+
+.da .da-dica {
+  color: var(--ss-text);
+  font-size: 12.5px;
+}
+
+.da .da-bateu {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 99px;
+  background: var(--ss-success-soft);
+  color: var(--ss-success-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.da .da-fechar {
+  width: 100%;
+  height: 40px;
+  font-size: 14px;
+}
+
+/* o resto da tela, só para a janela não acabar no vazio; sai pela borda de baixo */
+.da .da-lancamentos {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ss-line);
+}
+
+.da .da-lancamento {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* estreito: só o total da conta e o formulário */
+.da .ss-stage[data-layout="compact"] {
+  --g: 16px;
+}
+
+.da .ss-stage[data-layout="compact"] .da-janela {
+  top: var(--g);
+}
+
+.da .ss-stage[data-layout="compact"] .da-corpo {
+  grid-template-columns: minmax(0, 1fr);
+  row-gap: 14px;
+}
+
+.da .ss-stage[data-layout="compact"] .da-termo:not(.da-termo--total) {
+  display: none;
+}
+
+.da .ss-stage[data-layout="compact"] .da-termo--total {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
