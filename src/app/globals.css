@@ -660,11 +660,6 @@ body[data-confirmando] .deliver-btn {
   }
 }
 
-/* a captura do painel some embaixo, como se continuasse */
-.hero-shot {
-  mask-image: linear-gradient(to bottom, #000 70%, transparent);
-}
-
 /* página inicial: entrada do topo em sequência */
 .hero-in {
   animation: 700ms var(--ease-out) var(--d, 0ms) both hero-up;
@@ -736,15 +731,6 @@ body[data-confirmando] .deliver-btn {
     animation-timeline: scroll();
     animation-range: 0 80px;
   }
-  .hero-stage {
-    perspective: 1400px;
-  }
-  .hero-tilt {
-    transform-origin: 50% 0;
-    animation: tilt linear both;
-    animation-timeline: view();
-    animation-range: entry 0% cover 45%;
-  }
   .reveal {
     animation: hero-up linear both;
     animation-timeline: view();
@@ -794,17 +780,11 @@ body[data-confirmando] .deliver-btn {
     rotate: -8deg;
   }
 }
-@keyframes tilt {
-  from {
-    transform: rotateX(20deg) scale(0.93);
-  }
-}
 
 /* menos movimento: tudo já no lugar final */
 @media (prefers-reduced-motion: reduce) {
   .hero-in,
   .hero-word,
-  .hero-tilt,
   .reveal,
   .float,
   [data-inview] .step > *,

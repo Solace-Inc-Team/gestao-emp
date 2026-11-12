@@ -1,0 +1,367 @@
+/* Demo do hero: tudo escopado em .de, nas cores e na fonte do sistema. */
+.de .ss-stage {
+  --g: 40px;
+  --ss-font: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --ss-accent: var(--marca);
+  --ss-accent-soft: var(--accent-soft);
+  --ss-accent-text: var(--marca);
+  --ss-surface: var(--surface);
+  --ss-canvas: var(--subtle);
+  --ss-chrome: var(--surface);
+  --ss-line: var(--line);
+  --ss-text-strong: var(--fg);
+  --ss-text: var(--muted);
+  --ss-success: var(--ok);
+  --ss-success-soft: var(--ok-soft);
+  --ss-success-text: var(--ok);
+  /* a página é o fundo: nada de placa atrás da janela */
+  background: transparent;
+  overflow: hidden;
+}
+
+.de .de-janela {
+  position: absolute;
+  top: var(--g);
+  left: var(--g);
+  width: 840px;
+  height: 620px;
+  box-shadow: var(--ss-shadow-hero);
+}
+
+.de .de-nav {
+  will-change: transform;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 10px 0;
+}
+
+.de .de-marca {
+  margin: 0 0 14px 8px;
+  color: var(--ss-text-strong);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.de .de-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 7px;
+  color: var(--ss-text);
+  font-size: 13px;
+}
+
+.de .de-nav__item[data-on] {
+  background: var(--ss-surface);
+  box-shadow: 0 0 0 1px var(--ss-line);
+  color: var(--ss-text-strong);
+  font-weight: 500;
+}
+
+.de .de-main {
+  padding: 16px 16px 0;
+}
+
+.de .de-numeros {
+  display: grid;
+  grid-template-columns: 228px 228px;
+  gap: 16px;
+}
+
+.de .de-numero {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px;
+  border: 1px solid var(--ss-line);
+  border-radius: 10px;
+  background: var(--ss-surface);
+}
+
+.de .de-rotulo,
+.de .de-sub {
+  color: var(--ss-text);
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+
+.de .de-valor {
+  color: var(--ss-text-strong);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  line-height: 1.2;
+}
+
+.de .de-colunas {
+  display: grid;
+  grid-template-columns: 472px 1fr;
+  gap: 24px;
+  margin-top: 20px;
+}
+
+.de .de-lista {
+  border: 1px solid var(--ss-line);
+  border-radius: 10px;
+  background: var(--ss-surface);
+  overflow: hidden;
+}
+
+.de .de-lista__topo {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--ss-line);
+  color: var(--ss-text-strong);
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.de .de-linha {
+  display: grid;
+  grid-template-columns: 40px minmax(0, 1fr) 88px 84px;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--ss-line);
+  font-size: 13px;
+  transition: background-color 0.3s ease;
+}
+
+.de .de-linha[data-foco] {
+  background: var(--ss-canvas);
+}
+
+.de .de-linha__num {
+  color: var(--ss-text);
+  font-variant-numeric: tabular-nums;
+}
+
+.de .de-linha__quem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  color: var(--ss-text-strong);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.de .de-linha__quem small {
+  color: var(--ss-text);
+  font-size: 12px;
+  font-weight: 400;
+}
+
+.de .de-status {
+  justify-self: start;
+}
+
+.de .de-linha__valor {
+  color: var(--ss-text-strong);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.de .de-lado {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding-top: 14px;
+}
+
+.de .de-lado__linha {
+  display: flex;
+  gap: 12px;
+}
+
+/* o celular atravessa a borda direita da janela, sobre a coluna de enchimento */
+.de .de-celular {
+  position: absolute;
+  top: var(--g);
+  right: var(--g);
+  box-shadow: var(--ss-shadow-satellite), 0 30px 50px -20px rgb(15 23 42 / 0.35);
+}
+
+/* dentro do celular as medidas são em pontos do iOS */
+.de .de-app {
+  position: absolute;
+  inset: 0;
+  padding: 70px 16px 0;
+  background: var(--subtle);
+  font-family: var(--ss-font);
+}
+
+.de .de-app__ola {
+  display: block;
+  color: var(--ss-text);
+  font-size: 16px;
+}
+
+.de .de-app__titulo {
+  display: block;
+  margin: 2px 0 14px;
+  color: var(--ss-text-strong);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.de .de-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+  padding: 18px;
+  border: 1px solid var(--ss-line);
+  border-radius: 16px;
+  background: var(--ss-surface);
+}
+
+.de .de-card__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.de .de-card__cliente {
+  color: var(--ss-text-strong);
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.de .de-card__num {
+  color: var(--ss-text);
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.de .de-card__rua {
+  display: flex;
+  line-height: 20px;
+  align-items: center;
+  gap: 6px;
+  color: var(--ss-accent);
+  font-size: 15px;
+}
+
+.de .de-card__item {
+  color: var(--ss-text-strong);
+  font-size: 15px;
+}
+
+.de .de-card__cobrar {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-top: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--ss-canvas);
+  color: var(--ss-text);
+  font-size: 14px;
+}
+
+.de .de-card__cobrar b {
+  color: var(--ss-text-strong);
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.de .de-card__acao {
+  display: grid;
+  margin-top: 10px;
+}
+
+/* o botão principal do sistema é da cor do texto, não azul */
+.de .de-entregar[data-variant="primary"] {
+  background: var(--fg);
+  color: var(--bg);
+}
+
+.de .de-entregar {
+  width: 100%;
+  height: 48px;
+  font-size: 16px;
+}
+
+.de .de-confirma {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.de .de-confirma__linha {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ss-text-strong);
+  font-size: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.de .de-confirma__linha .ss-button {
+  height: 48px;
+  padding: 0 18px;
+  font-size: 16px;
+}
+
+/* o tempo para desfazer, encolhendo como no app */
+.de .de-confirma__barra {
+  height: 4px;
+  border-radius: 99px;
+  background: var(--ss-text-strong);
+  transform-origin: left;
+}
+
+.de .de-confirma__barra[data-on] {
+  animation: de-encolhe 2.2s linear forwards;
+}
+
+@keyframes de-encolhe {
+  to {
+    transform: scaleX(0);
+  }
+}
+
+/* estreito: a janela mostra só os números e o celular entra por baixo dela, sobre a lista */
+.de .ss-stage[data-layout="compact"] {
+  --g: 16px;
+}
+
+.de .ss-stage[data-layout="compact"] .de-janela {
+  width: 420px;
+  height: 260px;
+}
+
+.de .ss-stage[data-layout="compact"] .de-numeros {
+  grid-template-columns: 150px 150px;
+  gap: 10px;
+}
+
+.de .ss-stage[data-layout="compact"] .de-numero {
+  padding: 12px;
+}
+
+.de .ss-stage[data-layout="compact"] .de-valor {
+  font-size: 20px;
+}
+
+.de .ss-stage[data-layout="compact"] .de-colunas {
+  visibility: hidden;
+}
+
+.de .ss-stage[data-layout="compact"] .de-celular {
+  top: 196px;
+  right: auto;
+  left: 29px;
+}
+
+.de .de-card__acao > .ss-states__item {
+  width: 100%;
+}

@@ -6,8 +6,7 @@ import { Logo } from "@/components/logo";
 import { InView } from "@/components/in-view";
 import { LiveNumber } from "@/components/live-number";
 import { BairroRota, Botijao, Galao, Registro, Regua } from "./prancha";
-import painel from "../../../public/telas/painel.png";
-import painelEscuro from "../../../public/telas/painel-escuro.png";
+import { DemoEntrega } from "./demo-entrega";
 import entregador from "../../../public/telas/entregador.png";
 import portal from "../../../public/telas/portal.png";
 
@@ -104,22 +103,13 @@ export default function Inicio() {
             <Galao id="galao-celular" className="w-1/2" />
           </div>
 
-          <div style={atraso(480)} className="hero-in hero-stage relative mx-auto mt-16 max-w-6xl px-4 sm:mt-20 sm:px-6">
-            <div className="hero-tilt hero-shot rounded-2xl border border-line bg-surface p-1.5 shadow-[0_30px_80px_-30px_rgb(0_0_0/0.35)] sm:p-2">
-              {[
-                { src: painel, cls: "dark:hidden" },
-                { src: painelEscuro, cls: "hidden dark:block" },
-              ].map(({ src, cls }) => (
-                <Image
-                  key={cls}
-                  src={src}
-                  alt="Painel do dia: vendido hoje, pedidos em rota, Pix a conferir e acertos pendentes"
-                  priority
-                  sizes="(min-width: 1152px) 1120px, 100vw"
-                  className={`h-auto w-full rounded-xl border border-line ${cls}`}
-                />
-              ))}
-            </div>
+          <div
+            style={atraso(480)}
+            role="img"
+            aria-label="O entregador toca em Entreguei e recebi no celular, e no painel da loja o pedido vira Entregue e o vendido do dia sobe"
+            className="hero-in relative mx-auto mt-16 max-w-[66rem] px-4 sm:mt-20 sm:px-6"
+          >
+            <DemoEntrega />
           </div>
         </section>
 

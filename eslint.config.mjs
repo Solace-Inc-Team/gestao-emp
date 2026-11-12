@@ -14,6 +14,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // código de terceiros, copiado como veio
+    "src/vendor/**",
   ]),
 ]);
 
