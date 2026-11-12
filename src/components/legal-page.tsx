@@ -17,7 +17,7 @@ export function LegalPage({ title, children }: { title: string; children: ReactN
           </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-3xl px-6 py-12">
+      <main className="stagger mx-auto max-w-3xl px-6 py-12">
         <h1 className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]">{title}</h1>
         <p className="mt-2 text-muted">Versão de {termsDate}</p>
         <article className="legal mt-10">{children}</article>

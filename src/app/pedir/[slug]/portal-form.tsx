@@ -2,9 +2,11 @@
 
 import { useEffect, useRef, useState, useTransition } from "react";
 import QRCode from "qrcode";
-import { CircleAlert, CircleCheck } from "lucide-react";
+import { CircleAlert } from "lucide-react";
 import { CopyButton } from "@/components/copy-button";
 import { formatBRL } from "@/lib/money";
+import { LiveNumber } from "@/components/live-number";
+import { CheckDrawn } from "@/components/ui";
 import type { PortalResult } from "@/app/actions";
 
 type Product = { id: string; name: string; priceCents: number; returnable: boolean; containerPriceCents: number };
@@ -82,7 +84,7 @@ export function PortalForm({
                     </div>
                     <div className="flex items-center gap-1" role="group" aria-label={`Quantidade de ${p.name}`}>
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, -1)} aria-label="Diminuir">−</button>
-                      <span className="num w-9 text-center text-xl font-semibold" aria-live="polite">{n}</span>
+                      <span key={n} className="bump num w-9 text-center text-xl font-semibold" aria-live="polite">{n}</span>
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, 1)} aria-label="Aumentar">+</button>
                     </div>
                   </div>
@@ -159,7 +161,7 @@ export function PortalForm({
         <div className="panel p-4">
           <p className="flex items-baseline justify-between">
             <span className="font-semibold">Total</span>
-            <span className="num text-3xl font-semibold">{formatBRL(total)}</span>
+            <LiveNumber value={total} cents className="text-3xl font-semibold" />
           </p>
           <p className="mt-1 text-[13px] text-muted">Taxa de entrega, se houver, é combinada pela loja. Até 20 unidades de cada produto pelo site.</p>
           <button className="btn btn-primary mt-4 h-12 w-full text-lg" disabled={!items.length || pending}>
@@ -178,9 +180,9 @@ function Done({ number, totalCents, pix, lines }: { number: number; totalCents: 
     if (pix) QRCode.toString(pix, { type: "svg", margin: 1, width: 200 }).then(setQr);
   }, [pix]);
   return (
-    <section className="panel space-y-4 p-5" role="status">
+    <section className="enter panel space-y-4 p-5" role="status">
       <p className="flex items-center gap-2 text-lg font-semibold">
-        <CircleCheck size={22} strokeWidth={2} className="text-ok" aria-hidden="true" />
+        <CheckDrawn className="size-6 text-ok" />
         Pedido #{number} recebido
       </p>
       <ul className="text-muted">
@@ -192,7 +194,7 @@ function Done({ number, totalCents, pix, lines }: { number: number; totalCents: 
         Total de <b className="num">{formatBRL(totalCents)}</b>. A loja já está vendo seu pedido e vai separar para entrega.
       </p>
       {pix && (
-        <div className="space-y-3 border-t border-line pt-4">
+        <div style={{ animationDelay: "350ms" }} className="enter space-y-3 border-t border-line pt-4">
           <p className="font-semibold">Pague com Pix</p>
           {/* SVG gerado no próprio navegador a partir do código Pix */}
           {qr && <div className="w-fit rounded-md bg-white p-2" dangerouslySetInnerHTML={{ __html: qr }} />}

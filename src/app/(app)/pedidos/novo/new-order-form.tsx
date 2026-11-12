@@ -106,7 +106,13 @@ export function NewOrderForm({
       <input type="hidden" name="paymentMethod" value={payment} />
 
       <div className="space-y-6">
-        <div role="tablist" aria-label="Tipo de venda" className="inline-flex rounded-lg bg-subtle p-1">
+        <div role="tablist" aria-label="Tipo de venda" className="relative inline-grid grid-cols-2 rounded-lg bg-subtle p-1">
+          {/* fundo da aba escolhida: desliza para o lado em vez de trocar de repente */}
+          <span
+            aria-hidden="true"
+            className="absolute inset-y-1 left-1 w-[calc(50%-0.25rem)] rounded-md bg-surface shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1 ring-line transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            style={{ transform: mode === "balcao" ? "translateX(100%)" : "none" }}
+          />
           {(["entrega", "balcao"] as const).map((m) => (
             <button
               key={m}
@@ -114,7 +120,7 @@ export function NewOrderForm({
               role="tab"
               aria-selected={mode === m}
               onClick={() => setMode(m)}
-              className={`min-h-11 rounded-md px-3.5 py-1.5 text-[13px] sm:min-h-0 font-medium transition-colors ${mode === m ? "bg-surface text-fg shadow-[0_1px_2px_rgb(0_0_0/0.08)] ring-1 ring-line" : "text-muted hover:text-fg"}`}
+              className={`relative min-h-11 rounded-md px-3.5 py-1.5 text-[13px] sm:min-h-0 font-medium transition-colors ${mode === m ? "text-fg" : "text-muted hover:text-fg"}`}
             >
               {m === "entrega" ? "Entrega" : "Venda no balcão"}
             </button>

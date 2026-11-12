@@ -17,7 +17,7 @@ export default async function Pedir({ params }: PageProps<"/pedir/[slug]">) {
   const products = await portalProducts(t.id);
 
   return (
-    <main className="mx-auto min-h-screen max-w-lg px-4 py-8">
+    <main className="stagger mx-auto min-h-screen max-w-lg px-4 py-8">
       <p className="text-[13px] text-muted">Pedido pelo site</p>
       <h1 className="h1">{t.name}</h1>
       <p className="mt-1 mb-6 text-muted">Escolha os produtos e informe onde entregar. A loja confirma pelo telefone se precisar.</p>

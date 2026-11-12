@@ -283,6 +283,39 @@ details[open] > :not(summary) {
   transform-origin: top left;
 }
 
+/* barra de progresso do topo: sobe devagar até perto do fim e completa quando a tela chega */
+.nav-progress {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 100;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  transform-origin: left;
+  scale: 0 1;
+  opacity: 0;
+  pointer-events: none;
+}
+.nav-progress[data-progress="on"] {
+  opacity: 1;
+  animation: progress-trickle 8s cubic-bezier(0.1, 0.7, 0.2, 1) both;
+}
+.nav-progress[data-progress="done"] {
+  scale: 1 1;
+  opacity: 0;
+  transition:
+    scale 200ms var(--ease-out),
+    opacity 300ms ease 150ms;
+}
+@keyframes progress-trickle {
+  from {
+    scale: 0 1;
+  }
+  to {
+    scale: 0.9 1;
+  }
+}
+
 /* aviso de sucesso */
 .toast {
   transition:
@@ -344,6 +377,16 @@ details[open] > :not(summary) {
   display: inline-block;
   animation: pop var(--dur-slow) var(--ease-spring);
 }
+
+/* telas avulsas (login, portal, 404, termos): os blocos entram um depois do outro */
+.stagger > * {
+  animation: 600ms var(--ease-out) both hero-up;
+}
+.stagger > :nth-child(2) { animation-delay: 60ms; }
+.stagger > :nth-child(3) { animation-delay: 120ms; }
+.stagger > :nth-child(4) { animation-delay: 180ms; }
+.stagger > :nth-child(5) { animation-delay: 240ms; }
+.stagger > :nth-child(n + 6) { animation-delay: 300ms; }
 
 /* item que entra numa lista curta (resumo do pedido) */
 .enter {
@@ -494,7 +537,9 @@ details[open] > :not(summary) {
   .row-new,
   .check-draw circle,
   .check-draw path,
-  .bump {
+  .bump,
+  .stagger > *,
+  .enter {
     animation: none;
   }
   .popover,
@@ -742,5 +787,243 @@ body[data-confirmando] .deliver-btn {
   }
   .steps-line {
     display: none;
+  }
+}
+
+/* fundo vivo da página inicial ------------------------------------------------------------------ */
+
+/* aurora: manchas de luz grandes e suaves, sem filtro (o próprio gradiente já é macio), só derivando */
+.aurora {
+  position: absolute;
+  width: 46rem;
+  height: 46rem;
+  border-radius: 50%;
+  opacity: 0.55;
+  will-change: transform;
+  animation: drift 22s ease-in-out infinite alternate;
+}
+.aurora-agua {
+  top: -18rem;
+  left: calc(50% - 40rem);
+  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 38%, transparent), transparent);
+}
+.aurora-chama {
+  top: -14rem;
+  right: calc(50% - 42rem);
+  background: radial-gradient(closest-side, color-mix(in srgb, #f59e0b 30%, transparent), transparent);
+  animation-duration: 26s;
+  animation-direction: alternate-reverse;
+}
+.aurora-ceu {
+  top: 12rem;
+  left: calc(50% - 16rem);
+  width: 32rem;
+  height: 32rem;
+  background: radial-gradient(closest-side, color-mix(in srgb, #06b6d4 22%, transparent), transparent);
+  animation-duration: 30s;
+}
+@media (prefers-color-scheme: dark) {
+  .aurora {
+    opacity: 0.7;
+  }
+}
+
+/* grade acesa: a mesma grade, mais forte, só em volta do cursor */
+.hero-grid-lit {
+  background-image:
+    linear-gradient(to right, color-mix(in srgb, var(--accent) 45%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--accent) 45%, transparent) 1px, transparent 1px);
+  background-size: 56px 56px;
+  background-position: calc(50% + 28px) 0;
+  opacity: 0;
+  transition: opacity var(--dur-slow);
+  mask-image: radial-gradient(220px circle at var(--mx, 50%) var(--my, 30%), #000, transparent 70%);
+}
+.hero:hover .hero-grid-lit {
+  opacity: 1;
+}
+@media (hover: none) {
+  .hero-grid-lit {
+    display: none;
+  }
+}
+.hero-grid {
+  background-position: calc(50% + 28px) 0;
+}
+
+/* feixe: um traço de luz que desce por uma linha da grade */
+.beam {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 140px;
+  background: linear-gradient(to bottom, transparent, var(--accent), transparent);
+  box-shadow: 0 0 12px var(--accent);
+  opacity: 0;
+  animation: beam linear infinite;
+}
+
+/* granulado fino: tira o ar de "gradiente de computador" */
+.noise {
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* avisos de exemplo passando ao lado do painel, um de cada vez */
+.feed {
+  height: 15rem;
+}
+.feed-item {
+  position: absolute;
+  inset-inline: 0;
+  top: 0;
+  display: flex;
+  gap: 0.625rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 12px 32px -12px rgb(0 0 0 / 0.25);
+  opacity: 0;
+  animation: feed 12s var(--ease-out) infinite both;
+}
+
+/* reflexo que passa no botão principal de vez em quando */
+.btn-shine {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.btn-shine::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.35) 50%, transparent 65%);
+  translate: -120% 0;
+  animation: shine 4.5s ease-in-out 1.6s infinite;
+}
+
+/* cartões com a borda acendendo onde o mouse está */
+.glow-card {
+  position: relative;
+  transition:
+    translate var(--dur) var(--ease-out),
+    box-shadow var(--dur) var(--ease-out);
+}
+.glow-card::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  z-index: 1;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(260px circle at var(--mx, -100px) var(--my, -100px), var(--accent), transparent 70%);
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--dur-slow);
+  pointer-events: none;
+}
+.glow-card:hover {
+  translate: 0 -2px;
+  box-shadow: 0 18px 40px -24px rgb(0 0 0 / 0.35);
+}
+.glow-card:hover::before {
+  opacity: 1;
+}
+
+/* recursos: um véu de luz no alto da seção */
+.recursos::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: -1;
+  height: 28rem;
+  background: radial-gradient(60% 100% at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent);
+}
+
+/* faixa final escura nos dois temas */
+.cta-band {
+  background: #0b0d12;
+  color: #fff;
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
+}
+.cta-band .aurora {
+  opacity: 0.9;
+}
+
+@keyframes drift {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6rem, 3rem, 0) scale(1.12);
+  }
+  100% {
+    transform: translate3d(-4rem, 5rem, 0) scale(0.95);
+  }
+}
+@keyframes beam {
+  0% {
+    transform: translateY(-140px);
+    opacity: 0;
+  }
+  10%,
+  70% {
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(900px);
+    opacity: 0;
+  }
+}
+@keyframes feed {
+  0% {
+    opacity: 0;
+    transform: translate3d(24px, 0, 0) scale(0.96);
+  }
+  4%,
+  22% {
+    opacity: 1;
+    transform: none;
+  }
+  27%,
+  100% {
+    opacity: 0;
+    transform: translate3d(0, -14px, 0) scale(0.98);
+  }
+}
+@keyframes shine {
+  0%,
+  60% {
+    translate: -120% 0;
+  }
+  100% {
+    translate: 120% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora,
+  .beam,
+  .btn-shine::after {
+    animation: none !important;
+  }
+  .beam {
+    display: none;
+  }
+  /* sem ciclo: só o primeiro aviso, parado */
+  .feed-item {
+    animation: none !important;
+  }
+  .feed-item:first-child {
+    opacity: 1;
+  }
+  .glow-card:hover {
+    translate: none;
   }
 }

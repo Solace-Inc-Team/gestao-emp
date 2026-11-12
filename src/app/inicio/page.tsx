@@ -5,6 +5,7 @@ import { ArrowRight, Building2, FileSpreadsheet, KeyRound, WifiOff } from "lucid
 import { Logo } from "@/components/logo";
 import { InView } from "@/components/in-view";
 import { LiveNumber } from "@/components/live-number";
+import { Spotlight } from "@/components/spotlight";
 import painel from "../../../public/telas/painel.png";
 import painelEscuro from "../../../public/telas/painel-escuro.png";
 import entregador from "../../../public/telas/entregador.png";
@@ -25,6 +26,22 @@ const passos = [
 
 const titulo = "Do pedido ao acerto, sem conta de cabeça.".split(" ");
 const atraso = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
+
+// avisos de exemplo que passam ao lado do painel: a loja funcionando enquanto a pessoa lê
+const feed = [
+  { t: "Pedido #128 lançado", d: "Ana Ribeiro, 1× Gás P13", cor: "bg-warn" },
+  { t: "Carlos saiu para entrega", d: "2 pedidos, Jd. Primavera", cor: "bg-accent" },
+  { t: "Pix de R$ 28,00 conferido", d: "Pedido #126, Cláudia", cor: "bg-ok" },
+  { t: "Acerto do João: sem diferença", d: "R$ 165,00 contados", cor: "bg-ok" },
+];
+
+// feixes de luz que correm pelas linhas da grade (colunas de 56 px)
+const feixes = [
+  { col: 3, dur: 7, atraso: 0 },
+  { col: 9, dur: 9, atraso: 2.5 },
+  { col: 14, dur: 8, atraso: 5 },
+  { col: 20, dur: 10, atraso: 1.2 },
+];
 
 const estoque = [
   { p: "Gás P13", cheio: 42, vazio: 18, rua: 6 },
@@ -56,8 +73,23 @@ export default function Inicio() {
       </header>
 
       <main>
-        <section className="relative">
-          <div aria-hidden="true" className="hero-grid pointer-events-none absolute inset-0 -z-10" />
+        <Spotlight as="section" className="hero relative isolate">
+          {/* fundo vivo: aurora de água (azul) e chama (âmbar), grade com feixes, holofote no cursor e granulado */}
+          <div aria-hidden="true" className="hero-bg pointer-events-none absolute inset-0 -z-10 overflow-hidden">
+            <div className="aurora aurora-agua" />
+            <div className="aurora aurora-chama" />
+            <div className="aurora aurora-ceu" />
+            <div className="hero-grid absolute inset-0" />
+            <div className="hero-grid-lit absolute inset-0" />
+            {feixes.map((f) => (
+              <span
+                key={f.col}
+                className="beam"
+                style={{ left: `calc(50% + ${(f.col - 12) * 56}px)`, animationDuration: `${f.dur}s`, animationDelay: `${f.atraso}s` }}
+              />
+            ))}
+            <div className="noise absolute inset-0" />
+          </div>
           <div className="mx-auto max-w-6xl px-4 pt-20 text-center sm:px-6 sm:pt-28">
             <p style={atraso(0)} className="hero-in inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[12px] text-muted">
               <span className="size-1.5 rounded-full bg-ok" />
@@ -77,14 +109,25 @@ export default function Inicio() {
               Pedidos, entregas, botijões cheios e vazios e o dinheiro de cada entregador, registrados com quem fez e quando.
             </p>
             <div style={atraso(380)} className="hero-in mt-8 flex flex-wrap justify-center gap-3">
-              <Link href="/login" className="btn btn-primary h-11 px-5 text-[15px]">
+              <Link href="/login" className="btn btn-primary btn-shine h-11 px-5 text-[15px]">
                 Entrar no sistema <ArrowRight className="size-4" aria-hidden="true" />
               </Link>
               <a href="#como-funciona" className="btn h-11 px-5 text-[15px]">Ver como funciona</a>
             </div>
           </div>
 
-          <div style={atraso(480)} className="hero-in hero-stage mx-auto mt-16 max-w-6xl px-4 sm:mt-20 sm:px-6">
+          <div style={atraso(480)} className="hero-in hero-stage relative mx-auto mt-16 max-w-6xl px-4 sm:mt-20 sm:px-6">
+            <ul aria-hidden="true" className="feed absolute top-56 -right-10 z-10 hidden w-72 xl:block">
+              {feed.map((n, i) => (
+                <li key={n.t} style={{ animationDelay: `${1.2 + i * 3}s` }} className="feed-item">
+                  <span className={`mt-1.5 size-2 shrink-0 rounded-full ${n.cor}`} />
+                  <span>
+                    <span className="block text-[13px] font-medium">{n.t}</span>
+                    <span className="block text-[12px] text-muted">{n.d}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
             <div className="hero-tilt hero-shot rounded-2xl border border-line bg-surface p-1.5 shadow-[0_30px_80px_-30px_rgb(0_0_0/0.35)] sm:p-2">
               {[
                 { src: painel, cls: "dark:hidden" },
@@ -101,7 +144,7 @@ export default function Inicio() {
               ))}
             </div>
           </div>
-        </section>
+        </Spotlight>
 
         <section id="como-funciona" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6 sm:py-32">
           <p className="text-[13px] font-medium text-accent">Como funciona</p>
@@ -123,15 +166,15 @@ export default function Inicio() {
           </InView>
         </section>
 
-        <section id="recursos" className="scroll-mt-20 border-y border-line bg-surface/60">
+        <section id="recursos" className="recursos relative isolate scroll-mt-20 border-y border-line bg-surface/60">
           <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
             <p className="text-[13px] font-medium text-accent">Recursos</p>
             <h2 className="reveal mt-2 max-w-[24ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] sm:text-[2.5rem]">
               Feito em cima do que dá errado numa revenda.
             </h2>
 
-            <div className="mt-12 grid gap-4 lg:grid-cols-6">
-              <article className="reveal panel flex flex-col p-6 sm:p-8 lg:col-span-3">
+            <Spotlight className="mt-12 grid gap-4 lg:grid-cols-6">
+              <article className="reveal glow-card panel flex flex-col p-6 sm:p-8 lg:col-span-3">
                 <h3 className="text-[17px] font-semibold tracking-tight">Acerto que fecha no centavo</h3>
                 <p className="mt-2 text-muted">
                   O sistema sabe quanto cada entregador deve ter em mãos. Pagamento misto, repasse no meio do dia e gasto
@@ -157,7 +200,7 @@ export default function Inicio() {
                 </InView>
               </article>
 
-              <article className="reveal panel flex flex-col p-6 sm:p-8 lg:col-span-3">
+              <article className="reveal glow-card panel flex flex-col p-6 sm:p-8 lg:col-span-3">
                 <h3 className="text-[17px] font-semibold tracking-tight">Estoque de retornáveis</h3>
                 <p className="mt-2 text-muted">
                   Cheios, vazios e avariados, na loja e na rua. Saldo é a soma dos lançamentos; erro se corrige com estorno,
@@ -188,7 +231,7 @@ export default function Inicio() {
                 </InView>
               </article>
 
-              <article className="reveal panel overflow-hidden lg:col-span-4">
+              <article className="reveal glow-card panel overflow-hidden lg:col-span-4">
                 <div className="grid h-full sm:grid-cols-2">
                   <div className="p-6 sm:p-8">
                     <h3 className="text-[17px] font-semibold tracking-tight">No celular do entregador</h3>
@@ -208,7 +251,7 @@ export default function Inicio() {
                 </div>
               </article>
 
-              <article className="reveal panel overflow-hidden lg:col-span-2">
+              <article className="reveal glow-card panel overflow-hidden lg:col-span-2">
                 <div className="p-6 sm:p-8">
                   <h3 className="text-[17px] font-semibold tracking-tight">Pedido pelo link da loja</h3>
                   <p className="mt-2 text-muted">O cliente pede sozinho e já recebe o QR do Pix.</p>
@@ -223,7 +266,7 @@ export default function Inicio() {
                   />
                 </div>
               </article>
-            </div>
+            </Spotlight>
 
             <ul className="mt-16 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
               {extras.map(({ icon: Icon, t, d }) => (
@@ -237,16 +280,23 @@ export default function Inicio() {
           </div>
         </section>
 
-        <section className="mx-auto max-w-6xl px-4 py-24 text-center sm:px-6 sm:py-32">
-          <h2 className="mx-auto max-w-[20ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] text-balance sm:text-[2.75rem]">
-            Quatro perfis, uma conta que bate.
-          </h2>
-          <p className="mx-auto mt-4 max-w-[32rem] text-muted">
-            Dono, caixa, atendente e entregador, cada um vendo só o que é seu.
-          </p>
-          <Link href="/login" className="btn btn-primary mt-8 h-11 px-5 text-[15px]">
-            Entrar no sistema <ArrowRight className="size-4" aria-hidden="true" />
-          </Link>
+        <section className="px-4 py-24 sm:px-6 sm:py-32">
+          <div className="cta-band relative isolate mx-auto max-w-6xl overflow-hidden rounded-3xl px-6 py-20 text-center sm:py-24">
+            <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
+              <div className="aurora aurora-agua" />
+              <div className="aurora aurora-chama" />
+              <div className="noise absolute inset-0" />
+            </div>
+            <h2 className="reveal mx-auto max-w-[20ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] text-balance sm:text-[2.75rem]">
+              Quatro perfis, uma conta que bate.
+            </h2>
+            <p className="mx-auto mt-4 max-w-[32rem] text-white/70">
+              Dono, caixa, atendente e entregador, cada um vendo só o que é seu.
+            </p>
+            <Link href="/login" className="btn btn-shine mt-8 h-11 border-white bg-white px-5 text-[15px] text-black hover:bg-white/90">
+              Entrar no sistema <ArrowRight className="size-4" aria-hidden="true" />
+            </Link>
+          </div>
         </section>
       </main>
 

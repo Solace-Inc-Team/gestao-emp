@@ -11,8 +11,14 @@ export default async function LoginPage() {
   const user = await getUser();
   if (user) redirect(user.platformAdmin ? "/admin" : user.role === "entregador" ? "/entregador" : "/");
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-6 py-16">
-      <div className="w-full max-w-[22rem]">
+    <main className="relative isolate flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-16">
+      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
+        <div className="aurora aurora-agua" />
+        <div className="aurora aurora-chama" />
+        <div className="hero-grid absolute inset-0" />
+        <div className="noise absolute inset-0" />
+      </div>
+      <div className="stagger w-full max-w-[22rem]">
         <Logo size={28} />
         <h1 className="mt-8 text-[1.75rem] leading-tight font-semibold tracking-[-0.03em]">Entrar</h1>
         <p className="mt-1.5 text-muted">Pedidos, entregas, estoque e acerto de caixa da sua distribuidora.</p>

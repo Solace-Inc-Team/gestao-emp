@@ -1,6 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
+import { Suspense } from "react";
 import { Toaster } from "@/components/action-form";
+import { NavProgress } from "@/components/nav-progress";
+import { AreaTransition } from "@/components/area-transition";
 import "./globals.css";
 
 const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
@@ -22,7 +25,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="pt-BR" className={`${geist.variable} h-full`}>
       <body className="min-h-full">
-        {children}
+        <Suspense fallback={null}>
+          <NavProgress />
+        </Suspense>
+        <AreaTransition>{children}</AreaTransition>
         <Toaster />
       </body>
     </html>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { CircleAlert, CircleCheck } from "lucide-react";
+import { progress } from "./nav-progress";
 
 export type ActionState = { error?: string; ok?: string } | undefined | void;
 
@@ -45,11 +46,13 @@ export function ActionForm({
         // o botão que enviou mostra que está esperando e depois o ✓ (estilos em globals.css)
         const button = (e.nativeEvent as SubmitEvent).submitter;
         button?.setAttribute("data-state", "loading");
+        progress(true);
         start(async () => {
           let r: ActionState;
           try {
             r = await action(fd);
           } catch (e) {
+            progress(false);
             button?.removeAttribute("data-state");
             // sem sinal o fetch da ação falha: mantém a tela e o que foi digitado em vez de cair na página de erro
             if (e instanceof TypeError || !navigator.onLine) {
@@ -58,6 +61,8 @@ export function ActionForm({
             }
             throw e;
           }
+          // se a ação trocou de tela a barra completa sozinha; se não, completa aqui
+          progress(false);
           setError(r?.error);
           if (r?.error) {
             button?.removeAttribute("data-state");

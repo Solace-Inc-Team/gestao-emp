@@ -7,6 +7,7 @@ import { requireAdmin } from "@/lib/auth";
 import { logout } from "@/app/actions";
 import { Logo } from "@/components/logo";
 import { AdminNav } from "./admin-nav";
+import { PageTransition } from "@/components/page-transition";
 
 export const metadata = { title: { default: "Painel da Solace", template: "%s | Depósito" } };
 
@@ -38,7 +39,9 @@ export default async function AdminLayout({ children }: LayoutProps<"/admin">) {
           </div>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10 lg:py-10">{children}</main>
+      <main className="mx-auto w-full max-w-6xl px-4 py-8 lg:px-10 lg:py-10">
+        <PageTransition>{children}</PageTransition>
+      </main>
     </>
   );
 }
