@@ -40,7 +40,7 @@ export default async function Entregador() {
         </div>
       </header>
 
-      <div className="px-4 py-6">
+      <div className="pagina px-4 py-6">
         <p className="text-muted">Olá, {user.name.split(" ")[0]}</p>
         {!s ? (
           <div className="panel mt-4 flex flex-col items-center px-6 py-12 text-center">

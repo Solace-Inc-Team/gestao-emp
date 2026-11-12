@@ -8,7 +8,8 @@ export function PageTransition({ children }: { children: ReactNode }) {
   const path = usePathname();
   return (
     <ViewTransition key={path} enter="page" exit="page" default="none">
-      <div>{children}</div>
+      {/* .pagina: o conteúdo entra em cascata (globals.css); como a chave é a rota, só anima ao trocar de tela */}
+      <div className="pagina">{children}</div>
     </ViewTransition>
   );
 }
