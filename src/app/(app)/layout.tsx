@@ -53,6 +53,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           : []),
       ],
     },
+    { links: [{ href: "/ajuda", label: "Ajuda" }] },
   ];
 
   return (

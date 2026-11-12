@@ -597,6 +597,42 @@ details[open] > :not(summary) {
   font-weight: 600;
 }
 
+/* manual de operação: seções separadas, passos numerados e teclas desenhadas */
+.manual section + section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+}
+.manual h2 {
+  margin-top: 0;
+  font-size: 1.375rem;
+  letter-spacing: -0.02em;
+}
+.manual h3 {
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+.manual ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.manual ol li + li {
+  margin-top: 0.375rem;
+}
+.manual :is(p, ul, ol) + :is(p, ul, ol) {
+  margin-top: 0.75rem;
+}
+.manual kbd {
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--line);
+  border-bottom-width: 2px;
+  border-radius: 5px;
+  background: var(--surface);
+  font-family: var(--font-mono);
+  font-size: 0.8em;
+}
+
 /* enquanto uma entrega está na contagem do "Desfazer", as outras não podem ser confirmadas */
 body[data-confirmando] .deliver-btn {
   pointer-events: none;

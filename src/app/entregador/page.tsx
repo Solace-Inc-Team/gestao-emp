@@ -1,6 +1,6 @@
 import { ViewTransition } from "react";
 import Link from "next/link";
-import { Clock3, KeyRound, LogOut, MapPin, Phone } from "lucide-react";
+import { CircleHelp, Clock3, KeyRound, LogOut, MapPin, Phone } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { getShift, getSettings, itemsForOrders, listOrders, openShiftFor, getOrder } from "@/domain/queries";
 import { orderPix } from "@/domain/portal";
@@ -29,6 +29,9 @@ export default async function Entregador() {
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg/85 px-4 py-3 backdrop-blur">
         <Logo />
         <div className="flex gap-1">
+          <Link href="/ajuda" aria-label="Ajuda" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+            <CircleHelp size={17} strokeWidth={1.75} />
+          </Link>
           <Link href="/senha" aria-label="Trocar senha" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
             <KeyRound size={17} strokeWidth={1.75} />
           </Link>
