@@ -24,3 +24,9 @@
   background: var(--fg);
   color: var(--bg);
 }
+
+/* bordas de campo e botão secundário com a linha do sistema; a do kit some no escuro */
+.palco .ss-button[data-variant="secondary"],
+.palco .ss-field:not([data-focused]) .ss-field__box {
+  box-shadow: inset 0 0 0 1px var(--line);
+}

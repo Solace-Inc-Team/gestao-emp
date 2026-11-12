@@ -1,0 +1,203 @@
+/* FIG. 04: celular preso no alto, centrado, saindo por baixo do card. Medidas da tela em pontos do iOS. */
+.dp .dp-celular {
+  position: absolute;
+  top: 28px;
+  left: 30px;
+  box-shadow: var(--ss-shadow-satellite), 0 30px 50px -20px rgb(15 23 42 / 0.3);
+}
+
+.dp .dp-app {
+  position: absolute;
+  inset: 0;
+  padding: 72px 18px 0;
+  background: var(--bg);
+  font-family: var(--ss-font);
+}
+
+.dp .dp-sobre {
+  display: block;
+  color: var(--ss-text);
+  font-size: 15px;
+}
+
+.dp .dp-loja {
+  display: block;
+  margin: 2px 0 14px;
+  color: var(--ss-text-strong);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* os dígitos têm largura reservada: o total cresce sem empurrar o R$ */
+.dp .dp-total__digitos {
+  min-width: 6ch;
+  justify-content: flex-end;
+  text-align: right;
+}
+
+/* as duas telas ocupam o mesmo lugar e trocam com um fade e uma subida curta */
+.dp .dp-tela {
+  position: absolute;
+  top: 150px;
+  right: 18px;
+  left: 18px;
+  display: flex;
+  flex-direction: column;
+  opacity: 0;
+  translate: 0 8px;
+  will-change: transform;
+  transition:
+    opacity 0.2s ease,
+    translate 0.2s ease;
+}
+
+.dp .dp-tela[data-on] {
+  opacity: 1;
+  translate: 0 0;
+  transition-delay: 0.12s;
+}
+
+.dp .dp-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ss-line);
+  border-radius: 16px;
+  background: var(--ss-surface);
+}
+
+.dp .dp-produto {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+}
+
+.dp .dp-produto + .dp-produto {
+  border-top: 1px solid var(--ss-line);
+}
+
+.dp .dp-produto__nome {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--ss-text-strong);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.dp .dp-produto__nome small {
+  color: var(--ss-text);
+  font-size: 15px;
+  font-weight: 400;
+}
+
+.dp .dp-qtd {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dp .dp-qtd__b {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--ss-line);
+  border-radius: 10px;
+  color: var(--ss-text-strong);
+  font-size: 22px;
+}
+
+.dp .dp-qtd__n {
+  min-width: 26px;
+  color: var(--ss-text-strong);
+  font-size: 18px;
+  font-weight: 600;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.dp .dp-titulo {
+  margin: 20px 0 8px;
+  color: var(--ss-text-strong);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.dp .dp-pagamento {
+  height: 44px;
+}
+
+.dp .dp-pagamento .ss-seg__option {
+  font-size: 16px;
+}
+
+.dp .dp-total {
+  gap: 14px;
+  margin-top: 16px;
+  padding: 16px;
+}
+
+.dp .dp-total__linha {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  color: var(--ss-text-strong);
+  font-size: 17px;
+}
+
+.dp .dp-total__valor {
+  display: flex;
+  align-items: baseline;
+  gap: 0.25em;
+  font-size: 28px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.dp .dp-pedir,
+.dp .dp-copiar {
+  width: 100%;
+  height: 50px;
+  font-size: 17px;
+}
+
+.dp .dp-feito .dp-card {
+  gap: 10px;
+  padding: 18px;
+}
+
+.dp .dp-recebido {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ss-text-strong);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.dp .dp-recebido .ss-check {
+  color: var(--ss-success);
+}
+
+.dp .dp-linha {
+  color: var(--ss-text);
+  font-size: 15px;
+}
+
+.dp .dp-pix {
+  margin-top: 6px;
+  padding-top: 14px;
+  border-top: 1px solid var(--ss-line);
+  color: var(--ss-text-strong);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.dp .dp-qr {
+  width: 136px;
+  height: 136px;
+  border-radius: 8px;
+}

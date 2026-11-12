@@ -8,8 +8,8 @@ import { LiveNumber } from "@/components/live-number";
 import { BairroRota, Botijao, Galao, Registro, Regua } from "./prancha";
 import { DemoAcerto } from "./demo-acerto";
 import { DemoEntrega } from "./demo-entrega";
+import { DemoPortal } from "./demo-portal";
 import entregador from "../../../public/telas/entregador.png";
-import portal from "../../../public/telas/portal.png";
 
 export const metadata = {
   title: { absolute: "Depósito: gestão para revendas de água e gás" },
@@ -248,23 +248,18 @@ export default function Inicio() {
                 </div>
               </article>
 
-              <article className="reveal panel overflow-hidden lg:col-span-2">
+              <article className="reveal panel flex flex-col overflow-hidden lg:col-span-2">
                 <div className="p-6 sm:p-8">
                   <p className="fig">FIG. 04 · PORTAL</p>
                   <h3 className="text-[17px] font-semibold tracking-tight">Pedido pelo link da loja</h3>
                   <p className="mt-2 text-muted">O cliente pede sozinho e já recebe o QR do Pix.</p>
                 </div>
-                <div className="relative h-72 bg-subtle">
-                  <div style={atraso(-2500)} className="float absolute top-6 left-1/2 w-[62%] max-w-[220px] -translate-x-1/2">
-                    <Image
-                      src={portal}
-                      alt="Pedido pelo site, no celular do cliente"
-                      sizes="240px"
-                      className="w-full rounded-[1.75rem] border-[6px] border-fg/90 shadow-xl"
-                    />
-                    <Chamada x={72} y={8.5} lado="dir">Sua loja</Chamada>
-                    <Chamada x={88} y={26} lado="dir">1 toque</Chamada>
-                  </div>
+                <div
+                  role="img"
+                  aria-label="No celular, o cliente põe um Gás P13, escolhe Pix e faz o pedido; aparece Pedido #62 recebido com o QR do Pix"
+                  className="mt-auto bg-subtle"
+                >
+                  <DemoPortal />
                 </div>
               </article>
             </div>
