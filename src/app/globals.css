@@ -1365,3 +1365,110 @@ li > span > .fig {
     animation: none !important;
   }
 }
+
+/* janela de confirmação: cresce no centro com o fundo esmaecendo; no celular sobe de baixo como gaveta */
+.janela {
+  margin: auto;
+  width: calc(100% - 2rem);
+  max-width: 26rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--fg);
+  overflow: visible;
+}
+.janela::backdrop {
+  background: rgb(0 0 0 / 0.38);
+  backdrop-filter: blur(3px);
+  animation: fade-in var(--dur) ease both;
+}
+.janela-cartao {
+  padding: 1.375rem;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: 0 30px 80px -20px rgb(0 0 0 / 0.45);
+  animation: janela-entra 280ms var(--ease-spring) both;
+}
+.janela[data-saindo] .janela-cartao {
+  animation: janela-sai 170ms ease-in both;
+}
+.janela[data-saindo]::backdrop {
+  animation: fade-out 170ms ease-in both;
+}
+.btn-perigo {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: #fff;
+}
+.btn-perigo:hover {
+  background: color-mix(in srgb, var(--danger) 88%, black);
+}
+@media (max-width: 639px) {
+  .janela {
+    width: 100%;
+    max-width: none;
+    margin: auto 0 0;
+  }
+  .janela-cartao {
+    border-radius: 18px 18px 0 0;
+    padding-bottom: calc(1.375rem + env(safe-area-inset-bottom));
+    animation: gaveta-sobe 320ms var(--ease-out) both;
+  }
+  .janela[data-saindo] .janela-cartao {
+    animation: gaveta-desce 180ms ease-in both;
+  }
+}
+@keyframes janela-entra {
+  from {
+    opacity: 0;
+    scale: 0.94;
+    translate: 0 8px;
+  }
+}
+@keyframes janela-sai {
+  to {
+    opacity: 0;
+    scale: 0.97;
+  }
+}
+@keyframes gaveta-sobe {
+  from {
+    translate: 0 100%;
+  }
+}
+@keyframes gaveta-desce {
+  to {
+    translate: 0 100%;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .janela-cartao,
+  .janela[data-saindo] .janela-cartao {
+    animation: fade-in 120ms ease both !important;
+  }
+}
+
+/* campo que faltou preencher: borda vermelha e uma chacoalhada curta */
+.input[aria-invalid="true"] {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-soft);
+}
+.campo-treme {
+  animation: treme 360ms ease-in-out;
+}
+@keyframes treme {
+  20%,
+  60% {
+    translate: -4px 0;
+  }
+  40%,
+  80% {
+    translate: 4px 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .campo-treme {
+    animation: none;
+  }
+}

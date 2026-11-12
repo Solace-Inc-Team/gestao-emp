@@ -7,6 +7,7 @@ import { CopyButton } from "@/components/copy-button";
 import { formatBRL } from "@/lib/money";
 import { LiveNumber } from "@/components/live-number";
 import { CheckDrawn } from "@/components/ui";
+import { validarCampos } from "@/components/action-form";
 import type { PortalResult } from "@/app/actions";
 
 type Product = { id: string; name: string; priceCents: number; returnable: boolean; containerPriceCents: number };
@@ -57,9 +58,16 @@ export function PortalForm({
   return (
     <form
       method="post"
+      noValidate
       className="space-y-6"
       onSubmit={(e) => {
         e.preventDefault();
+        // campo faltando: mensagem em português e o campo treme, no lugar do balão do navegador
+        const aviso = validarCampos(e.currentTarget);
+        if (aviso) {
+          setResult({ error: aviso });
+          return;
+        }
         const fd = new FormData(e.currentTarget);
         start(async () => setResult(await action(fd)));
       }}

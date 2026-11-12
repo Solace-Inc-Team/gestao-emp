@@ -3,10 +3,43 @@
 import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { CircleAlert, CircleCheck } from "lucide-react";
 import { progress } from "./nav-progress";
+import { confirmar } from "./confirm-dialog";
 
 export type ActionState = { error?: string; ok?: string } | undefined | void;
 
 const TOAST_EVENT = "deposito:toast";
+
+// mensagem do sistema no lugar do balão do navegador ("Please fill out this field"), usando o rótulo do campo
+type Campo = HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement;
+function avisoDoCampo(campo: Campo) {
+  const rotulo = (campo.labels?.[0]?.textContent ?? campo.getAttribute("aria-label") ?? "")
+    // tira o que vem entre parênteses no rótulo, como "(opcional)"
+    .replace(/\s*\(.*?\)\s*/g, " ")
+    .trim();
+  const nome = rotulo ? `o campo "${rotulo}"` : "este campo";
+  const v = campo.validity;
+  if (v.valueMissing) return campo instanceof HTMLSelectElement ? `Escolha uma opção em ${nome}.` : `Preencha ${nome}.`;
+  if (v.typeMismatch && campo.type === "email") return "Digite um e-mail válido, como nome@empresa.com.";
+  if (v.tooShort && "minLength" in campo) return `Em ${nome}, use pelo menos ${campo.minLength} caracteres.`;
+  if (v.rangeUnderflow || v.rangeOverflow || v.stepMismatch) return `O valor em ${nome} está fora do permitido.`;
+  if (v.patternMismatch) return `Confira o formato em ${nome}.`;
+  return `Confira ${nome}.`;
+}
+
+/** Primeiro campo inválido do formulário: marca, faz tremer, põe o foco e devolve a mensagem. Sem erro, null. */
+export function validarCampos(form: HTMLFormElement): string | null {
+  const campo = form.querySelector<Campo>(":invalid:not(fieldset)");
+  if (!campo) return null;
+  campo.setAttribute("aria-invalid", "true");
+  campo.classList.remove("campo-treme");
+  void campo.offsetWidth;
+  campo.classList.add("campo-treme");
+  campo.focus();
+  campo.addEventListener("input", () => campo.removeAttribute("aria-invalid"), { once: true });
+  // a mensagem de erro rola a tela até ela; depois disso a tela volta para o campo que falta
+  setTimeout(() => campo.scrollIntoView({ block: "center", behavior: "smooth" }), 80);
+  return avisoDoCampo(campo);
+}
 
 export const toast = (message: string) => window.dispatchEvent(new CustomEvent(TOAST_EVENT, { detail: message }));
 
@@ -38,13 +71,26 @@ export function ActionForm({
     <form
       // se enviado antes do JS carregar, vai como POST: senha nunca aparece na URL
       method="post"
-      onSubmit={(e) => {
+      // a validação dos campos é mostrada pelo próprio formulário (sem o balão do navegador); o servidor valida de novo
+      noValidate
+      onSubmit={async (e) => {
         e.preventDefault();
-        if (confirm && !window.confirm(confirm)) return;
         const form = e.currentTarget;
-        const fd = new FormData(form);
         // o botão que enviou mostra que está esperando e depois o ✓ (estilos em globals.css)
         const button = (e.nativeEvent as SubmitEvent).submitter;
+        // campo obrigatório vazio ou inválido: o campo treme e a mensagem sai em português, sem o balão do navegador
+        const aviso = validarCampos(form);
+        if (aviso) {
+          setError(aviso);
+          return;
+        }
+        // ação sem volta: pergunta na janela do sistema, com o nome do botão clicado no botão de confirmar
+        if (
+          confirm &&
+          !(await confirmar(confirm, { rotulo: button?.textContent?.trim(), perigo: button?.classList.contains("btn-danger") }))
+        )
+          return;
+        const fd = new FormData(form);
         button?.setAttribute("data-state", "loading");
         progress(true);
         start(async () => {

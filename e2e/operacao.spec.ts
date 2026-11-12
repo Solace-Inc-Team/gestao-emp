@@ -44,12 +44,12 @@ test("pedido em dinheiro: atendente lança, entregador entrega, caixa faz o acer
   await page.goto("/caixa");
   await page.getByRole("listitem").filter({ hasText: "Carlos Mendes" }).getByRole("link", { name: "Repasse ou acerto" }).click();
   await expect(page.getByLabel("Conta do acerto")).toContainText("R$ 140,00");
-  page.once("dialog", (d) => {
-    expect(d.message()).toContain("bateu");
-    void d.accept();
-  });
   await page.getByLabel("Dinheiro contado").fill("140,00");
   await page.getByRole("button", { name: "Fechar acerto" }).click();
+  // confirmação na janela do sistema: título é a pergunta, o texto traz a conta
+  const janela = page.getByRole("dialog", { name: "Fechar o acerto?" });
+  await expect(janela).toContainText("bateu");
+  await janela.getByRole("button", { name: "Fechar acerto" }).click();
   await expect(page.getByText("Contado no acerto")).toBeVisible();
   await expect(page.getByLabel("Conta do acerto")).toContainText("sem diferença");
 });

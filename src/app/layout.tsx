@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
 import { Toaster } from "@/components/action-form";
+import { Confirmador } from "@/components/confirm-dialog";
 import { NavProgress } from "@/components/nav-progress";
 import { AreaTransition } from "@/components/area-transition";
 import "./globals.css";
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         </Suspense>
         <AreaTransition>{children}</AreaTransition>
         <Toaster />
+        <Confirmador />
       </body>
     </html>
   );

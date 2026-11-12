@@ -55,7 +55,7 @@ export default async function Admin() {
                         <p className="text-sm text-muted">{t.owner ?? "sem dono"}, desde {fmtDateTime(t.createdAt).split(" ")[0].replace(",", "")}</p>
                         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-2">
                           <a href={`/admin/exportar?empresa=${t.id}`} className="text-[13px] text-muted hover:text-fg">Exportar</a>
-                          <PopoverForm align="left" label="Redefinir acesso" action={resetOwnerAccessAction} submit="Redefinir" confirm="A senha do dono será trocada e o 2FA dele desligado. Continuar?">
+                          <PopoverForm align="left" label="Redefinir acesso" action={resetOwnerAccessAction} submit="Redefinir" confirm="Redefinir o acesso do dono? A senha dele será trocada e a verificação em duas etapas, desligada.">
                             <input type="hidden" name="tenantId" value={t.id} />
                             <label className="label mb-0" htmlFor={`o-${t.id}`}>Senha nova do dono</label>
                             <input id={`o-${t.id}`} name="password" type="text" minLength={8} required autoComplete="off" className="input" />
