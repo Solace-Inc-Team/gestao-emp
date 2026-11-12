@@ -17,17 +17,34 @@ export function lerEscolha(): Escolha {
   }
 }
 
-export function aplicar(escolha: Escolha) {
+/**
+ * Guarda a escolha e troca o tema. Com `origem` (o centro do botão clicado), o tema novo nasce
+ * dali num círculo que cobre a tela: a troca tem uma causa visível em vez de um corte seco.
+ */
+export function aplicar(escolha: Escolha, origem?: { x: number; y: number }) {
   try {
     if (escolha === "auto") localStorage.removeItem(CHAVE);
     else localStorage.setItem(CHAVE, escolha);
   } catch {
     // aparelho sem armazenamento: vale só nesta página
   }
-  const escuro = escolha === "escuro" || (escolha === "auto" && matchMedia("(prefers-color-scheme: dark)").matches);
-  document.documentElement.dataset.tema = escuro ? "escuro" : "claro";
-  // de claro para automático num aparelho claro o atributo não muda: o evento avisa mesmo assim
-  window.dispatchEvent(new Event("tema"));
+  const html = document.documentElement;
+  const novo = escolha === "escuro" || (escolha === "auto" && matchMedia("(prefers-color-scheme: dark)").matches) ? "escuro" : "claro";
+  const trocar = () => {
+    html.dataset.tema = novo;
+    // de claro para automático num aparelho claro o atributo não muda: o evento avisa mesmo assim
+    window.dispatchEvent(new Event("tema"));
+  };
+  const animar =
+    origem && novo !== html.dataset.tema && "startViewTransition" in document && !matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (!animar) return trocar();
+  // o raio vai até o canto mais distante do botão, para o círculo cobrir a tela toda
+  const raio = Math.hypot(Math.max(origem.x, innerWidth - origem.x), Math.max(origem.y, innerHeight - origem.y));
+  html.style.setProperty("--tema-x", `${origem.x}px`);
+  html.style.setProperty("--tema-y", `${origem.y}px`);
+  html.style.setProperty("--tema-r", `${raio}px`);
+  html.dataset.trocandoTema = "";
+  document.startViewTransition(trocar).finished.finally(() => delete html.dataset.trocandoTema);
 }
 
 /** Para quem precisa reagir ao tema em JavaScript (as demos da página inicial). */

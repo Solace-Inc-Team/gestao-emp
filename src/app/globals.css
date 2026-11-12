@@ -423,6 +423,18 @@ details[open] > :not(summary) {
 ::view-transition-new(root) {
   animation: none;
 }
+/* troca de tema: a tela nova nasce do botão clicado e se espalha até o canto mais longe */
+html[data-trocando-tema]::view-transition-new(root) {
+  animation: 600ms var(--ease-trajeto) both tema-revela;
+}
+@keyframes tema-revela {
+  from {
+    clip-path: circle(0 at var(--tema-x) var(--tema-y));
+  }
+  to {
+    clip-path: circle(var(--tema-r) at var(--tema-x) var(--tema-y));
+  }
+}
 ::view-transition-old(.page) {
   animation: 100ms ease-in both fade-out;
 }
@@ -1571,5 +1583,26 @@ details[open] > summary.desvio .desvio-seta {
   }
   .tabela-pilha td:empty {
     display: none;
+  }
+}
+
+/* ícone do botão de tema: gira um quarto de volta ao trocar, saindo e entrando no mesmo lugar */
+.tema-icone {
+  opacity: 0;
+  rotate: -90deg;
+  scale: 0.6;
+  transition:
+    opacity var(--dur) ease,
+    rotate var(--dur-slow) var(--ease-chegada),
+    scale var(--dur-slow) var(--ease-chegada);
+}
+.tema-icone[data-on] {
+  opacity: 1;
+  rotate: 0deg;
+  scale: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tema-icone {
+    transition: none;
   }
 }
