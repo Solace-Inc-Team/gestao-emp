@@ -1,7 +1,8 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { TemaBotao } from "@/components/tema-botao";
-import { ArrowRight, Building2, FileSpreadsheet, KeyRound, WifiOff } from "lucide-react";
+import { StatusSistema } from "@/components/status-sistema";
+import { ArrowRight } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { InView } from "@/components/in-view";
 import { LiveNumber } from "@/components/live-number";
@@ -10,6 +11,8 @@ import { DemoAcerto } from "./demo-acerto";
 import { DemoCelular } from "./demo-celular";
 import { DemoEntrega } from "./demo-entrega";
 import { DemoPortal } from "./demo-portal";
+import { Prateleira } from "./prateleira";
+import { DadosSeus, EmpresaIsolada, SemInternet, SenhaDeNovo } from "./diagramas";
 
 export const metadata = {
   title: { absolute: "Depósito: gestão para revendas de água e gás" },
@@ -34,10 +37,10 @@ const estoque = [
 ];
 
 const extras = [
-  { icon: WifiOff, t: "Funciona sem internet", d: "A confirmação da entrega fica guardada e sobe quando o sinal volta." },
-  { icon: KeyRound, t: "Senha de novo no que não volta", d: "Estorno, inventário e ajuste pedem confirmação de quem está logado." },
-  { icon: Building2, t: "Cada empresa isolada", d: "Filtro em toda consulta e Row-Level Security no Postgres por baixo." },
-  { icon: FileSpreadsheet, t: "Os dados são seus", d: "Relatórios por dia, entregador e produto, e exportação em planilha." },
+  { figura: SemInternet, t: "Funciona sem internet", d: "A confirmação da entrega fica guardada e sobe quando o sinal volta." },
+  { figura: SenhaDeNovo, t: "Senha de novo no que não volta", d: "Estorno, inventário e ajuste pedem confirmação de quem está logado." },
+  { figura: EmpresaIsolada, t: "Cada empresa isolada", d: "Filtro em toda consulta e Row-Level Security no Postgres por baixo." },
+  { figura: DadosSeus, t: "Os dados são seus", d: "Relatórios por dia, entregador e produto, e exportação em planilha." },
 ];
 
 export default function Inicio() {
@@ -137,7 +140,8 @@ export default function Inicio() {
 
         <section className="faixa-chama">
           <InView className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.15fr_1fr]">
-            <div>
+            {/* min-w-0: a prateleira corta na borda em vez de alargar a coluna e empurrar o texto */}
+            <div className="min-w-0">
               <p className="font-mono text-[12px] tracking-[0.14em] uppercase">Vasilhame retornável</p>
               <h2 className="reveal mt-3 max-w-[16ch] text-[2.25rem] leading-[1.04] font-semibold tracking-[-0.04em] text-balance sm:text-[3.25rem]">
                 Saiu cheio, voltou vazio. O estoque fecha sozinho.
@@ -160,6 +164,7 @@ export default function Inicio() {
                   </div>
                 ))}
               </dl>
+              <Prateleira quantos={12} className="mt-8 max-w-md" />
             </div>
             <Botijao className="mx-auto w-full max-w-[22rem]" />
           </InView>
@@ -259,18 +264,19 @@ export default function Inicio() {
               </article>
             </div>
 
-            <ul className="mt-16 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
-              {extras.map(({ icon: Icon, t, d }, i) => (
-                <li key={t} className="anim-icone border-t border-line pt-5">
-                  <span className="flex items-center justify-between">
-                    <Icon className="size-5 text-muted" aria-hidden="true" />
+            {/* cada extra com um esquema em linha que explica a ideia; os traços se desenham ao aparecer */}
+            <InView className="mt-16">
+              <ul className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
+                {extras.map(({ figura: Figura, t, d }, i) => (
+                  <li key={t} className="border-t border-line pt-5">
                     <span className="fig">{String(i + 1).padStart(2, "0")}</span>
-                  </span>
-                  <h3 className="mt-4 font-semibold">{t}</h3>
-                  <p className="mt-1 text-muted">{d}</p>
-                </li>
-              ))}
-            </ul>
+                    <Figura className="h-20 w-full max-w-[15rem]" />
+                    <h3 className="mt-5 font-semibold">{t}</h3>
+                    <p className="mt-1 text-muted">{d}</p>
+                  </li>
+                ))}
+              </ul>
+            </InView>
           </div>
         </section>
 
@@ -291,8 +297,15 @@ export default function Inicio() {
       </main>
 
       <footer className="border-t border-line">
+        {/* o mesmo motivo do estoque fechando a página, quieto e cortado nas bordas */}
+        <InView className="overflow-hidden pt-8">
+          <Prateleira quantos={48} className="justify-center text-line" />
+        </InView>
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-[13px] text-muted sm:px-6">
-          <span>Depósito, um produto Solace.</span>
+          <span className="flex flex-wrap items-center gap-x-5 gap-y-2">
+            <span>Depósito, um produto Solace.</span>
+            <StatusSistema />
+          </span>
           <nav className="flex gap-5">
             <Link href="/termos" className="hover:text-fg">Termos de uso</Link>
             <Link href="/privacidade" className="hover:text-fg">Privacidade</Link>

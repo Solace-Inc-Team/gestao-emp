@@ -1606,3 +1606,79 @@ details[open] > summary.desvio .desvio-seta {
     transition: none;
   }
 }
+
+/* prateleira de vasilhames: o motivo da página inicial, tirado do próprio estoque */
+.prateleira .vasilhame {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.prateleira .nivel {
+  fill: currentColor;
+  stroke: none;
+  opacity: 0.32;
+  transform-box: fill-box;
+  transform-origin: bottom;
+  /* a onda percorre a fileira: cada vasilhame esvazia um pouco depois do vizinho e volta a encher */
+  animation: prateleira-nivel 7s var(--ease-trajeto) calc(var(--i) * 0.28s) infinite both;
+}
+@keyframes prateleira-nivel {
+  0%,
+  30% {
+    scale: 1 1;
+  }
+  45%,
+  70% {
+    scale: 1 0;
+  }
+  85%,
+  100% {
+    scale: 1 1;
+  }
+}
+/* só anda enquanto está na tela */
+[data-inview="false"] .prateleira .nivel {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .prateleira .nivel {
+    animation: none;
+  }
+  .prateleira .nivel[data-parado="vazio"] {
+    scale: 1 0;
+  }
+}
+/* traço técnico só se desenha quando o bloco aparece, não no carregamento da página */
+[data-inview="false"] .ink [pathLength],
+[data-inview="false"] .ink .nota,
+[data-inview="false"] .ink .tracejado[pathLength] {
+  animation-play-state: paused;
+}
+/* o único ponto âmbar de cada esquema: o momento que importa */
+.ink .chama {
+  fill: var(--chama);
+  stroke: none;
+  animation: fade-in 400ms ease 1.4s both;
+}
+[data-inview="false"] .ink .chama {
+  animation-play-state: paused;
+}
+
+/* ponto do status do sistema: um halo leve que pulsa devagar enquanto está tudo no ar */
+.status-vivo {
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 45%, transparent);
+  animation: status-vivo 2.4s ease-out infinite;
+}
+@keyframes status-vivo {
+  70%,
+  100% {
+    box-shadow: 0 0 0 6px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .status-vivo {
+    animation: none;
+  }
+}
