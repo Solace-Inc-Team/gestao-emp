@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { requireUser } from "@/lib/auth";
-import { dashboard, listDrivers } from "@/domain/queries";
+import { dashboard, listDrivers, primeirosPassos } from "@/domain/queries";
 import { todayISO } from "@/lib/period";
 import { LiveNumber } from "@/components/live-number";
 import { SemanaBarras } from "@/components/semana-barras";
 import { comparar } from "@/lib/comparativo";
 import { FiltroPainel } from "./filtro-painel";
+import { PrimeirosPassos } from "./primeiros-passos";
 import { Money, StatusBadge, Empty, fmtTime, paymentLabel } from "@/components/ui";
 
 export const metadata = { title: "Painel" };
@@ -20,6 +21,8 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
   const entregadores = await listDrivers(user.tenantId);
   const entregador = entregadores.find((e) => e.id === sp.entregador);
   const d = await dashboard(user.tenantId, { day: dia, driverId: entregador?.id });
+  // os primeiros passos são tarefas do dono; os outros perfis não têm acesso a metade das telas
+  const passos = user.role === "dono" ? await primeirosPassos(user.tenantId) : null;
   const ehHoje = dia === hojeISO;
   const filtrado = !ehHoje || !!entregador;
   const hoje = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" }).format(
@@ -78,6 +81,8 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
           {filtrado && <Link href="/" className="btn">Hoje, todos</Link>}
         </FiltroPainel>
       </div>
+
+      {passos && <PrimeirosPassos feito={passos} />}
 
       <section className="panel mb-6 grid divide-line sm:grid-cols-3 sm:divide-x">
         <div className="p-5">

@@ -769,3 +769,26 @@ test("painel: semana de 7 dias seguidos, terminando no vendido do dia", async ()
   assert.equal(antigo.week[0].day, "2020-01-02");
   assert.equal(antigo.emAndamento, false);
 });
+
+test("primeiros passos: empresa nova começa do zero e cada passo se completa com o dado de verdade", async () => {
+  const { db } = m.db;
+  const { tenants, users, products } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const [t] = await db.insert(tenants).values({ name: "Nova", slug: `teste-nova-${Date.now()}` }).returning();
+  await db.insert(users).values({ tenantId: t.id, name: "Dono Nova", email: `dono@${t.id}.test`, role: "dono", passwordHash: "x" });
+
+  assert.deepEqual(await m.q.primeirosPassos(t.id), { produtos: false, estoque: false, equipe: false, pix: false, turno: false, pedido: false });
+
+  await db.insert(products).values({ tenantId: t.id, name: "Gás P13", priceCents: 11500 });
+  // entregador desativado não conta: quem saiu não faz entrega
+  await db.insert(users).values({ tenantId: t.id, name: "Ex", email: `ex@${t.id}.test`, role: "entregador", passwordHash: "x", active: false });
+  await db.update(tenants).set({ pixKey: "pix@nova.test" }).where(eq(tenants.id, t.id));
+  const meio = await m.q.primeirosPassos(t.id);
+  assert.equal(meio.produtos, true);
+  assert.equal(meio.pix, true);
+  assert.equal(meio.equipe, false);
+
+  // a empresa A, montada pelo teste com tudo, não enxerga os passos da nova e vice-versa
+  const a = await m.q.primeirosPassos(A.t.id);
+  assert.equal(a.produtos && a.estoque && a.equipe && a.turno && a.pedido, true);
+});

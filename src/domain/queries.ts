@@ -637,3 +637,21 @@ export const listAudit = scoped(async function listAudit(
   for (const x of [...tur, ...prod, ...cli, ...usu, ...forn]) nomes[x.id] = x.n;
   return { rows: page, nomes, more: rows.length > porPagina };
 });
+
+/**
+ * Primeiros passos de uma empresa nova, deduzidos dos próprios dados: cada passo
+ * fica feito quando a coisa existe de verdade, sem marcar nada à mão.
+ */
+export const primeirosPassos = scoped(async function primeirosPassos(tenantId: string) {
+  const [r] = await db
+    .select({
+      produtos: sql<boolean>`exists (select 1 from ${products} where ${products.tenantId} = ${tenantId})`,
+      estoque: sql<boolean>`exists (select 1 from ${stockMovements} where ${stockMovements.tenantId} = ${tenantId})`,
+      equipe: sql<boolean>`exists (select 1 from ${users} where ${users.tenantId} = ${tenantId} and ${users.role} = 'entregador' and ${users.active})`,
+      pix: sql<boolean>`(select ${tenants.pixKey} <> '' from ${tenants} where ${tenants.id} = ${tenantId})`,
+      turno: sql<boolean>`exists (select 1 from ${shifts} where ${shifts.tenantId} = ${tenantId})`,
+      pedido: sql<boolean>`exists (select 1 from ${orders} where ${orders.tenantId} = ${tenantId})`,
+    })
+    .from(sql`(select 1) as um`);
+  return r;
+});
