@@ -178,9 +178,6 @@ export default function Inicio() {
             <Logo />
           </Link>
           <nav className="flex items-center gap-6 text-[13px] text-muted">
-            <a href="#dia" className="hidden hover:text-fg sm:inline">O dia</a>
-            <a href="#preco" className="hidden hover:text-fg sm:inline">Preço</a>
-            <a href="#perguntas" className="hidden hover:text-fg sm:inline">Perguntas</a>
             <TemaBotao className="size-9 sm:size-8" />
             <Link href="/login" className="btn px-3 text-[13px] sm:h-8">Entrar</Link>
           </nav>

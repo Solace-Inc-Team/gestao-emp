@@ -2159,7 +2159,7 @@ details[open] > summary.desvio .desvio-seta {
   }
 }
 
-/* página inicial: os links do topo, o botão "Ver um dia" e as paradas do relógio levam até a seção
+/* página inicial: o botão "Ver um dia" e as paradas do relógio levam até a seção
    rolando, para a pessoa ver o caminho entre onde estava e aonde foi. Só nesta página (nas trocas de
    tela do sistema a rolagem continua direta) e só para quem não pediu menos movimento. */
 @media (prefers-reduced-motion: no-preference) {
