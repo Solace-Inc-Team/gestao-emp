@@ -10,26 +10,12 @@ const papel = "#f4f3ee";
 const tinta = "#1747c6";
 const texto = "#171717";
 
-function Registro({ style }: { style: React.CSSProperties }) {
-  return (
-    <svg width="28" height="28" viewBox="0 0 24 24" style={{ position: "absolute", ...style }}>
-      <circle cx="12" cy="12" r="6" fill="none" stroke={tinta} strokeWidth="1.4" />
-      <path d="M12 0 V24 M0 12 H24" stroke={tinta} strokeWidth="1.4" />
-    </svg>
-  );
-}
-
 export default function Image() {
   const traco = { fill: "none", stroke: tinta, strokeWidth: 2.2, strokeLinecap: "round", strokeLinejoin: "round" } as const;
   const mono = { fontFamily: "monospace", fontSize: 16, letterSpacing: 2, color: tinta, textTransform: "uppercase" } as const;
   return new ImageResponse(
     (
       <div style={{ width: "100%", height: "100%", display: "flex", position: "relative", background: papel, padding: "72px 80px" }}>
-        <Registro style={{ top: 28, left: 28 }} />
-        <Registro style={{ top: 28, right: 28 }} />
-        <Registro style={{ bottom: 28, left: 28 }} />
-        <Registro style={{ bottom: 28, right: 28 }} />
-
         <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", width: 700 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <svg width="44" height="44" viewBox="0 0 24 24">
@@ -43,10 +29,6 @@ export default function Image() {
             <span style={{ marginTop: 22, fontSize: 26, color: "#555", lineHeight: 1.35 }}>
               Pedidos, entregas, botijões cheios e vazios e o dinheiro de cada entregador.
             </span>
-          </div>
-          <div style={{ display: "flex", border: `1.5px solid ${tinta}`, alignSelf: "flex-start" }}>
-            <span style={{ ...mono, padding: "8px 14px", borderRight: `1.5px solid ${tinta}` }}>Prancha 01</span>
-            <span style={{ ...mono, padding: "8px 14px" }}>Vasilhames retornáveis</span>
           </div>
         </div>
 
