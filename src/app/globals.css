@@ -846,8 +846,9 @@ body[data-confirmando] .deliver-btn {
   stroke-width: 1;
   animation: agua 14s ease-in-out 1.4s infinite both;
 }
+/* desloca exatamente uma onda inteira (crista + vale = 120): o fim da volta encaixa no começo, sem pulo */
 .ink .agua-onda {
-  animation: onda 2.8s linear infinite;
+  animation: onda 5.6s linear infinite;
 }
 .ink .rotulo-cheio {
   animation: rotulo 14s ease 1.4s infinite both;
@@ -937,7 +938,7 @@ body[data-confirmando] .deliver-btn {
 }
 @keyframes onda {
   to {
-    transform: translateX(-60px);
+    transform: translateX(-120px);
   }
 }
 @keyframes rotulo {
