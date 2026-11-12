@@ -6,7 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { InView } from "@/components/in-view";
 import { LiveNumber } from "@/components/live-number";
-import { BairroRota, Botijao, Galao, Registro, Regua } from "./prancha";
+import { BairroRota, Botijao, Galao, Regua } from "./prancha";
 import { DemoAcerto } from "./demo-acerto";
 import { DemoCelular } from "./demo-celular";
 import { DemoEntrega } from "./demo-entrega";
@@ -62,18 +62,9 @@ export default function Inicio() {
 
       <main>
         <section className="prancha relative isolate overflow-hidden border-b border-line">
-          {/* prancha técnica: marcas de registro, régua, carimbo e os dois vasilhames em desenho de engenharia */}
+          {/* prancha técnica: régua e os dois vasilhames em desenho de engenharia */}
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 mx-auto max-w-[90rem]">
-            <Registro className="absolute top-6 left-6 size-6" />
-            <Registro className="absolute top-6 right-6 size-6" />
             <Regua className="absolute top-28 left-8 hidden h-[26rem] lg:block" />
-            <dl className="carimbo absolute top-5 right-16 hidden xl:grid">
-              <dt>Depósito</dt>
-              <dd>Prancha 01/04</dd>
-              <dt className="col-span-2">Vasilhames retornáveis</dt>
-              <dd>Esc. 1:5</dd>
-              <dd>Rev. 2026</dd>
-            </dl>
             <Botijao className="absolute top-28 left-[max(1rem,calc(50%-40rem))] hidden w-[17rem] lg:block" />
             <Galao id="galao-topo" className="absolute top-28 right-[max(1rem,calc(50%-40rem))] hidden w-[17rem] lg:block" />
           </div>

@@ -882,22 +882,6 @@ body[data-confirmando] .deliver-btn {
   animation: balanca 3.4s ease-in-out infinite alternate;
 }
 
-/* carimbo de prancha, no canto */
-.carimbo {
-  grid-template-columns: auto auto;
-  border: 1px solid color-mix(in srgb, var(--tinta) 55%, transparent);
-  color: var(--tinta);
-  font-family: var(--font-mono);
-  font-size: 10px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  animation: fade-in 800ms ease 1.2s both;
-}
-.carimbo > * {
-  padding: 0.35rem 0.6rem;
-  border: 0.5px solid color-mix(in srgb, var(--tinta) 35%, transparent);
-}
-
 /* faixa final: azul elétrico chapado, o bairro em traço branco e a rota se desenhando quando aparece */
 .cta-band {
   background: var(--marca-forte);
@@ -986,8 +970,7 @@ body[data-confirmando] .deliver-btn {
   .ink [pathLength],
   .ink .nota,
   .ink .etiqueta-corpo,
-  .ink .agua-onda,
-  .carimbo {
+  .ink .agua-onda {
     animation: none !important;
     stroke-dashoffset: 0;
   }
