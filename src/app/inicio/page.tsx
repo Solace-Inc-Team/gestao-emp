@@ -143,6 +143,36 @@ export default function Inicio() {
           </InView>
         </section>
 
+        <section className="faixa-chama">
+          <InView className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.15fr_1fr]">
+            <div>
+              <p className="font-mono text-[12px] tracking-[0.14em] uppercase">Vasilhame retornável</p>
+              <h2 className="reveal mt-3 max-w-[16ch] text-[2.25rem] leading-[1.04] font-semibold tracking-[-0.04em] text-balance sm:text-[3.25rem]">
+                Saiu cheio, voltou vazio. O estoque fecha sozinho.
+              </h2>
+              <p className="mt-5 max-w-[34rem] text-[16px] leading-relaxed opacity-80">
+                Cada entrega baixa um cheio e devolve um vazio para a conta da loja. Se o cliente não tem vasilhame para
+                trocar, o sistema cobra o casco; o que chega amassado sai separado, como avariado.
+              </p>
+              <dl className="mt-10 grid max-w-md grid-cols-3 border-t border-current/25 font-mono text-[11px] tracking-[0.12em] uppercase">
+                {[
+                  ["Cheios", 42],
+                  ["Vazios", 18],
+                  ["Avariados", 2],
+                ].map(([t, n]) => (
+                  <div key={t} className="pt-4">
+                    <dt className="opacity-70">{t}</dt>
+                    <dd className="mt-1 font-sans text-[2rem] font-semibold tracking-tight">
+                      <LiveNumber value={n as number} fromZero="visible" />
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            </div>
+            <Botijao className="mx-auto w-full max-w-[22rem]" />
+          </InView>
+        </section>
+
         <section id="recursos" className="recursos relative isolate scroll-mt-20 border-y border-line bg-surface/60">
           <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
             <p className="text-[13px] font-medium text-accent">Recursos</p>
@@ -266,7 +296,7 @@ export default function Inicio() {
             <p className="mx-auto mt-4 max-w-[32rem] text-white/80">
               Dono, caixa, atendente e entregador, cada um vendo só o que é seu.
             </p>
-            <Link href="/login" className="btn mt-8 h-11 border-white bg-white px-5 text-[15px] text-[#0b3bd6] hover:bg-white/90">
+            <Link href="/login" className="btn mt-8 h-11 border-white bg-white px-5 text-[15px] text-[var(--marca-forte)] hover:bg-white/90">
               Entrar no sistema <ArrowRight className="size-4" aria-hidden="true" />
             </Link>
           </InView>

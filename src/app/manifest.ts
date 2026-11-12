@@ -6,8 +6,8 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "Depósito",
     start_url: "/entregador",
     display: "standalone",
-    background_color: "#f3f6f8",
-    theme_color: "#13233f",
+    background_color: "#f4f3ee",
+    theme_color: "#1745d0",
     lang: "pt-BR",
     icons: [{ src: "/icon.svg", sizes: "any", type: "image/svg+xml" }],
   };

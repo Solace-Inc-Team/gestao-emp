@@ -62,7 +62,17 @@ export function PageHeader({ title, description, children }: { title: string; de
 }
 
 export function Empty({ children }: { children: ReactNode }) {
-  return <p className="px-6 py-12 text-center text-muted">{children}</p>;
+  return (
+    <div className="px-6 py-12 text-center text-muted">
+      {/* galão vazio em desenho técnico: a linha tracejada é o nível que não tem */}
+      <svg viewBox="0 0 40 48" className="ink mx-auto mb-3 h-12 w-10 opacity-80" aria-hidden="true">
+        <path pathLength={1} d="M15 4 H25 V9 H15 Z" />
+        <path pathLength={1} d="M17 13 C9 14 6 17 6 21 V40 C6 43 8 44 11 44 H29 C32 44 34 43 34 40 V21 C34 17 31 14 23 13 V9 M17 9 V13" />
+        <path pathLength={1} d="M10 39 H30" className="tracejado" />
+      </svg>
+      <p>{children}</p>
+    </div>
+  );
 }
 
 /** Cabeçalho interno de painel: título à esquerda, ação ou link à direita. */
