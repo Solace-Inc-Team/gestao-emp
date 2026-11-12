@@ -1,4 +1,5 @@
 import { ImageResponse } from "next/og";
+import { CHAMA, GOTA } from "@/components/logo";
 
 // imagem que aparece quando o link do site é colado no WhatsApp, LinkedIn etc.: a mesma prancha do topo
 export const alt = "Depósito: gestão para revendas de água e gás";
@@ -32,8 +33,8 @@ export default function Image() {
         <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", width: 700 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
             <svg width="44" height="44" viewBox="0 0 24 24">
-              <rect width="24" height="24" rx="6" fill={tinta} />
-              <path d="M12 5.5c2.7 3.2 4.2 5.5 4.2 7.6a4.2 4.2 0 0 1-8.4 0c0-2.1 1.5-4.4 4.2-7.6z" fill="#ffffff" />
+              <path d={GOTA} fill={tinta} />
+              <path d={CHAMA} fill="#f5a524" stroke={papel} strokeWidth="1.5" paintOrder="stroke" />
             </svg>
             <span style={{ fontSize: 30, fontWeight: 700, color: texto, letterSpacing: -0.5 }}>Depósito</span>
           </div>

@@ -1082,3 +1082,248 @@ li > span > .fig {
     animation: none !important;
   }
 }
+
+/* ícones animados ---------------------------------------------------------------------------------
+   Movimentos inspirados na lucide-animated, feitos em CSS sobre os mesmos ícones Lucide (sem a Motion):
+   animam com o mouse sobre o link ou botão inteiro, e uma vez quando o item do menu vira a tela atual. */
+.lucide * {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+/* painel: os quatro quadros entram um depois do outro */
+:is(a, button, .anim-icone):hover > .lucide-layout-grid,
+[aria-current="page"] > .lucide-layout-grid {
+  & > rect {
+    animation: icone-pop 420ms var(--ease-spring) both;
+  }
+  & > rect:nth-child(2) { animation-delay: 60ms; }
+  & > rect:nth-child(3) { animation-delay: 120ms; }
+  & > rect:nth-child(4) { animation-delay: 180ms; }
+}
+/* novo pedido: o + gira um quarto de volta */
+:is(a, button, .anim-icone):hover > .lucide-plus,
+[aria-current="page"] > .lucide-plus {
+  animation: icone-gira-90 420ms var(--ease-spring);
+}
+/* pedidos: as linhas do recibo se escrevem */
+:is(a, button, .anim-icone):hover > .lucide-receipt-text,
+[aria-current="page"] > .lucide-receipt-text > path:nth-child(-n + 3) {
+  stroke-dasharray: 10;
+  animation: icone-escreve 500ms var(--ease-out) both;
+}
+:is(a, button, .anim-icone):hover > .lucide-receipt-text,
+[aria-current="page"] > .lucide-receipt-text > path:nth-child(2) { animation-delay: 80ms; }
+:is(a, button, .anim-icone):hover > .lucide-receipt-text,
+[aria-current="page"] > .lucide-receipt-text > path:nth-child(3) { animation-delay: 160ms; }
+/* entregas: o caminhão sacoleja e avança */
+:is(a, button, .anim-icone):hover > .lucide-truck,
+[aria-current="page"] > .lucide-truck {
+  animation: icone-dirige 600ms ease-in-out;
+}
+/* caixa: a aba da carteira abre e fecha */
+:is(a, button, .anim-icone):hover > .lucide-wallet,
+[aria-current="page"] > .lucide-wallet > path:first-child {
+  animation: icone-aba 500ms var(--ease-spring);
+}
+/* estoque: a caixa pula */
+:is(a, button, .anim-icone):hover > .lucide-package,
+[aria-current="page"] > .lucide-package {
+  animation: icone-pula 520ms var(--ease-out);
+}
+/* clientes: a segunda pessoa chega pelo lado */
+:is(a, button, .anim-icone):hover > .lucide-users,
+[aria-current="page"] > .lucide-users > :is(path:nth-child(2), path:nth-child(3)) {
+  animation: icone-chega 480ms var(--ease-out) both;
+}
+/* fiado: as moedas caem na mão */
+:is(a, button, .anim-icone):hover > .lucide-hand-coins,
+[aria-current="page"] > .lucide-hand-coins > circle {
+  animation: icone-cai 520ms var(--ease-spring) both;
+}
+:is(a, button, .anim-icone):hover > .lucide-hand-coins,
+[aria-current="page"] > .lucide-hand-coins > circle:last-child { animation-delay: 90ms; }
+/* relatórios: as barras crescem de baixo para cima */
+:is(a, button, .anim-icone):hover > .lucide-chart-column,
+[aria-current="page"] > .lucide-chart-column > path:not(:first-child) {
+  transform-origin: bottom;
+  animation: icone-cresce 520ms var(--ease-out) both;
+}
+:is(a, button, .anim-icone):hover > .lucide-chart-column,
+[aria-current="page"] > .lucide-chart-column > path:nth-child(3) { animation-delay: 70ms; }
+:is(a, button, .anim-icone):hover > .lucide-chart-column,
+[aria-current="page"] > .lucide-chart-column > path:nth-child(2) { animation-delay: 140ms; }
+/* despesas: o cifrão balança */
+:is(a, button, .anim-icone):hover > .lucide-receipt,
+[aria-current="page"] > .lucide-receipt > path:nth-child(-n + 2) {
+  animation: icone-balanca 520ms ease-in-out;
+}
+/* produtos e preços: a etiqueta balança presa no furo */
+:is(a, button, .anim-icone):hover > .lucide-tag,
+[aria-current="page"] > .lucide-tag {
+  transform-origin: 30% 30%;
+  animation: icone-balanca 600ms ease-in-out;
+}
+/* equipe e configurações: a engrenagem gira */
+:is(a, button, .anim-icone):hover > .lucide-user-cog,
+[aria-current="page"] > .lucide-user-cog > :nth-child(n + 2) {
+  transform-box: view-box;
+  transform-origin: 18px 15px;
+  animation: icone-gira 700ms var(--ease-out);
+}
+:is(a, button, .anim-icone):hover > .lucide-settings,
+[aria-current="page"] > .lucide-settings {
+  animation: icone-gira 700ms var(--ease-out);
+}
+/* trocar senha: a chave dá meia volta na fechadura */
+:is(a, button, .anim-icone):hover > .lucide-key-round,
+[aria-current="page"] > .lucide-key-round {
+  animation: icone-chave 520ms var(--ease-spring);
+}
+/* sair e setas: avançam e voltam */
+:is(a, button, .anim-icone):hover > .lucide-log-out,
+[aria-current="page"] > .lucide-log-out > path:nth-child(-n + 2),
+:is(a, button, .anim-icone):hover > .lucide-arrow-right,
+[aria-current="page"] > .lucide-arrow-right {
+  animation: icone-avanca 480ms var(--ease-out);
+}
+/* página inicial: os ícones dos itens numerados respondem ao mouse */
+.anim-icone:hover > span > .lucide {
+  animation: icone-pula 520ms var(--ease-out);
+}
+
+@keyframes icone-pop {
+  from {
+    scale: 0.4;
+    opacity: 0;
+  }
+}
+@keyframes icone-gira-90 {
+  from {
+    rotate: -90deg;
+  }
+}
+@keyframes icone-escreve {
+  from {
+    stroke-dashoffset: 10;
+  }
+}
+@keyframes icone-dirige {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  25% {
+    translate: 1px -1px;
+  }
+  50% {
+    translate: 2.5px 0;
+  }
+  75% {
+    translate: 1px -0.5px;
+  }
+}
+@keyframes icone-aba {
+  40% {
+    translate: 0 -2.5px;
+  }
+}
+@keyframes icone-pula {
+  30% {
+    translate: 0 -3px;
+  }
+  60% {
+    translate: 0 0;
+    scale: 1.08 0.92;
+  }
+}
+@keyframes icone-chega {
+  from {
+    translate: 5px 0;
+    opacity: 0;
+  }
+}
+@keyframes icone-cai {
+  from {
+    translate: 0 -6px;
+    opacity: 0;
+  }
+}
+@keyframes icone-cresce {
+  from {
+    scale: 1 0;
+  }
+}
+@keyframes icone-balanca {
+  25% {
+    rotate: -14deg;
+  }
+  60% {
+    rotate: 9deg;
+  }
+}
+@keyframes icone-gira {
+  from {
+    rotate: -120deg;
+  }
+}
+@keyframes icone-chave {
+  50% {
+    rotate: -35deg;
+  }
+}
+@keyframes icone-avanca {
+  50% {
+    translate: 3px 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lucide,
+  .lucide * {
+    animation: none !important;
+  }
+}
+
+/* logotipo: a chama acende ao abrir e tremula com o mouse; o acento do "ó" é uma faísca âmbar */
+.logo-acento {
+  position: absolute;
+  top: 0.01em;
+  left: 0.27em;
+  width: 0.15em;
+  height: 0.3em;
+  border-radius: 0.1em 0.1em 0.04em 0.04em;
+  background: var(--chama);
+  rotate: 32deg;
+}
+.logo-chama {
+  transform-box: fill-box;
+  transform-origin: 50% 90%;
+  animation: chama-acende 700ms var(--ease-spring) 150ms both;
+}
+:is(a, .logo):hover .logo-chama {
+  animation: chama-tremula 900ms ease-in-out;
+}
+@keyframes chama-acende {
+  from {
+    scale: 0.2 0;
+  }
+}
+@keyframes chama-tremula {
+  20% {
+    scale: 0.92 1.08;
+    rotate: -4deg;
+  }
+  45% {
+    scale: 1.06 0.94;
+    rotate: 3deg;
+  }
+  70% {
+    scale: 0.96 1.04;
+    rotate: -2deg;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .logo-chama {
+    animation: none !important;
+  }
+}

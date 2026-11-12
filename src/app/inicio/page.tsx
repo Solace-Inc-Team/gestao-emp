@@ -289,7 +289,7 @@ export default function Inicio() {
 
             <ul className="mt-16 grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-4">
               {extras.map(({ icon: Icon, t, d }, i) => (
-                <li key={t} className="border-t border-line pt-5">
+                <li key={t} className="anim-icone border-t border-line pt-5">
                   <span className="flex items-center justify-between">
                     <Icon className="size-5 text-muted" aria-hidden="true" />
                     <span className="fig">{String(i + 1).padStart(2, "0")}</span>
