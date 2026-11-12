@@ -57,6 +57,7 @@
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 }
 
 body {
@@ -612,15 +613,6 @@ body[data-confirmando] .deliver-btn {
   }
 }
 
-/* página inicial: grade fina atrás do título, sumindo nas bordas */
-.hero-grid {
-  background-image:
-    linear-gradient(to right, var(--line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 70% 55% at 50% 20%, #000 30%, transparent 75%);
-}
-
 /* a captura do painel some embaixo, como se continuasse */
 .hero-shot {
   mask-image: linear-gradient(to bottom, #000 70%, transparent);
@@ -633,9 +625,6 @@ body[data-confirmando] .deliver-btn {
 .hero-word {
   display: inline-block;
   animation: 800ms var(--ease-out) var(--d, 0ms) both word-in;
-}
-.hero-grid {
-  animation: 1.4s var(--ease-out) both grid-in;
 }
 
 /* celulares respirando devagar */
@@ -729,12 +718,6 @@ body[data-confirmando] .deliver-btn {
     filter: blur(8px);
   }
 }
-@keyframes grid-in {
-  from {
-    opacity: 0;
-    scale: 1.06;
-  }
-}
 @keyframes float {
   50% {
     transform: translateY(-8px);
@@ -774,7 +757,6 @@ body[data-confirmando] .deliver-btn {
 @media (prefers-reduced-motion: reduce) {
   .hero-in,
   .hero-word,
-  .hero-grid,
   .hero-tilt,
   .reveal,
   .float,
@@ -790,240 +772,216 @@ body[data-confirmando] .deliver-btn {
   }
 }
 
-/* fundo vivo da página inicial ------------------------------------------------------------------ */
+/* prancha técnica da página inicial e do login ------------------------------------------------- */
 
-/* aurora: manchas de luz grandes e suaves, sem filtro (o próprio gradiente já é macio), só derivando */
-.aurora {
-  position: absolute;
-  width: 46rem;
-  height: 46rem;
-  border-radius: 50%;
-  opacity: 0.55;
-  will-change: transform;
-  animation: drift 22s ease-in-out infinite alternate;
-}
-.aurora-agua {
-  top: -18rem;
-  left: calc(50% - 40rem);
-  background: radial-gradient(closest-side, color-mix(in srgb, var(--accent) 38%, transparent), transparent);
-}
-.aurora-chama {
-  top: -14rem;
-  right: calc(50% - 42rem);
-  background: radial-gradient(closest-side, color-mix(in srgb, #f59e0b 30%, transparent), transparent);
-  animation-duration: 26s;
-  animation-direction: alternate-reverse;
-}
-.aurora-ceu {
-  top: 12rem;
-  left: calc(50% - 16rem);
-  width: 32rem;
-  height: 32rem;
-  background: radial-gradient(closest-side, color-mix(in srgb, #06b6d4 22%, transparent), transparent);
-  animation-duration: 30s;
+/* papel de prancha: um tom acima do fundo, e tinta azul de desenho técnico */
+.prancha {
+  --papel: #f4f3ee;
+  --tinta: #1747c6;
+  background: var(--papel);
 }
 @media (prefers-color-scheme: dark) {
-  .aurora {
-    opacity: 0.7;
+  .prancha {
+    --papel: #0b0f17;
+    --tinta: #6d9dff;
   }
 }
 
-/* grade acesa: a mesma grade, mais forte, só em volta do cursor */
-.hero-grid-lit {
-  background-image:
-    linear-gradient(to right, color-mix(in srgb, var(--accent) 45%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--accent) 45%, transparent) 1px, transparent 1px);
-  background-size: 56px 56px;
-  background-position: calc(50% + 28px) 0;
-  opacity: 0;
-  transition: opacity var(--dur-slow);
-  mask-image: radial-gradient(220px circle at var(--mx, 50%) var(--my, 30%), #000, transparent 70%);
+.ink {
+  overflow: visible;
+  fill: none;
+  stroke: var(--tinta);
+  stroke-width: 1.25;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
-.hero:hover .hero-grid-lit {
-  opacity: 1;
+/* cada traço se desenha do começo ao fim, grupo por grupo */
+.ink [pathLength] {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: ink-draw 1.6s var(--ease-out) var(--d, 0s) forwards;
 }
-@media (hover: none) {
-  .hero-grid-lit {
-    display: none;
-  }
+.ink .cota,
+.ink .tracejado {
+  stroke-width: 0.9;
+  opacity: 0.75;
 }
-.hero-grid {
-  background-position: calc(50% + 28px) 0;
+.ink .tracejado[pathLength] {
+  stroke-dasharray: 0.012 0.012;
+  stroke-dashoffset: 0;
+  animation: fade-in 600ms ease var(--d, 0s) both;
 }
-
-/* feixe: um traço de luz que desce por uma linha da grade */
-.beam {
-  position: absolute;
-  top: 0;
-  width: 1px;
-  height: 140px;
-  background: linear-gradient(to bottom, transparent, var(--accent), transparent);
-  box-shadow: 0 0 12px var(--accent);
-  opacity: 0;
-  animation: beam linear infinite;
+.ink .nota {
+  fill: var(--tinta);
+  stroke: none;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  letter-spacing: 0.08em;
+  animation: fade-in 500ms ease calc(var(--d, 0s) + 0.6s) both;
 }
-
-/* granulado fino: tira o ar de "gradiente de computador" */
-.noise {
-  opacity: 0.05;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+.ink .forte {
+  font-weight: 600;
 }
-
-/* avisos de exemplo passando ao lado do painel, um de cada vez */
-.feed {
-  height: 15rem;
+.ink .ponto {
+  fill: var(--tinta);
+  stroke: none;
 }
-.feed-item {
-  position: absolute;
-  inset-inline: 0;
-  top: 0;
-  display: flex;
-  gap: 0.625rem;
-  padding: 0.75rem 0.875rem;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--surface) 88%, transparent);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 12px 32px -12px rgb(0 0 0 / 0.25);
-  opacity: 0;
-  animation: feed 12s var(--ease-out) infinite both;
+.ink .papel {
+  fill: var(--papel);
 }
 
-/* reflexo que passa no botão principal de vez em quando */
-.btn-shine {
-  position: relative;
-  overflow: hidden;
-  isolation: isolate;
+/* água do galão: enche até o gargalo, ondula, esvazia, e o rótulo acompanha */
+.ink .agua {
+  fill: color-mix(in srgb, var(--tinta) 16%, transparent);
+  stroke: var(--tinta);
+  stroke-width: 1;
+  animation: agua 14s ease-in-out 1.4s infinite both;
 }
-.btn-shine::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background: linear-gradient(105deg, transparent 35%, rgb(255 255 255 / 0.35) 50%, transparent 65%);
-  translate: -120% 0;
-  animation: shine 4.5s ease-in-out 1.6s infinite;
+.ink .agua-onda {
+  animation: onda 2.8s linear infinite;
 }
-
-/* cartões com a borda acendendo onde o mouse está */
-.glow-card {
-  position: relative;
-  transition:
-    translate var(--dur) var(--ease-out),
-    box-shadow var(--dur) var(--ease-out);
+.ink .rotulo-cheio {
+  animation: rotulo 14s ease 1.4s infinite both;
 }
-.glow-card::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  z-index: 1;
-  border-radius: inherit;
-  padding: 1px;
-  background: radial-gradient(260px circle at var(--mx, -100px) var(--my, -100px), var(--accent), transparent 70%);
-  mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  mask-composite: exclude;
-  opacity: 0;
-  transition: opacity var(--dur-slow);
-  pointer-events: none;
-}
-.glow-card:hover {
-  translate: 0 -2px;
-  box-shadow: 0 18px 40px -24px rgb(0 0 0 / 0.35);
-}
-.glow-card:hover::before {
-  opacity: 1;
+.ink .rotulo-vazio {
+  animation: rotulo 14s ease 8.4s infinite both;
 }
 
-/* recursos: um véu de luz no alto da seção */
-.recursos::before {
-  content: "";
-  position: absolute;
-  inset: 0 0 auto;
-  z-index: -1;
-  height: 28rem;
-  background: radial-gradient(60% 100% at 50% 0%, color-mix(in srgb, var(--accent) 10%, transparent), transparent);
+/* etiqueta de entrega balançando presa no furo da alça */
+.ink .etiqueta-corpo {
+  transform-box: view-box;
+  transform-origin: 135px 64px;
+  animation: balanca 3.4s ease-in-out infinite alternate;
 }
 
-/* faixa final escura nos dois temas */
+/* carimbo de prancha, no canto */
+.carimbo {
+  grid-template-columns: auto auto;
+  border: 1px solid color-mix(in srgb, var(--tinta) 55%, transparent);
+  color: var(--tinta);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  animation: fade-in 800ms ease 1.2s both;
+}
+.carimbo > * {
+  padding: 0.35rem 0.6rem;
+  border: 0.5px solid color-mix(in srgb, var(--tinta) 35%, transparent);
+}
+
+/* faixa final: azul elétrico chapado, o bairro em traço branco e a rota se desenhando quando aparece */
 .cta-band {
-  background: #0b0d12;
+  background: #0b3bd6;
   color: #fff;
-  box-shadow: inset 0 0 0 1px rgb(255 255 255 / 0.08);
 }
-.cta-band .aurora {
-  opacity: 0.9;
+.cta-band .ink {
+  stroke: rgb(255 255 255 / 0.22);
+  stroke-width: 1;
+}
+.cta-band .ink .corrego {
+  stroke: rgb(255 255 255 / 0.4);
+  stroke-width: 6;
+  stroke-opacity: 0.35;
+}
+.cta-band .ink .rota {
+  stroke: #fff;
+  stroke-width: 3;
+  animation-duration: 2.4s;
+  animation-delay: 0.6s;
+}
+.cta-band .ink .deposito {
+  fill: #fff;
+  stroke: none;
+}
+.cta-band .ink .chegada {
+  fill: #ffc53d;
+  stroke: #fff;
+  stroke-width: 2;
+  transform-box: fill-box;
+  transform-origin: center;
+  scale: 0;
+}
+@media (scripting: enabled) {
+  .cta-band[data-inview="false"] .ink [pathLength] {
+    animation-play-state: paused;
+  }
+}
+.cta-band[data-inview="true"] .chegada {
+  animation: stamp 520ms var(--ease-spring) 3s both;
+  scale: 1;
 }
 
-@keyframes drift {
-  0% {
-    transform: translate3d(0, 0, 0) scale(1);
-  }
-  50% {
-    transform: translate3d(6rem, 3rem, 0) scale(1.12);
-  }
-  100% {
-    transform: translate3d(-4rem, 5rem, 0) scale(0.95);
+@keyframes ink-draw {
+  to {
+    stroke-dashoffset: 0;
   }
 }
-@keyframes beam {
-  0% {
-    transform: translateY(-140px);
-    opacity: 0;
-  }
-  10%,
-  70% {
-    opacity: 0.9;
-  }
-  100% {
-    transform: translateY(900px);
-    opacity: 0;
-  }
-}
-@keyframes feed {
-  0% {
-    opacity: 0;
-    transform: translate3d(24px, 0, 0) scale(0.96);
-  }
-  4%,
-  22% {
-    opacity: 1;
-    transform: none;
-  }
-  27%,
-  100% {
-    opacity: 0;
-    transform: translate3d(0, -14px, 0) scale(0.98);
-  }
-}
-@keyframes shine {
+@keyframes agua {
   0%,
-  60% {
-    translate: -120% 0;
+  6% {
+    transform: translateY(270px);
   }
+  32%,
+  58% {
+    transform: translateY(0);
+  }
+  84%,
   100% {
-    translate: 120% 0;
+    transform: translateY(270px);
+  }
+}
+@keyframes onda {
+  to {
+    transform: translateX(-60px);
+  }
+}
+@keyframes rotulo {
+  0%,
+  8% {
+    opacity: 0;
+  }
+  14%,
+  44% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+@keyframes balanca {
+  from {
+    rotate: -5deg;
+  }
+  to {
+    rotate: 4deg;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .aurora,
-  .beam,
-  .btn-shine::after {
+  .ink [pathLength],
+  .ink .nota,
+  .ink .etiqueta-corpo,
+  .ink .agua-onda,
+  .carimbo {
     animation: none !important;
+    stroke-dashoffset: 0;
   }
-  .beam {
-    display: none;
-  }
-  /* sem ciclo: só o primeiro aviso, parado */
-  .feed-item {
+  /* galão parado cheio, só com o rótulo CHEIO */
+  .ink .agua {
     animation: none !important;
+    transform: none;
   }
-  .feed-item:first-child {
+  .ink .rotulo-cheio {
+    animation: none !important;
     opacity: 1;
   }
-  .glow-card:hover {
-    translate: none;
+  .ink .rotulo-vazio {
+    display: none;
+  }
+  .cta-band .chegada {
+    animation: none !important;
+    scale: 1;
   }
 }

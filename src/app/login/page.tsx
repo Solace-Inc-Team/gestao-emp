@@ -4,6 +4,7 @@ import { getUser } from "@/lib/auth";
 import { login } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
 import { Logo } from "@/components/logo";
+import { Galao, Registro } from "@/app/inicio/prancha";
 
 export const metadata = { title: "Entrar" };
 
@@ -11,12 +12,13 @@ export default async function LoginPage() {
   const user = await getUser();
   if (user) redirect(user.platformAdmin ? "/admin" : user.role === "entregador" ? "/entregador" : "/");
   return (
-    <main className="relative isolate flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-16">
+    <main className="prancha relative isolate flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-16">
       <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-        <div className="aurora aurora-agua" />
-        <div className="aurora aurora-chama" />
-        <div className="hero-grid absolute inset-0" />
-        <div className="noise absolute inset-0" />
+        <Registro className="absolute top-6 left-6 size-6" />
+        <Registro className="absolute top-6 right-6 size-6" />
+        <Registro className="absolute bottom-6 left-6 size-6" />
+        <Registro className="absolute right-6 bottom-6 size-6" />
+        <Galao id="galao-login" className="absolute top-1/2 right-[6vw] hidden w-[20rem] -translate-y-1/2 opacity-60 xl:block" />
       </div>
       <div className="stagger w-full max-w-[22rem]">
         <Logo size={28} />

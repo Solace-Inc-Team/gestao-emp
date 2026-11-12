@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import { Suspense } from "react";
 import { Toaster } from "@/components/action-form";
 import { NavProgress } from "@/components/nav-progress";
@@ -7,6 +7,7 @@ import { AreaTransition } from "@/components/area-transition";
 import "./globals.css";
 
 const geist = Geist({ variable: "--font-geist", subsets: ["latin"] });
+const geistMono = Geist_Mono({ variable: "--font-geist-mono", subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: { default: "Depósito", template: "%s | Depósito" },
@@ -23,7 +24,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="pt-BR" className={`${geist.variable} h-full`}>
+    <html lang="pt-BR" className={`${geist.variable} ${geistMono.variable} h-full`}>
       <body className="min-h-full">
         <Suspense fallback={null}>
           <NavProgress />
