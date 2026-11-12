@@ -268,7 +268,7 @@ export default function Inicio() {
             <InView className="mt-16">
               <ul className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
                 {extras.map(({ figura: Figura, t, d }, i) => (
-                  <li key={t} className="border-t border-line pt-5">
+                  <li key={t} className="extra border-t border-line pt-5">
                     <span className="fig">{String(i + 1).padStart(2, "0")}</span>
                     <Figura className="h-20 w-full max-w-[15rem]" />
                     <h3 className="mt-5 font-semibold">{t}</h3>

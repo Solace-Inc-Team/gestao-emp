@@ -1656,14 +1656,97 @@ details[open] > summary.desvio .desvio-seta {
 [data-inview="false"] .ink .tracejado[pathLength] {
   animation-play-state: paused;
 }
-/* o único ponto âmbar de cada esquema: o momento que importa */
-.ink .chama {
-  fill: var(--chama);
-  stroke: none;
+/* ponto de chegada de cada esquema, no azul do próprio traço: aparece depois que o traço termina */
+.ink .marco {
   animation: fade-in 400ms ease 1.4s both;
 }
-[data-inview="false"] .ink .chama {
+[data-inview="false"] .ink .marco {
   animation-play-state: paused;
+}
+
+/* esquemas dos extras: ao passar o cursor (ou focar), a história de cada um acontece.
+   um traço curto corre pela ligação; o cadeado abre; a parede acende; a planilha se preenche */
+.ink .fluxo[pathLength] {
+  stroke-width: 2.25;
+  stroke-dasharray: 0.14 1;
+  stroke-dashoffset: 0.14;
+  opacity: 0;
+  animation: none;
+}
+@keyframes fluxo {
+  from {
+    stroke-dashoffset: 0.14;
+  }
+  to {
+    stroke-dashoffset: -1;
+  }
+}
+.ink .argola {
+  transform-box: fill-box;
+  transition: translate var(--dur-slow) var(--ease-chegada);
+}
+.ink .parede {
+  transition: stroke-width var(--dur) ease;
+}
+.ink .celula {
+  fill: var(--tinta);
+  stroke: none;
+  opacity: 0;
+  transition: opacity 200ms ease;
+}
+@media (hover: hover) {
+  .extra:is(:hover, :focus-within) .ink .fluxo[pathLength] {
+    opacity: 1;
+    animation: fluxo 1.6s var(--ease-trajeto) infinite;
+  }
+  .extra:is(:hover, :focus-within) .ink .argola {
+    translate: 0 -3px;
+  }
+  .extra:is(:hover, :focus-within) .ink .parede {
+    stroke-width: 2;
+    transition-delay: 0.9s;
+  }
+  .extra:is(:hover, :focus-within) .ink .celula {
+    opacity: 0.28;
+    transition-delay: calc(0.6s + var(--c) * 0.12s);
+  }
+}
+/* celular não tem cursor: a mesma história roda sozinha, devagar, enquanto o bloco está na tela */
+@media (hover: none) {
+  [data-inview="true"] .extra .ink .fluxo[pathLength] {
+    opacity: 1;
+    animation: fluxo 2.8s var(--ease-trajeto) 1.8s infinite backwards;
+  }
+  [data-inview="true"] .extra .ink .argola {
+    animation: argola 2.8s var(--ease-chegada) 1.8s infinite;
+  }
+  [data-inview="true"] .extra .ink .celula {
+    animation: celula 2.8s ease calc(1.8s + var(--c) * 0.12s) infinite;
+  }
+}
+@keyframes argola {
+  20%,
+  70% {
+    translate: 0 -3px;
+  }
+}
+@keyframes celula {
+  30%,
+  80% {
+    opacity: 0.28;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ink .fluxo[pathLength] {
+    animation: none !important;
+    opacity: 0 !important;
+  }
+  .ink .argola,
+  .ink .celula,
+  .ink .parede {
+    animation: none !important;
+    transition: none;
+  }
 }
 
 /* ponto do status do sistema: um halo leve que pulsa devagar enquanto está tudo no ar */
