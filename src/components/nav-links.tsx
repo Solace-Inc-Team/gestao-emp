@@ -15,6 +15,7 @@ import {
   Tag,
   UserCog,
   HandCoins,
+  History,
   Receipt,
   type LucideIcon,
 } from "lucide-react";
@@ -33,6 +34,7 @@ const icons: Record<string, LucideIcon> = {
   "/despesas": Receipt,
   "/produtos": Tag,
   "/equipe": UserCog,
+  "/auditoria": History,
 };
 
 export type NavGroup = { title?: string; links: { href: string; label: string }[] };

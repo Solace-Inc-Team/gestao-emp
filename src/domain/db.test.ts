@@ -701,3 +701,35 @@ test("caixa: despacho espera o acerto e não entra em turno fechado", async () =
   }
   await assert.rejects(m.shifts.openShift(B.ctx, B.driver.id, 0).then(() => m.shifts.openShift(B.ctx, B.driver.id, 0)), /já tem um turno aberto/);
 });
+
+test("auditoria: filtra por área e por pessoa, traz os nomes e não mostra nada de outra empresa", async () => {
+  await m.stock.adjustStock(A.ctx, { productId: A.product.id, state: "cheio", counted: 7, reason: "teste da auditoria" });
+  await m.stock.adjustStock(B.ctx, { productId: B.product.id, state: "cheio", counted: 3, reason: "teste da auditoria" });
+  const periodo = { from: new Date(Date.now() - 864e5), to: new Date(Date.now() + 864e5) };
+
+  const estoque = await m.q.listAudit(A.t.id, { ...periodo, area: "estoque" });
+  const ajuste = estoque.rows.find((r) => r.action === "estoque.ajuste" && r.entityId === A.product.id);
+  assert.ok(ajuste, "o ajuste de A aparece");
+  assert.equal(estoque.nomes[A.product.id], A.product.name);
+  assert.ok(estoque.rows.every((r) => r.action.startsWith("estoque.")));
+  const tudo = await m.q.listAudit(A.t.id, periodo);
+  assert.ok(tudo.rows.every((r) => r.entityId !== B.product.id), "nada de B na auditoria de A");
+
+  // o ajuste foi do dono: filtrando pelo entregador ele não aparece
+  const doEntregador = await m.q.listAudit(A.t.id, { ...periodo, userId: A.driver.id });
+  assert.ok(doEntregador.rows.every((r) => r.action !== "estoque.ajuste"));
+});
+
+test("painel: filtro de entregador mostra só o turno e as vendas dele", async () => {
+  // testes anteriores fecham o turno do entregador de A: abre outro se precisar
+  if (!(await m.q.openShiftFor(A.t.id, A.driver.id))) await m.shifts.openShift(A.ctx, A.driver.id, 0);
+  const d = await m.q.dashboard(A.t.id, { driverId: A.driver.id });
+  assert.ok(d.openShifts.length > 0);
+  assert.ok(d.openShifts.every((s) => s.driverId === A.driver.id));
+  const outro = await m.q.dashboard(A.t.id, { driverId: B.driver.id });
+  assert.equal(outro.openShifts.length, 0, "entregador de outra empresa não traz turno de A");
+  // dia sem movimento: nada vendido
+  const vazio = await m.q.dashboard(A.t.id, { day: "2020-01-01" });
+  assert.equal(vazio.revenue, 0);
+  assert.equal(vazio.recent.length, 0);
+});

@@ -5,6 +5,7 @@ import { db, scoped } from "@/db";
 import { cashEntries, customerAddresses, customers, orderItems, orders, products, shifts, stockMovements, suppliers, tenants, users, auditLog } from "@/db/schema";
 import { expectedCash, paymentSummary } from "@/lib/cash";
 import { todayISO } from "@/lib/period";
+import { isUuid } from "@/lib/ctx";
 
 // meia-noite de Brasília, não a do servidor (o container roda em UTC)
 export const startOfToday = () => new Date(`${todayISO()}T00:00:00-03:00`);
@@ -93,7 +94,15 @@ const orderCols = {
 
 export const listOrders = scoped(function listOrders(
   tenantId: string,
-  f: { status?: (typeof orders.status.enumValues)[number]; since?: Date; driverId?: string; customerId?: string; q?: string } = {},
+  f: {
+    status?: (typeof orders.status.enumValues)[number];
+    since?: Date;
+    until?: Date;
+    deliveredIn?: [Date, Date];
+    driverId?: string;
+    customerId?: string;
+    q?: string;
+  } = {},
 ) {
   return db
     .select(orderCols)
@@ -105,6 +114,8 @@ export const listOrders = scoped(function listOrders(
         eq(orders.tenantId, tenantId),
         f.status ? eq(orders.status, f.status) : undefined,
         f.since ? gte(orders.createdAt, f.since) : undefined,
+        f.until ? lt(orders.createdAt, f.until) : undefined,
+        f.deliveredIn ? and(gte(orders.deliveredAt, f.deliveredIn[0]), lt(orders.deliveredAt, f.deliveredIn[1])) : undefined,
         f.driverId ? eq(orders.driverId, f.driverId) : undefined,
         f.customerId ? eq(orders.customerId, f.customerId) : undefined,
         f.q?.trim()
@@ -374,12 +385,18 @@ export const openShiftFor = scoped(async function openShiftFor(tenantId: string,
   return s ?? null;
 });
 
-export const dashboard = scoped(async function dashboard(tenantId: string) {
-  const since = startOfToday();
-  const today = await listOrders(tenantId, { since });
-  const delivered = today.filter((o) => o.status === "entregue");
+/**
+ * Números do painel. `day` (AAAA-MM-DD) e `driverId` filtram as vendas, os pedidos e o que saiu; fila,
+ * alertas e dinheiro na rua são sempre do momento (com o entregador, só o turno dele).
+ */
+export const dashboard = scoped(async function dashboard(tenantId: string, f: { day?: string; driverId?: string } = {}) {
+  const since = f.day ? new Date(`${f.day}T00:00:00-03:00`) : startOfToday();
+  const until = new Date(since.getTime() + 864e5);
+  const today = await listOrders(tenantId, { since, until, driverId: f.driverId });
+  // vendido = entregue no dia, como nos relatórios (pedido de ontem entregue hoje conta hoje)
+  const delivered = await listOrders(tenantId, { status: "entregue", deliveredIn: [since, until], driverId: f.driverId });
   const byMethod = paymentSummary(delivered);
-  const open = await listShifts(tenantId, "aberto");
+  const open = (await listShifts(tenantId, "aberto")).filter((s) => !f.driverId || s.driverId === f.driverId);
   const [{ divergent }] = await db
     .select({ divergent: sql<number>`count(*)::int` })
     .from(shifts)
@@ -391,7 +408,15 @@ export const dashboard = scoped(async function dashboard(tenantId: string) {
     .from(orderItems)
     .innerJoin(orders, eq(orders.id, orderItems.orderId))
     .innerJoin(products, eq(products.id, orderItems.productId))
-    .where(and(eq(orders.tenantId, tenantId), eq(orders.status, "entregue"), gte(orders.deliveredAt, since)))
+    .where(
+      and(
+        eq(orders.tenantId, tenantId),
+        eq(orders.status, "entregue"),
+        gte(orders.deliveredAt, since),
+        lt(orders.deliveredAt, until),
+        f.driverId ? eq(orders.driverId, f.driverId) : undefined,
+      ),
+    )
     .groupBy(products.name)
     .orderBy(desc(sql`sum(coalesce(${orderItems.deliveredQuantity}, ${orderItems.quantity}))`));
   return {
@@ -505,4 +530,69 @@ export const periodReport = scoped(async function periodReport(tenantId: string,
     .where(and(eq(shifts.tenantId, tenantId), eq(shifts.status, "fechado"), gte(shifts.closedAt, from), lt(shifts.closedAt, to)))
     .orderBy(desc(shifts.closedAt));
   return { days, closed };
+});
+
+/**
+ * Registros da auditoria no período, do mais novo para o mais antigo, com filtro por pessoa e por área
+ * (o começo do nome da ação: "pedido", "turno", "estoque"...). Traz também os nomes que o texto precisa
+ * (número do pedido, entregador do turno, produto, cliente) para a tela não mostrar ids.
+ */
+export const listAudit = scoped(async function listAudit(
+  tenantId: string,
+  f: { from: Date; to: Date; userId?: string; area?: string; page?: number },
+) {
+  const porPagina = 50;
+  const rows = await db
+    .select({
+      id: auditLog.id,
+      action: auditLog.action,
+      entity: auditLog.entity,
+      entityId: auditLog.entityId,
+      data: auditLog.data,
+      createdAt: auditLog.createdAt,
+      userName: users.name,
+    })
+    .from(auditLog)
+    .leftJoin(users, eq(users.id, auditLog.userId))
+    .where(
+      and(
+        eq(auditLog.tenantId, tenantId),
+        gte(auditLog.createdAt, f.from),
+        lt(auditLog.createdAt, f.to),
+        f.userId ? eq(auditLog.userId, f.userId) : undefined,
+        f.area ? ilike(auditLog.action, `${f.area}.%`) : undefined,
+      ),
+    )
+    .orderBy(desc(auditLog.createdAt))
+    .limit(porPagina + 1)
+    .offset((f.page ?? 0) * porPagina);
+  const page = rows.slice(0, porPagina);
+
+  // nomes por tipo de registro, numa consulta por tipo
+  const ids = (entity: string) => [...new Set(page.filter((r) => r.entity === entity && r.entityId && isUuid(r.entityId)).map((r) => r.entityId!))];
+  const pessoas = [
+    ...new Set(
+      page.flatMap((r) => {
+        const d = (r.data ?? {}) as Record<string, unknown>;
+        // "from"/"to" também aparecem com estado de vasilhame ("vazio"): só entra o que tem forma de id
+        return [d.driverId, d.from, d.to].filter((x): x is string => typeof x === "string" && isUuid(x));
+      }),
+    ),
+  ];
+  const [ped, tur, prod, cli, usu, forn] = await Promise.all([
+    ids("order").length ? db.select({ id: orders.id, n: orders.number }).from(orders).where(and(eq(orders.tenantId, tenantId), inArray(orders.id, ids("order")))) : [],
+    ids("shift").length
+      ? db.select({ id: shifts.id, n: driver.name }).from(shifts).innerJoin(driver, eq(driver.id, shifts.driverId)).where(and(eq(shifts.tenantId, tenantId), inArray(shifts.id, ids("shift"))))
+      : [],
+    ids("product").length ? db.select({ id: products.id, n: products.name }).from(products).where(and(eq(products.tenantId, tenantId), inArray(products.id, ids("product")))) : [],
+    ids("customer").length ? db.select({ id: customers.id, n: customers.name }).from(customers).where(and(eq(customers.tenantId, tenantId), inArray(customers.id, ids("customer")))) : [],
+    [...ids("user"), ...pessoas].length
+      ? db.select({ id: users.id, n: users.name }).from(users).where(and(eq(users.tenantId, tenantId), inArray(users.id, [...ids("user"), ...pessoas])))
+      : [],
+    ids("supplier").length ? db.select({ id: suppliers.id, n: suppliers.name }).from(suppliers).where(and(eq(suppliers.tenantId, tenantId), inArray(suppliers.id, ids("supplier")))) : [],
+  ]);
+  const nomes: Record<string, string> = {};
+  for (const x of ped) nomes[x.id] = `#${x.n}`;
+  for (const x of [...tur, ...prod, ...cli, ...usu, ...forn]) nomes[x.id] = x.n;
+  return { rows: page, nomes, more: rows.length > porPagina };
 });

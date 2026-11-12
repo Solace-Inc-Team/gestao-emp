@@ -4,7 +4,7 @@ import { ViewTransition, type ReactNode } from "react";
 import { usePathname } from "next/navigation";
 
 // telas do sistema interno: entre elas quem anima é o PageTransition do layout, com a barra lateral parada
-const APP = /^\/(pedidos|entregas|caixa|estoque|clientes|fiado|relatorios|despesas|produtos|equipe|configuracoes|fornecedores)(\/|$)/;
+const APP = /^\/(pedidos|entregas|caixa|estoque|clientes|fiado|relatorios|despesas|produtos|equipe|configuracoes|fornecedores|auditoria)(\/|$)/;
 
 const area = (path: string) => (path === "/" || APP.test(path) ? "app" : path.startsWith("/admin") ? "admin" : path);
 

@@ -99,6 +99,9 @@ test("cada perfil só entra no que é seu", async ({ page }) => {
   await entrar(page, "atendente@demo.com");
   await page.goto("/configuracoes");
   await expect(page).not.toHaveURL(/configuracoes/);
+  // auditoria é só do dono
+  await page.goto("/auditoria");
+  await expect(page).not.toHaveURL(/auditoria/);
   expect((await page.goto("/admin"))?.status()).toBe(404);
   expect((await page.request.get("/exportar")).status()).toBe(401);
 });

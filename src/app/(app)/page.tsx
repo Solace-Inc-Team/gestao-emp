@@ -1,35 +1,67 @@
 import Link from "next/link";
 import { ShieldAlert } from "lucide-react";
 import { requireUser } from "@/lib/auth";
-import { dashboard } from "@/domain/queries";
+import { dashboard, listDrivers } from "@/domain/queries";
+import { todayISO } from "@/lib/period";
 import { LiveNumber } from "@/components/live-number";
 import { Money, StatusBadge, Empty, fmtTime, paymentLabel } from "@/components/ui";
 
 export const metadata = { title: "Painel" };
 
-export default async function Painel() {
+export default async function Painel({ searchParams }: PageProps<"/">) {
   const user = await requireUser("dono", "atendente", "caixa");
-  const d = await dashboard(user.tenantId);
-  const hoje = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" }).format(new Date());
+  const sp = await searchParams;
+  const hojeISO = todayISO();
+  // dia futuro ou malformado volta para hoje; entregador só vale se for da empresa
+  const dia = typeof sp.dia === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.dia) && sp.dia <= hojeISO ? sp.dia : hojeISO;
+  const entregadores = await listDrivers(user.tenantId);
+  const entregador = entregadores.find((e) => e.id === sp.entregador);
+  const d = await dashboard(user.tenantId, { day: dia, driverId: entregador?.id });
+  const ehHoje = dia === hojeISO;
+  const filtrado = !ehHoje || !!entregador;
+  const hoje = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long", timeZone: "America/Sao_Paulo" }).format(
+    new Date(`${dia}T12:00:00-03:00`),
+  );
+  const noDia = ehHoje ? "hoje" : `em ${dia.split("-").reverse().slice(0, 2).join("/")}`;
 
   return (
     <>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
         <div>
           <p className="text-muted first-letter:uppercase">{hoje}</p>
-          <h1 className="h1">Painel do dia</h1>
+          <h1 className="h1">Painel do dia{entregador ? `: ${entregador.name}` : ""}</h1>
         </div>
-        <Link href="/pedidos/novo" className="btn btn-primary">Novo pedido</Link>
+        <div className="flex flex-wrap items-end gap-2">
+          {/* filtro: as vendas mudam com o dia e o entregador; fila e dinheiro na rua são sempre de agora */}
+          <form className="flex flex-wrap items-end gap-2" aria-label="Filtrar o painel">
+            <div>
+              <label className="label" htmlFor="dia">Dia</label>
+              <input id="dia" name="dia" type="date" max={hojeISO} defaultValue={dia} className="input" />
+            </div>
+            <div>
+              <label className="label" htmlFor="entregador">Entregador</label>
+              <select id="entregador" name="entregador" defaultValue={entregador?.id ?? ""} className="input">
+                <option value="">Todos</option>
+                {entregadores.map((e) => (
+                  <option key={e.id} value={e.id}>{e.name}</option>
+                ))}
+              </select>
+            </div>
+            <button className="btn">Ver</button>
+            {filtrado && <Link href="/" className="btn">Hoje, todos</Link>}
+          </form>
+          <Link href="/pedidos/novo" className="btn btn-primary">Novo pedido</Link>
+        </div>
       </div>
 
       <section className="panel mb-6 grid divide-line sm:grid-cols-3 sm:divide-x">
         <div className="p-5">
-          <p className="text-muted">Vendido hoje</p>
+          <p className="text-muted">Vendido {noDia}</p>
           <LiveNumber value={d.revenue} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
-          <p className="mt-1 text-sm text-muted">{d.deliveredCount} pedidos entregues</p>
+          <p className="mt-1 text-sm text-muted">{d.deliveredCount} {d.deliveredCount === 1 ? "pedido entregue" : "pedidos entregues"}</p>
         </div>
         <div className="border-t border-line p-5 sm:border-t-0">
-          <p className="text-muted">Dinheiro na rua</p>
+          <p className="text-muted">Dinheiro na rua agora</p>
           <LiveNumber value={d.cashInStreet} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
           <p className="mt-1 text-sm text-muted">
             com {d.openShifts.length} {d.openShifts.length === 1 ? "entregador" : "entregadores"}, a acertar
@@ -102,7 +134,7 @@ export default async function Painel() {
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <section className="panel">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
-            <h2 className="h2">Pedidos de hoje</h2>
+            <h2 className="h2">Pedidos {ehHoje ? "de hoje" : noDia}</h2>
             <Link href="/pedidos" className="text-sm text-accent hover:underline">Ver todos</Link>
           </div>
           {d.recent.length ? (
@@ -127,13 +159,17 @@ export default async function Painel() {
               </tbody>
             </table>
           ) : (
-            <Empty>Nenhum pedido hoje. <Link href="/pedidos/novo" className="text-accent underline">Lançar o primeiro</Link></Empty>
+            filtrado ? (
+              <Empty>Nenhum pedido {noDia}{entregador ? ` com ${entregador.name}` : ""}.</Empty>
+            ) : (
+              <Empty>Nenhum pedido hoje. <Link href="/pedidos/novo" className="text-accent underline">Lançar o primeiro</Link></Empty>
+            )
           )}
         </section>
 
         <div className="space-y-6">
           <section className="panel">
-            <h2 className="h2 border-b border-line px-4 py-3">Entregadores em turno</h2>
+            <h2 className="h2 border-b border-line px-4 py-3">Entregadores em turno agora</h2>
             {d.openShifts.length ? (
               <ul>
                 {d.openShifts.map((s) => (
@@ -157,7 +193,7 @@ export default async function Painel() {
           </section>
 
           <section className="panel p-4">
-            <h2 className="h2 mb-3">Recebido por forma de pagamento</h2>
+            <h2 className="h2 mb-3">Recebido {noDia}, por forma de pagamento</h2>
             <dl className="space-y-1.5">
               {(Object.keys(paymentLabel) as (keyof typeof paymentLabel)[]).map((k) => (
                 <div key={k} className="flex justify-between">
@@ -168,7 +204,7 @@ export default async function Painel() {
             </dl>
             {d.sold.length > 0 && (
               <>
-                <h3 className="mt-5 mb-2 font-semibold">Saiu hoje</h3>
+                <h3 className="mt-5 mb-2 font-semibold">Saiu {noDia}</h3>
                 <ul className="space-y-1">
                   {d.sold.map((s) => (
                     <li key={s.name} className="flex justify-between">

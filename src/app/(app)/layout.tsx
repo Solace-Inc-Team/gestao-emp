@@ -48,6 +48,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
               { href: "/produtos", label: "Produtos e preços" },
               { href: "/equipe", label: "Equipe" },
               { href: "/configuracoes", label: "Configurações" },
+              { href: "/auditoria", label: "Auditoria" },
             ]
           : []),
       ],

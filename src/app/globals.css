@@ -1156,6 +1156,10 @@ li > span > .fig {
 :is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-settings {
   animation: icone-gira 700ms var(--ease-out);
 }
+/* auditoria: o relógio volta no tempo */
+:is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-history {
+  animation: icone-volta 600ms var(--ease-out);
+}
 /* trocar senha: a chave dá meia volta na fechadura */
 :is(:is(a, button, .anim-icone):hover, [aria-current="page"]) > .lucide-key-round {
   animation: icone-chave 520ms var(--ease-spring);
@@ -1245,6 +1249,11 @@ li > span > .fig {
 @keyframes icone-gira {
   from {
     rotate: -120deg;
+  }
+}
+@keyframes icone-volta {
+  from {
+    rotate: 200deg;
   }
 }
 @keyframes icone-chave {
