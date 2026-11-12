@@ -137,6 +137,7 @@ export function DemoEntrega() {
           <>
             <Window
               className="de-janela"
+              lights="grey"
               sidebar={
                 layout === "wide" ? <nav className="de-nav">
                   <span className="de-marca">Depósito</span>

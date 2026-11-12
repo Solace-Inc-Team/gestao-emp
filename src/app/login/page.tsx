@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { getUser } from "@/lib/auth";
 import { login } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
-import { Logo } from "@/components/logo";
+import { MarcaDaSessao } from "@/components/logo";
 import { Galao, Registro } from "@/app/inicio/prancha";
 
 export const metadata = { title: "Entrar" };
@@ -21,7 +21,7 @@ export default async function LoginPage() {
         <Galao id="galao-login" className="absolute top-1/2 right-[6vw] hidden w-[20rem] -translate-y-1/2 opacity-60 xl:block" />
       </div>
       <div className="stagger w-full max-w-[22rem]">
-        <Logo size={28} />
+        <MarcaDaSessao size={28} />
         <h1 className="mt-8 text-[1.75rem] leading-tight font-semibold tracking-[-0.03em]">Entrar</h1>
         <p className="mt-1.5 text-muted">Pedidos, entregas, estoque e acerto de caixa da sua distribuidora.</p>
         <ActionForm action={login} className="mt-8 space-y-4">

@@ -1,3 +1,5 @@
+import { ViewTransition } from "react";
+
 // Símbolo "gota-chama": a gota d'água azul com a chama do gás acesa dentro, separadas por um respiro da
 // cor do fundo. No nome, o acento do "ó" é uma faísca âmbar. Os mesmos traços estão em app/icon.svg.
 export const GOTA = "M12 1.6C12 1.6 4.5 9.4 4.5 15.2a7.5 7.5 0 0 0 15 0C19.5 9.4 12 1.6 12 1.6Z";
@@ -20,5 +22,14 @@ export function Logo({ size = 22 }: { size?: number }) {
         sito
       </span>
     </span>
+  );
+}
+
+/** A marca nas telas de entrada e no topo do sistema: é o mesmo elemento, então ela desliza de uma para a outra ao entrar. Uma por página. */
+export function MarcaDaSessao({ size }: { size?: number }) {
+  return (
+    <ViewTransition name="marca" share="marca-viaja" default="none">
+      <Logo size={size} />
+    </ViewTransition>
   );
 }

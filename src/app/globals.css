@@ -230,9 +230,13 @@ body {
   outline-offset: 2px;
 }
 
-/* movimento: curtas no dia a dia, nada que faça o operador esperar */
+/* movimento: curtas no dia a dia, nada que faça o operador esperar.
+   Duas curvas no site todo, as mesmas das demos da página inicial:
+   chegada para o que aparece, trajeto para o que vai de um lugar a outro. */
 :root {
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-chegada: cubic-bezier(0.25, 0.8, 0.25, 1);
+  --ease-trajeto: cubic-bezier(0.45, 0, 0.1, 1);
+  --ease-out: var(--ease-chegada);
   --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --dur-fast: 120ms;
   --dur: 200ms;
@@ -434,7 +438,12 @@ details[open] > :not(summary) {
 }
 ::view-transition-group(.morph) {
   animation-duration: 360ms;
-  animation-timing-function: var(--ease-out);
+  animation-timing-function: var(--ease-trajeto);
+}
+/* a marca sai do login e vai até o canto do sistema, sem sumir no caminho */
+::view-transition-group(.marca-viaja) {
+  animation-duration: 420ms;
+  animation-timing-function: var(--ease-trajeto);
 }
 ::view-transition-image-pair(.morph) {
   animation-name: via-blur;
@@ -442,7 +451,7 @@ details[open] > :not(summary) {
 /* cartões que só mudam de lugar porque outro saiu: deslizam sem desfoque */
 ::view-transition-group(.move) {
   animation-duration: 300ms;
-  animation-timing-function: var(--ease-out);
+  animation-timing-function: var(--ease-trajeto);
 }
 
 /* entregador: cartão entregue sai pela direita */

@@ -4,7 +4,7 @@ import { ShieldCheck } from "lucide-react";
 import { getPendingMfa } from "@/lib/auth";
 import { verifyMfaAction } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
-import { Logo } from "@/components/logo";
+import { MarcaDaSessao } from "@/components/logo";
 
 export const metadata = { title: "Código de verificação" };
 
@@ -13,7 +13,7 @@ export default async function Codigo() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6 py-16">
       <div className="w-full max-w-[22rem]">
-        <Logo size={28} />
+        <MarcaDaSessao size={28} />
         <ShieldCheck size={28} strokeWidth={1.5} className="mt-8 text-muted" aria-hidden="true" />
         <h1 className="mt-3 text-[1.75rem] leading-tight font-semibold tracking-[-0.03em]">Código de verificação</h1>
         <p className="mt-1.5 text-muted">Abra o app autenticador e digite o código de 6 dígitos do Depósito.</p>

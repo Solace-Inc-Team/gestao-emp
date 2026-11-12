@@ -1,6 +1,6 @@
 "use client";
 
-import { Bar, Button, Check, Field, Stage, States, Window, type Act } from "@/vendor/stageshow";
+import { Bar, Button, Check, Connector, Field, Stage, States, Window, type Act } from "@/vendor/stageshow";
 import { brl, useEscuro } from "./palco";
 import "./demo-acerto.css";
 
@@ -51,69 +51,84 @@ export function DemoAcerto() {
       theme={dark ? "dark" : "light"}
       className="da palco"
     >
-      {(s) => (
-        <Window title="Acerto de João" className="da-janela">
-          <div className="da-corpo">
-            <dl className="da-conta">
-              {CONTA.map(([rotulo, v]) => (
-                <div key={rotulo} className="da-termo">
-                  <dt>{rotulo}</dt>
-                  <dd>{v < 0 ? `− ${brl(-v)}` : brl(v)}</dd>
-                </div>
-              ))}
-              <div className="da-termo da-termo--total">
-                <dt>Deve apresentar</dt>
-                <dd>{brl(16500)}</dd>
-              </div>
-            </dl>
+      {(s, rect, layout) => {
+        // a linha liga o "bateu" ao valor que ele confere; no estreito os dois ficam empilhados e ela sai
+        const total = rect("total");
+        const bateu = rect("bateu");
+        return (
+          <>
+            <Window title="Acerto de João" className="da-janela" lights="grey">
+              <div className="da-corpo">
+                <dl className="da-conta">
+                  {CONTA.map(([rotulo, v]) => (
+                    <div key={rotulo} className="da-termo">
+                      <dt>{rotulo}</dt>
+                      <dd>{v < 0 ? `− ${brl(-v)}` : brl(v)}</dd>
+                    </div>
+                  ))}
+                  <div className="da-termo da-termo--total">
+                    <dt>Deve apresentar</dt>
+                    <dd data-target="total">{brl(16500)}</dd>
+                  </div>
+                </dl>
 
-            <div className="da-form">
-              <Field
-                label="Dinheiro contado"
-                value={s.contado}
-                placeholder="0,00"
-                focused={s.foco}
-                leading={<span className="da-rs">R$</span>}
-                box={{ "data-target": "contado", "data-cursor": "ibeam" }}
-                className="da-campo"
+                <div className="da-form">
+                  <Field
+                    label="Dinheiro contado"
+                    value={s.contado}
+                    placeholder="0,00"
+                    focused={s.foco}
+                    leading={<span className="da-rs">R$</span>}
+                    box={{ "data-target": "contado", "data-cursor": "ibeam" }}
+                    className="da-campo"
+                  />
+                  <div className="da-faixa">
+                    <States
+                      align="start"
+                      value={s.bateu ? "bateu" : "dica"}
+                      states={{
+                        dica: <span className="da-dica">Conte na frente do entregador</span>,
+                        bateu: (
+                          <span className="da-bateu" data-target="bateu">
+                            <Check on={s.bateu} size={16} /> bateu, sem diferença
+                          </span>
+                        ),
+                      }}
+                    />
+                  </div>
+                  <Button
+                    variant="primary"
+                    size="large"
+                    className="da-fechar"
+                    data-target="fechar"
+                    icon={s.fechado ? <Check on size={16} /> : undefined}
+                  >
+                    {s.fechado ? "Acerto fechado" : "Fechar acerto"}
+                  </Button>
+                </div>
+
+                <div className="da-lancamentos" aria-hidden="true">
+                  <Bar w={96} h={7} tone={3} />
+                  {[132, 104, 148].map((w, i) => (
+                    <div key={i} className="da-lancamento">
+                      <Bar w={w} h={6} tone={2} />
+                      <Bar w={52} h={6} tone={1} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Window>
+            {layout === "wide" && total && bateu && (
+              <Connector
+                from={{ x: bateu.x - 6, y: bateu.y + bateu.height / 2 }}
+                to={{ x: total.x + total.width + 6, y: total.y + total.height / 2 }}
+                show={s.bateu}
+                className="da-confere"
               />
-              <div className="da-faixa">
-                <States
-                  align="start"
-                  value={s.bateu ? "bateu" : "dica"}
-                  states={{
-                    dica: <span className="da-dica">Conte na frente do entregador</span>,
-                    bateu: (
-                      <span className="da-bateu">
-                        <Check on={s.bateu} size={16} /> bateu, sem diferença
-                      </span>
-                    ),
-                  }}
-                />
-              </div>
-              <Button
-                variant="primary"
-                size="large"
-                className="da-fechar"
-                data-target="fechar"
-                icon={s.fechado ? <Check on size={16} /> : undefined}
-              >
-                {s.fechado ? "Acerto fechado" : "Fechar acerto"}
-              </Button>
-            </div>
-
-            <div className="da-lancamentos" aria-hidden="true">
-              <Bar w={96} h={7} tone={3} />
-              {[132, 104, 148].map((w, i) => (
-                <div key={i} className="da-lancamento">
-                  <Bar w={w} h={6} tone={2} />
-                  <Bar w={52} h={6} tone={1} />
-                </div>
-              ))}
-            </div>
-          </div>
-        </Window>
-      )}
+            )}
+          </>
+        );
+      }}
     </Stage>
   );
 }

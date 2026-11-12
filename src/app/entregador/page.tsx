@@ -6,7 +6,7 @@ import { getShift, getSettings, itemsForOrders, listOrders, openShiftFor, getOrd
 import { orderPix } from "@/domain/portal";
 import { PixBox } from "@/components/pix-box";
 import { logout } from "@/app/actions";
-import { Logo } from "@/components/logo";
+import { MarcaDaSessao } from "@/components/logo";
 import { Money, paymentLabel } from "@/components/ui";
 import { DeliverButton } from "./deliver-button";
 import { DeliveryExceptions } from "@/components/delivery-forms";
@@ -27,7 +27,7 @@ export default async function Entregador() {
   return (
     <div className="mx-auto min-h-screen max-w-lg">
       <header className="sticky top-0 z-10 flex items-center justify-between border-b border-line bg-bg/85 px-4 py-3 backdrop-blur">
-        <Logo />
+        <MarcaDaSessao />
         <div className="flex gap-1">
           <Link href="/ajuda" aria-label="Ajuda" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
             <CircleHelp size={17} strokeWidth={1.75} />

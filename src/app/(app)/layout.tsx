@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { KeyRound, LogOut } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { logout } from "@/app/actions";
-import { Logo } from "@/components/logo";
+import { MarcaDaSessao } from "@/components/logo";
 import { NavLinks, type NavGroup } from "@/components/nav-links";
 import { roleLabel } from "@/components/ui";
 import { PageTransition } from "@/components/page-transition";
@@ -60,7 +60,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
     <div className="lg:grid lg:min-h-screen lg:grid-cols-[15rem_1fr]">
       <aside className="border-b border-line lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
         <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3 lg:pt-5">
-          <Logo />
+          <MarcaDaSessao />
           <form action={logout} className="lg:hidden">
             <button className="tap px-2 text-[13px] text-muted hover:text-fg">Sair</button>
           </form>

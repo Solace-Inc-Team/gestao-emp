@@ -1,10 +1,12 @@
+import { MarcaDaSessao } from "@/components/logo";
+
 // formato da tela do entregador enquanto carrega: cabeçalho, caixa no topo e dois cartões de entrega
 export default function Loading() {
   return (
     <div className="mx-auto min-h-screen max-w-lg" aria-busy="true" aria-label="Carregando">
-      {/* mesma altura do cabeçalho de verdade, para o conteúdo não pular quando chega */}
+      {/* mesma altura do cabeçalho de verdade; a marca já é a de verdade, que chega deslizando do login */}
       <div className="flex h-[69px] items-center border-b border-line px-4">
-        <div className="skeleton h-6 w-28" />
+        <MarcaDaSessao />
       </div>
       <div className="px-4 py-6">
         <div className="skeleton h-4 w-24" />

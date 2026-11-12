@@ -15,7 +15,7 @@
 .da .da-corpo {
   display: grid;
   grid-template-columns: 196px minmax(0, 1fr);
-  column-gap: 24px;
+  column-gap: 40px;
   align-content: start;
   padding: 20px 20px 0;
 }
