@@ -1,47 +1,172 @@
-import { Fragment } from "react";
+import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import { TemaBotao } from "@/components/tema-botao";
 import { StatusSistema } from "@/components/status-sistema";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, MessageCircle } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { InView } from "@/components/in-view";
 import { LiveNumber } from "@/components/live-number";
-import { BairroRota, Botijao, Galao, Regua } from "./prancha";
+import { BairroRota } from "./prancha";
 import { DemoAcerto } from "./demo-acerto";
 import { DemoCelular } from "./demo-celular";
 import { DemoEntrega } from "./demo-entrega";
 import { DemoPortal } from "./demo-portal";
 import { Prateleira } from "./prateleira";
-import { DadosSeus, EmpresaIsolada, SemInternet, SenhaDeNovo } from "./diagramas";
+import { DadosSeus, EmpresaIsolada, SenhaDeNovo } from "./diagramas";
+import { RelogioDoDia, paradas } from "./relogio-do-dia";
+import { PRECO, WHATSAPP, linkWhatsApp } from "./contato";
 
 export const metadata = {
   title: { absolute: "Depósito: gestão para revendas de água e gás" },
   description:
-    "Pedidos, entregas, estoque de cheios e vazios e o acerto de caixa de cada entregador, num sistema feito para a rotina da distribuidora.",
+    "Pedido, entrega, cascos e o dinheiro de cada entregador num sistema só, do primeiro pedido da manhã ao acerto da noite.",
 };
 
-const passos = [
-  { n: "01", t: "Pedido", d: "Chega pelo WhatsApp, telefone, balcão ou pelo link da loja. O preço vem do cadastro." },
-  { n: "02", t: "Rota", d: "O atendente escolhe o entregador. O botijão já sai reservado do estoque." },
-  { n: "03", t: "Entrega", d: "O entregador confirma no celular, até sem sinal. Parcial e ocorrência também." },
-  { n: "04", t: "Acerto", d: "No fim do turno o caixa conta o dinheiro. Diferença fica pendente até o dono decidir." },
-];
-
-const titulo = "Do pedido ao acerto, sem conta de cabeça.".split(" ");
+const titulo = "Todo casco volta. Todo real fecha.".split(" ");
 const atraso = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
+const temZap = WHATSAPP !== "";
+const zap = linkWhatsApp("Olá! Quero conhecer o Depósito para a minha revenda.");
 
-const estoque = [
-  { p: "Gás P13", cheio: 42, vazio: 18, rua: 6 },
-  { p: "Galão 20L", cheio: 75, vazio: 31, rua: 12 },
-  { p: "Gás P45", cheio: 8, vazio: 3, rua: 0 },
+// o dia da revenda, hora a hora: o texto fala da rotina do dono, e o desenho ao lado mostra a tela
+const dia: Record<(typeof paradas)[number]["id"], { t: string; d: string; largo?: boolean; figura: ReactNode }> = {
+  h07: {
+    t: "O entregador sai com o troco contado.",
+    d: "Abrir o turno leva um toque. Fica anotado quanto de troco cada um levou, quem entregou o dinheiro e a que horas, para a conta da noite começar certa.",
+    figura: <TurnosAbertos />,
+  },
+  h09: {
+    t: "O pedido chega por onde o cliente quiser.",
+    d: "Telefone, balcão, WhatsApp ou o link da loja, onde o cliente pede sozinho e já recebe o QR do Pix. O preço vem do cadastro, sem ninguém fazer conta.",
+    figura: (
+      <div role="img" aria-label="No celular, o cliente põe um Gás P13, escolhe Pix e faz o pedido; aparece Pedido #62 recebido com o QR do Pix" className="dia-tela">
+        <DemoPortal />
+      </div>
+    ),
+  },
+  h11: {
+    t: "Cada entrega com dono, do balcão até a porta.",
+    d: "O atendente escolhe o entregador e o botijão sai reservado do estoque. A loja vê no painel o que está na rua; o entregador vê no celular só as entregas dele.",
+    largo: true,
+    figura: (
+      <div role="img" aria-label="O entregador toca em Entreguei e recebi no celular, e no painel da loja o pedido vira Entregue e o vendido do dia sobe">
+        <DemoEntrega />
+      </div>
+    ),
+  },
+  h13: {
+    t: "Rua sem sinal não segura a entrega.",
+    d: "O entregador confirma assim mesmo: a entrega fica guardada no celular e sobe sozinha quando a conexão volta. Tocou errado? Tem 5 segundos para desfazer.",
+    figura: (
+      <div
+        role="img"
+        aria-label="No celular, o João toca em Entreguei e recebi, desfaz dentro dos 5 segundos, toca de novo e o dinheiro que ele deve ter sobe de R$ 248,00 para R$ 363,00"
+        className="dia-tela"
+      >
+        <DemoCelular />
+      </div>
+    ),
+  },
+  h15: {
+    t: "Saiu cheio, voltou vazio. O estoque fecha sozinho.",
+    d: "Cada entrega baixa um cheio e devolve um vazio. Cliente sem casco paga o vasilhame, e o que volta amassado sai separado, como avariado.",
+    figura: <Cascos />,
+  },
+  h18: {
+    t: "Na hora do acerto, a conta já está pronta.",
+    d: "O sistema sabe quanto cada entregador tem que apresentar: troco, vendas em dinheiro, repasses e gastos. O caixa conta e fecha no centavo, ou a diferença fica registrada até o dono decidir.",
+    figura: (
+      <div
+        role="img"
+        aria-label="Acerto do João: deve apresentar R$ 165,00, o caixa digita 165,00, o sistema mostra bateu, sem diferença, e o acerto é fechado"
+        className="dia-tela overflow-hidden rounded-2xl border border-line bg-subtle"
+      >
+        <DemoAcerto />
+      </div>
+    ),
+  },
+};
+
+const garantias = [
+  { figura: SenhaDeNovo, t: "Ninguém apaga nada", d: "Erro se corrige com estorno, com a senha de quem está logado, e fica no histórico com nome e hora." },
+  { figura: EmpresaIsolada, t: "O que é seu, só você vê", d: "Cada revenda tem os dados separados das outras, em toda tela e no próprio banco de dados." },
+  { figura: DadosSeus, t: "Seus dados, quando quiser", d: "Relatórios por dia, entregador e produto, e tudo em planilha para baixar quando precisar." },
 ];
 
-const extras = [
-  { figura: SemInternet, t: "Funciona sem internet", d: "A confirmação da entrega fica guardada e sobe quando o sinal volta." },
-  { figura: SenhaDeNovo, t: "Senha de novo no que não volta", d: "Estorno, inventário e ajuste pedem confirmação de quem está logado." },
-  { figura: EmpresaIsolada, t: "Cada empresa isolada", d: "Filtro em toda consulta e Row-Level Security no Postgres por baixo." },
-  { figura: DadosSeus, t: "Os dados são seus", d: "Relatórios por dia, entregador e produto, e exportação em planilha." },
+const perguntas = [
+  ["Precisa instalar alguma coisa?", "Não. O Depósito abre no navegador do computador e do celular. No celular do entregador dá para pôr um ícone na tela inicial, como um aplicativo."],
+  ["Emite nota fiscal?", "Ainda não. O Depósito cuida da operação: pedido, entrega, estoque e caixa. A nota continua no emissor que você já usa."],
+  ["E se o celular do entregador ficar sem internet?", "Ele confirma a entrega mesmo assim. A confirmação fica guardada no aparelho e é enviada sozinha quando o sinal volta, sem duplicar."],
+  ["O cliente consegue pedir sozinho?", "Sim. Cada loja tem um link de pedido. O pedido cai na fila com o selo do site e, se for Pix, o cliente já recebe o QR para pagar."],
+  ["Quem trabalha comigo vê tudo?", "Não. São quatro perfis, dono, caixa, atendente e entregador, e cada um vê só o que é seu."],
+  ["Se eu quiser sair, levo meus dados?", "Sim. O dono baixa todos os dados da empresa em planilhas, num arquivo só, quando quiser."],
 ];
+
+/** Os turnos que abriram de manhã, como aparecem no caixa: linha por linha, na ordem em que saíram. */
+function TurnosAbertos() {
+  const turnos = [
+    ["João Pereira", "R$ 50,00", "07:02"],
+    ["Rafael Lima", "R$ 40,00", "07:05"],
+    ["Ana Souza", "R$ 50,00", "07:11"],
+  ];
+  return (
+    <div className="dia-tela overflow-hidden rounded-2xl border border-line bg-surface text-[14px]">
+      <p className="flex items-center justify-between border-b border-line px-5 py-3 text-[13px] text-muted">
+        <span>Caixa · turnos de hoje</span>
+        <span className="flex items-center gap-1.5">
+          <span className="size-1.5 rounded-full bg-ok" />3 na rua
+        </span>
+      </p>
+      <table className="num w-full">
+        <tbody>
+          {turnos.map(([nome, troco, hora], i) => (
+            <tr key={nome} style={atraso(200 + i * 160)} className="print border-t border-line first:border-t-0">
+              <td className="px-5 py-3 font-medium">{nome}</td>
+              <td className="px-5 py-3 text-muted">troco {troco}</td>
+              <td className="px-5 py-3 text-right text-muted">{hora}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <p className="border-t border-line px-5 py-3 text-[13px] text-muted">Abertos por Marina, no caixa.</p>
+    </div>
+  );
+}
+
+/** A faixa âmbar do estoque: os números de cascos e a prateleira que esvazia e enche. */
+function Cascos() {
+  return (
+    <div className="faixa-chama dia-tela overflow-hidden rounded-2xl p-6 sm:p-8">
+      <p className="font-mono text-[11px] tracking-[0.14em] uppercase">Gás P13 · loja</p>
+      <dl className="mt-4 grid grid-cols-3 border-t border-current/25 font-mono text-[11px] tracking-[0.12em] uppercase">
+        {[
+          ["Cheios", 42],
+          ["Vazios", 18],
+          ["Avariados", 2],
+        ].map(([t, n]) => (
+          <div key={t} className="pt-4">
+            <dt className="opacity-70">{t}</dt>
+            <dd className="mt-1 font-sans text-[2rem] font-semibold tracking-tight">
+              <LiveNumber value={n as number} fromZero="visible" />
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <Prateleira quantos={12} className="mt-8" />
+    </div>
+  );
+}
+
+function BotaoContato({ className = "" }: { className?: string }) {
+  return temZap ? (
+    <a href={zap} target="_blank" rel="noopener noreferrer" className={`btn btn-primary h-11 px-5 text-[15px] ${className}`}>
+      <MessageCircle className="size-4" aria-hidden="true" /> Conversar no WhatsApp
+    </a>
+  ) : (
+    <Link href="/login" className={`btn btn-primary h-11 px-5 text-[15px] ${className}`}>
+      Entrar no sistema <ArrowRight className="size-4" aria-hidden="true" />
+    </Link>
+  );
+}
 
 export default function Inicio() {
   return (
@@ -52,8 +177,9 @@ export default function Inicio() {
             <Logo />
           </Link>
           <nav className="flex items-center gap-6 text-[13px] text-muted">
-            <a href="#como-funciona" className="hidden hover:text-fg sm:inline">Como funciona</a>
-            <a href="#recursos" className="hidden hover:text-fg sm:inline">Recursos</a>
+            <a href="#dia" className="hidden hover:text-fg sm:inline">O dia</a>
+            <a href="#preco" className="hidden hover:text-fg sm:inline">Preço</a>
+            <a href="#perguntas" className="hidden hover:text-fg sm:inline">Perguntas</a>
             <TemaBotao className="size-9 sm:size-8" />
             <Link href="/login" className="btn px-3 text-[13px] sm:h-8">Entrar</Link>
           </nav>
@@ -61,19 +187,13 @@ export default function Inicio() {
       </header>
 
       <main>
-        <section className="prancha relative isolate overflow-hidden border-b border-line">
-          {/* prancha técnica: régua e os dois vasilhames em desenho de engenharia */}
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 mx-auto max-w-[90rem]">
-            <Regua className="absolute top-28 left-8 hidden h-[26rem] lg:block" />
-            <Botijao className="absolute top-28 left-[max(1rem,calc(50%-40rem))] hidden w-[17rem] lg:block" />
-            <Galao id="galao-topo" className="absolute top-28 right-[max(1rem,calc(50%-40rem))] hidden w-[17rem] lg:block" />
-          </div>
-          <div className="mx-auto max-w-6xl px-4 pt-20 text-center sm:px-6 sm:pt-28">
+        <section className="prancha border-b border-line">
+          <div className="mx-auto max-w-6xl px-4 pt-20 pb-16 text-center sm:px-6 sm:pt-28 sm:pb-20">
             <p style={atraso(0)} className="hero-in inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[12px] text-muted">
               <span className="size-1.5 rounded-full bg-ok" />
               Para revendas de água e gás
             </p>
-            <h1 className="mx-auto mt-6 max-w-[15ch] text-[2.6rem] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-[4.25rem]">
+            <h1 className="mx-auto mt-6 max-w-[14ch] text-[2.6rem] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-[4.25rem]">
               {/* cada palavra entra sozinha; o espaço fica fora para não ser comido pelo inline-block */}
               {titulo.map((w, i) => (
                 <Fragment key={i}>
@@ -83,184 +203,66 @@ export default function Inicio() {
                 </Fragment>
               ))}
             </h1>
-            <p style={atraso(300)} className="hero-in mx-auto mt-5 max-w-[34rem] text-[16px] leading-relaxed text-muted sm:text-[17px]">
-              Pedidos, entregas, botijões cheios e vazios e o dinheiro de cada entregador, registrados com quem fez e quando.
+            <p style={atraso(300)} className="hero-in mx-auto mt-5 max-w-[36rem] text-[16px] leading-relaxed text-muted sm:text-[17px]">
+              Pedido, entrega, cascos e o dinheiro de cada entregador num sistema só, do primeiro pedido da manhã ao acerto da noite.
             </p>
             <div style={atraso(380)} className="hero-in mt-8 flex flex-wrap justify-center gap-3">
-              <Link href="/login" className="btn btn-primary h-11 px-5 text-[15px]">
-                Entrar no sistema <ArrowRight className="size-4" aria-hidden="true" />
-              </Link>
-              <a href="#como-funciona" className="btn h-11 px-5 text-[15px]">Ver como funciona</a>
+              <BotaoContato />
+              <a href="#dia" className="btn h-11 px-5 text-[15px]">Ver um dia na revenda</a>
             </div>
-          </div>
-
-          <div aria-hidden="true" className="mx-auto mt-10 flex max-w-sm justify-center gap-2 px-4 lg:hidden">
-            <Botijao className="w-1/2" />
-            <Galao id="galao-celular" className="w-1/2" />
-          </div>
-
-          <div
-            style={atraso(480)}
-            role="img"
-            aria-label="O entregador toca em Entreguei e recebi no celular, e no painel da loja o pedido vira Entregue e o vendido do dia sobe"
-            className="hero-in relative mx-auto mt-16 max-w-[66rem] px-4 sm:mt-20 sm:px-6"
-          >
-            <DemoEntrega />
-          </div>
-        </section>
-
-        <section id="como-funciona" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6 sm:py-32">
-          <p className="text-[13px] font-medium text-accent">Como funciona</p>
-          <h2 className="reveal mt-2 max-w-[22ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] sm:text-[2.5rem]">
-            O caminho de um botijão, do telefone até o caixa.
-          </h2>
-          <InView className="steps relative mt-12">
-            {/* linha que corre por cima dos passos quando eles aparecem */}
-            <div aria-hidden="true" className="steps-line absolute inset-x-0 -top-px z-10 h-0.5 rounded-full bg-accent" />
-            <ol className="grid gap-px overflow-hidden rounded-2xl border border-line bg-line sm:grid-cols-2 lg:grid-cols-4">
-              {passos.map((s, i) => (
-                <li key={s.n} style={atraso(i * 160)} className="step bg-surface p-6">
-                  <span className="step-n num text-[13px] text-muted">{s.n}</span>
-                  <h3 className="mt-8 text-[17px] font-semibold tracking-tight">{s.t}</h3>
-                  <p className="mt-2 text-muted">{s.d}</p>
-                </li>
-              ))}
-            </ol>
-          </InView>
-        </section>
-
-        <section className="faixa-chama">
-          <InView className="mx-auto grid max-w-6xl items-center gap-12 px-4 py-20 sm:px-6 sm:py-28 lg:grid-cols-[1.15fr_1fr]">
-            {/* min-w-0: a prateleira corta na borda em vez de alargar a coluna e empurrar o texto */}
-            <div className="min-w-0">
-              <p className="font-mono text-[12px] tracking-[0.14em] uppercase">Vasilhame retornável</p>
-              <h2 className="reveal mt-3 max-w-[16ch] text-[2.25rem] leading-[1.04] font-semibold tracking-[-0.04em] text-balance sm:text-[3.25rem]">
-                Saiu cheio, voltou vazio. O estoque fecha sozinho.
-              </h2>
-              <p className="mt-5 max-w-[34rem] text-[16px] leading-relaxed opacity-80">
-                Cada entrega baixa um cheio e devolve um vazio para a conta da loja. Se o cliente não tem vasilhame para
-                trocar, o sistema cobra o casco; o que chega amassado sai separado, como avariado.
+            {temZap && (
+              <p style={atraso(440)} className="hero-in mt-4 text-[13px] text-muted">
+                Já é cliente? <Link href="/login" className="text-fg underline-offset-4 hover:underline">Entrar</Link>
               </p>
-              <dl className="mt-10 grid max-w-md grid-cols-3 border-t border-current/25 font-mono text-[11px] tracking-[0.12em] uppercase">
-                {[
-                  ["Cheios", 42],
-                  ["Vazios", 18],
-                  ["Avariados", 2],
-                ].map(([t, n]) => (
-                  <div key={t} className="pt-4">
-                    <dt className="opacity-70">{t}</dt>
-                    <dd className="mt-1 font-sans text-[2rem] font-semibold tracking-tight">
-                      <LiveNumber value={n as number} fromZero="visible" />
-                    </dd>
-                  </div>
-                ))}
-              </dl>
-              <Prateleira quantos={12} className="mt-8 max-w-md" />
-            </div>
-            <Botijao className="mx-auto w-full max-w-[22rem]" />
-          </InView>
+            )}
+            <InView className="hero-in mx-auto mt-14 max-w-5xl sm:mt-20">
+              <RelogioDoDia />
+            </InView>
+          </div>
         </section>
 
-        <section id="recursos" className="recursos relative isolate scroll-mt-20 border-y border-line bg-surface/60">
-          <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-32">
-            <p className="text-[13px] font-medium text-accent">Recursos</p>
-            <h2 className="reveal mt-2 max-w-[24ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] sm:text-[2.5rem]">
-              Feito em cima do que dá errado numa revenda.
+        <section id="dia" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6 sm:py-32">
+          <p className="text-[13px] font-medium text-accent">Um dia na revenda</p>
+          <h2 className="reveal mt-2 max-w-[22ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] sm:text-[2.5rem]">
+            Das 7h às 18h, cada coisa anotada no lugar certo.
+          </h2>
+
+          <ol className="mt-16 sm:mt-20">
+            {paradas.map((p, i) => {
+              const { t, d, largo, figura } = dia[p.id];
+              const ultima = i === paradas.length - 1;
+              return (
+                <li key={p.id} id={p.id} className="scroll-mt-24">
+                  {/* a linha à esquerda é o trajeto do dia: cada trecho se desenha quando a parada aparece */}
+                  <InView className={`dia-parada ${ultima ? "dia-ultima" : ""}`}>
+                    <div className={`grid gap-8 lg:gap-12 ${largo ? "" : "lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1fr)] lg:items-center"}`}>
+                      <div className="dia-texto max-w-xl">
+                        <p className="num font-mono text-[13px] tracking-[0.08em] text-accent">
+                          {String(p.hora).padStart(2, "0")}:00 · {p.nome.toUpperCase()}
+                        </p>
+                        <h3 className="mt-3 text-[1.5rem] leading-tight font-semibold tracking-[-0.03em] sm:text-[1.75rem]">{t}</h3>
+                        <p className="mt-3 text-[16px] leading-relaxed text-muted">{d}</p>
+                      </div>
+                      <div className="dia-figura min-w-0">{figura}</div>
+                    </div>
+                  </InView>
+                </li>
+              );
+            })}
+          </ol>
+        </section>
+
+        <section className="border-y border-line bg-surface/60">
+          <div className="mx-auto max-w-6xl px-4 py-24 sm:px-6 sm:py-28">
+            <p className="text-[13px] font-medium text-accent">Depois das 18h</p>
+            <h2 className="reveal mt-2 max-w-[22ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] sm:text-[2.5rem]">
+              O que segura a conta no dia seguinte.
             </h2>
-
-            <div className="mt-12 grid gap-4 lg:grid-cols-6">
-              <article className="reveal panel flex flex-col overflow-hidden lg:col-span-3">
-                <div className="p-6 sm:p-8">
-                  <p className="fig">FIG. 01 · ACERTO</p>
-                  <h3 className="text-[17px] font-semibold tracking-tight">Acerto que fecha no centavo</h3>
-                  <p className="mt-2 text-muted">
-                    O sistema sabe quanto cada entregador deve ter em mãos. Pagamento misto, repasse no meio do dia e gasto
-                    autorizado entram na conta.
-                  </p>
-                </div>
-                <div
-                  role="img"
-                  aria-label="Acerto do João: deve apresentar R$ 165,00, o caixa digita 165,00, o sistema mostra bateu, sem diferença, e o acerto é fechado"
-                  className="mt-auto bg-subtle"
-                >
-                  <DemoAcerto />
-                </div>
-              </article>
-
-              <article className="reveal panel flex flex-col p-6 sm:p-8 lg:col-span-3">
-                <p className="fig">FIG. 02 · ESTOQUE</p>
-                <h3 className="text-[17px] font-semibold tracking-tight">Estoque de retornáveis</h3>
-                <p className="mt-2 text-muted">
-                  Cheios, vazios e avariados, na loja e na rua. Saldo é a soma dos lançamentos; erro se corrige com estorno,
-                  nunca apagando.
-                </p>
-                {/* números simples entrando linha a linha: dez contadores rolando juntos pesam na rolagem de celular fraco */}
-                <InView className="mt-8">
-                  <table className="num w-full overflow-hidden rounded-xl border border-line bg-bg text-[14px]">
-                    <thead>
-                      <tr className="text-left text-[12px] text-muted">
-                        <th className="px-4 py-2.5 font-medium">Produto</th>
-                        <th className="px-4 py-2.5 text-right font-medium">Cheios</th>
-                        <th className="px-4 py-2.5 text-right font-medium">Vazios</th>
-                        <th className="px-4 py-2.5 text-right font-medium">Na rua</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {estoque.map((e, i) => (
-                        <tr key={e.p} style={atraso(i * 140)} className="print border-t border-line">
-                          <td className="px-4 py-2.5">{e.p}</td>
-                          <td className="px-4 py-2.5 text-right">{e.cheio}</td>
-                          <td className="px-4 py-2.5 text-right text-muted">{e.vazio}</td>
-                          <td className="px-4 py-2.5 text-right text-muted">{e.rua}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </InView>
-              </article>
-
-              <article className="reveal panel overflow-hidden lg:col-span-4">
-                <div className="grid h-full sm:grid-cols-2">
-                  <div className="p-6 sm:p-8">
-                    <p className="fig">FIG. 03 · ENTREGADOR</p>
-                    <h3 className="text-[17px] font-semibold tracking-tight">No celular do entregador</h3>
-                    <p className="mt-2 text-muted">
-                      Só as entregas dele, quanto deve ter em dinheiro e um botão grande pra confirmar, com 5 segundos pra
-                      desfazer.
-                    </p>
-                  </div>
-                  <div
-                    role="img"
-                    aria-label="No celular, o João toca em Entreguei e recebi, desfaz dentro dos 5 segundos, toca de novo e o dinheiro que ele deve ter sobe de R$ 248,00 para R$ 363,00"
-                    className="bg-subtle"
-                  >
-                    <DemoCelular />
-                  </div>
-                </div>
-              </article>
-
-              <article className="reveal panel flex flex-col overflow-hidden lg:col-span-2">
-                <div className="p-6 sm:p-8">
-                  <p className="fig">FIG. 04 · PORTAL</p>
-                  <h3 className="text-[17px] font-semibold tracking-tight">Pedido pelo link da loja</h3>
-                  <p className="mt-2 text-muted">O cliente pede sozinho e já recebe o QR do Pix.</p>
-                </div>
-                <div
-                  role="img"
-                  aria-label="No celular, o cliente põe um Gás P13, escolhe Pix e faz o pedido; aparece Pedido #62 recebido com o QR do Pix"
-                  className="mt-auto bg-subtle"
-                >
-                  <DemoPortal />
-                </div>
-              </article>
-            </div>
-
-            {/* cada extra com um esquema em linha que explica a ideia; os traços se desenham ao aparecer */}
-            <InView className="mt-16">
-              <ul className="grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:grid-cols-4">
-                {extras.map(({ figura: Figura, t, d }, i) => (
+            {/* cada garantia com um esquema em linha que explica a ideia; os traços se desenham ao aparecer */}
+            <InView className="mt-14">
+              <ul className="grid gap-x-10 gap-y-12 sm:grid-cols-3">
+                {garantias.map(({ figura: Figura, t, d }) => (
                   <li key={t} className="extra border-t border-line pt-5">
-                    <span className="fig">{String(i + 1).padStart(2, "0")}</span>
                     <Figura className="h-20 w-full max-w-[15rem]" />
                     <h3 className="mt-5 font-semibold">{t}</h3>
                     <p className="mt-1 text-muted">{d}</p>
@@ -271,18 +273,79 @@ export default function Inicio() {
           </div>
         </section>
 
-        <section className="px-4 py-24 sm:px-6 sm:py-32">
+        <section className="mx-auto grid max-w-6xl gap-16 px-4 py-24 sm:px-6 sm:py-32 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
+          <div id="preco" className="scroll-mt-24">
+            <p className="text-[13px] font-medium text-accent">Preço</p>
+            <h2 className="reveal mt-2 text-[2rem] leading-tight font-semibold tracking-[-0.035em]">
+              {PRECO ? (
+                <>
+                  {PRECO}
+                  <span className="text-[1.125rem] font-medium tracking-normal text-muted"> por mês</span>
+                </>
+              ) : (
+                "Sob consulta"
+              )}
+            </h2>
+            <p className="mt-3 text-muted">
+              {PRECO
+                ? "Com tudo o que está nesta página, para a equipe inteira."
+                : "Conte quantos entregadores e quantos pedidos por dia a sua revenda tem, e a gente responde com o valor."}
+            </p>
+            <ul className="mt-6 space-y-2.5 border-t border-line pt-6 text-[15px]">
+              {[
+                "Dono, caixa, atendente e entregador",
+                "Link de pedido para os clientes, com Pix",
+                "Estoque de cheios, vazios e avariados",
+                "Acerto de caixa por entregador",
+                "Relatórios e exportação em planilha",
+              ].map((x) => (
+                <li key={x} className="flex gap-3">
+                  <span aria-hidden="true" className="mt-[0.6em] h-px w-3 shrink-0 bg-accent" />
+                  {x}
+                </li>
+              ))}
+            </ul>
+            {/* sem WhatsApp não há a quem pedir o valor; "Entrar" aqui confundiria quem ainda não é cliente */}
+            {temZap && <BotaoContato className="mt-8" />}
+          </div>
+
+          <div id="perguntas" className="scroll-mt-24">
+            <p className="text-[13px] font-medium text-accent">Perguntas</p>
+            <h2 className="reveal mt-2 text-[2rem] leading-tight font-semibold tracking-[-0.035em]">O que todo dono pergunta.</h2>
+            <div className="mt-6 border-t border-line">
+              {perguntas.map(([q, a]) => (
+                // mesmo name: abrir uma pergunta fecha a outra
+                <details key={q} name="perguntas" className="pergunta border-b border-line">
+                  <summary className="flex cursor-pointer items-center justify-between gap-4 py-4 text-[16px] font-medium">
+                    {q}
+                    <span aria-hidden="true" className="pergunta-sinal" />
+                  </summary>
+                  <p className="pb-5 text-muted">{a}</p>
+                </details>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="px-4 pb-24 sm:px-6 sm:pb-32">
           <InView className="cta-band relative isolate mx-auto max-w-6xl overflow-hidden rounded-3xl px-6 py-20 text-center sm:py-24">
             <BairroRota className="pointer-events-none absolute inset-0 -z-10 h-full w-full" />
-            <h2 className="reveal mx-auto max-w-[20ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] text-balance sm:text-[2.75rem]">
-              Quatro perfis, uma conta que bate.
+            <p className="font-mono text-[12px] tracking-[0.14em] text-white/80 uppercase">18:00 · Acerto</p>
+            <h2 className="reveal mx-auto mt-3 max-w-[20ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] text-balance sm:text-[2.75rem]">
+              Fechar o dia sem conta de cabeça.
             </h2>
             <p className="mx-auto mt-4 max-w-[32rem] text-white/80">
-              Dono, caixa, atendente e entregador, cada um vendo só o que é seu.
+              {temZap ? "Chame no WhatsApp e veja o Depósito funcionando com a rotina da sua revenda." : "Dono, caixa, atendente e entregador, cada um vendo só o que é seu."}
             </p>
-            <Link href="/login" className="btn mt-8 h-11 border-white bg-white px-5 text-[15px] text-[var(--marca-forte)] hover:bg-white/90">
-              Entrar no sistema <ArrowRight className="size-4" aria-hidden="true" />
-            </Link>
+            {temZap ? (
+              <a href={zap} target="_blank" rel="noopener noreferrer" className="btn mt-8 h-11 border-white bg-white px-5 text-[15px] text-[var(--marca-forte)] hover:bg-white/90">
+                <MessageCircle className="size-4" aria-hidden="true" /> Conversar no WhatsApp
+              </a>
+            ) : (
+              <Link href="/login" className="btn mt-8 h-11 border-white bg-white px-5 text-[15px] text-[var(--marca-forte)] hover:bg-white/90">
+                Entrar no sistema <ArrowRight className="size-4" aria-hidden="true" />
+              </Link>
+            )}
           </InView>
         </section>
       </main>

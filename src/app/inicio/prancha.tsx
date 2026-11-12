@@ -42,53 +42,6 @@ function Chamada({ from, to, children, anchor = "start" }: { from: [number, numb
   );
 }
 
-/** Botijão P13 em vista frontal, com cotas, chamadas e a etiqueta de entrega balançando na alça. */
-export function Botijao({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 320 420" className={`ink ${className}`} aria-hidden="true">
-      <g style={d(0.3)}>
-        {/* alça protetora com os dois furos */}
-        <path pathLength={1} d="M108 112 V64 C108 52 116 46 128 46 H192 C204 46 212 52 212 64 V112" />
-        <rect pathLength={1} x={120} y={58} width={30} height={13} rx={6.5} />
-        <rect pathLength={1} x={170} y={58} width={30} height={13} rx={6.5} />
-        {/* válvula */}
-        <rect pathLength={1} x={150} y={84} width={20} height={24} rx={2} />
-        <rect pathLength={1} x={145} y={77} width={30} height={8} rx={2} />
-      </g>
-      <g style={d(0.1)}>
-        {/* corpo, costura e pé */}
-        <path pathLength={1} d="M80 146 C80 116 120 108 160 108 C200 108 240 116 240 146 V312 C240 336 206 346 160 346 C114 346 80 336 80 312 Z" />
-        <path pathLength={1} d="M80 228 C120 236 200 236 240 228" />
-        <path pathLength={1} d="M100 340 V372 H220 V340" />
-        <rect pathLength={1} x={116} y={354} width={20} height={9} rx={4.5} />
-        <rect pathLength={1} x={184} y={354} width={20} height={9} rx={4.5} />
-      </g>
-      <g style={d(0.7)}>
-        <rect pathLength={1} x={110} y={170} width={100} height={40} rx={3} className="tracejado" />
-        <text x={160} y={187} textAnchor="middle" className="nota forte">GLP</text>
-        <text x={160} y={201} textAnchor="middle" className="nota">13 kg</text>
-      </g>
-      <g style={d(1.1)}>
-        <Cota x1={268} y1={46} x2={268} y2={372} tx={282} ty={212} rotate={90}>46 cm</Cota>
-        <Cota x1={80} y1={398} x2={240} y2={398} tx={160} ty={414}>Ø 36 cm</Cota>
-        <Chamada from={[160, 80]} to={[90, 24]} anchor="end">VÁLVULA</Chamada>
-        <Chamada from={[82, 300]} to={[66, 300]} anchor="end">AÇO</Chamada>
-      </g>
-      {/* etiqueta de entrega pendurada no furo da alça */}
-      <g className="etiqueta" style={d(1.5)}>
-        <g className="etiqueta-corpo">
-          <path pathLength={1} d="M135 64 C128 86 116 102 106 118" />
-          <path pathLength={1} d="M64 118 H162 L172 128 V170 H64 Z" className="papel" />
-          <circle cx={161} cy={129} r={2.6} className="ponto" />
-          <text x={72} y={136} className="nota forte">#128</text>
-          <text x={72} y={149} className="nota">ANA RIBEIRO</text>
-          <text x={72} y={162} className="nota">JD. PRIMAVERA</text>
-        </g>
-      </g>
-    </svg>
-  );
-}
-
 /** Galão de 20 L em vista frontal; a água enche e esvazia, e o rótulo troca entre CHEIO e VAZIO. */
 // o id do recorte precisa ser único na página: há um galão para computador e outro para celular
 export function Galao({ id, className = "" }: { id: string; className?: string }) {
@@ -129,26 +82,6 @@ export function Galao({ id, className = "" }: { id: string; className?: string }
         <text x={160} y={398} textAnchor="middle" className="nota forte rotulo-vazio">VAZIO</text>
         <text x={160} y={412} textAnchor="middle" className="nota">RETORNÁVEL</text>
       </g>
-    </svg>
-  );
-}
-
-/** Régua vertical em centímetros, na margem da prancha. */
-export function Regua({ className = "" }: { className?: string }) {
-  const marcas = Array.from({ length: 41 }, (_, i) => i);
-  return (
-    <svg viewBox="0 0 28 410" className={`ink ${className}`} aria-hidden="true">
-      <g style={d(0.2)}>
-        <line pathLength={1} x1={1} y1={5} x2={1} y2={405} />
-        {marcas.map((i) => (
-          <line key={i} pathLength={1} x1={1} y1={5 + i * 10} x2={i % 10 === 0 ? 14 : i % 5 === 0 ? 10 : 6} y2={5 + i * 10} />
-        ))}
-      </g>
-      {[0, 10, 20, 30, 40].map((n) => (
-        <text key={n} x={17} y={8 + n * 10} className="nota">
-          {n}
-        </text>
-      ))}
     </svg>
   );
 }

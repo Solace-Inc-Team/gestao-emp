@@ -692,31 +692,12 @@ body[data-confirmando] .deliver-btn {
   animation: 800ms var(--ease-out) var(--d, 0ms) both word-in;
 }
 
-/* passos acendem um depois do outro, com a linha correndo por cima */
-.steps-line {
-  transform-origin: left;
-  scale: 0 1;
-}
-[data-inview="true"] .steps-line {
-  animation: 1.2s var(--ease-out) 100ms both line-run;
-}
-/* o conteúdo do passo é que entra: o fundo branco fica, senão a grade cinza aparece no buraco */
+/* linhas que entram uma a uma, como impressas (turnos do caixa na página inicial) */
 @media (scripting: enabled) {
-  [data-inview="false"] .step > *,
   [data-inview="false"] .print {
     opacity: 0;
   }
 }
-[data-inview="true"] .step > * {
-  animation: 600ms var(--ease-out) var(--d, 0ms) both hero-up;
-}
-[data-inview="true"] .step-n {
-  animation:
-    600ms var(--ease-out) var(--d, 0ms) both hero-up,
-    1s ease var(--d, 0ms) both step-glow;
-}
-
-/* linhas da tabela de estoque entram uma a uma */
 [data-inview="true"] .print {
   animation: 420ms var(--ease-out) var(--d, 0ms) both print-in;
 }
@@ -762,28 +743,11 @@ body[data-confirmando] .deliver-btn {
     filter: blur(8px);
   }
 }
-@keyframes line-run {
-  to {
-    scale: 1 1;
-  }
-}
-@keyframes step-glow {
-  30% {
-    color: var(--accent);
-  }
-}
 @keyframes print-in {
   from {
     opacity: 0;
     translate: 0 -4px;
     clip-path: inset(0 0 100% 0);
-  }
-}
-@keyframes stamp {
-  from {
-    opacity: 0;
-    scale: 1.8;
-    rotate: -8deg;
   }
 }
 
@@ -792,14 +756,9 @@ body[data-confirmando] .deliver-btn {
   .hero-in,
   .hero-word,
   .reveal,
-  [data-inview] .step > *,
-  [data-inview] .print,
-  [data-inview] .steps-line {
+  [data-inview] .print {
     animation: none !important;
     opacity: 1 !important;
-  }
-  .steps-line {
-    display: none;
   }
 }
 
@@ -873,13 +832,6 @@ body[data-confirmando] .deliver-btn {
 }
 .ink .rotulo-vazio {
   animation: rotulo 14s ease 8.4s infinite both;
-}
-
-/* etiqueta de entrega balançando presa no furo da alça */
-.ink .etiqueta-corpo {
-  transform-box: view-box;
-  transform-origin: 135px 64px;
-  animation: balanca 3.4s ease-in-out infinite alternate;
 }
 
 /* faixa final: azul elétrico chapado, o bairro em traço branco e a rota se desenhando quando aparece */
@@ -957,19 +909,10 @@ body[data-confirmando] .deliver-btn {
     opacity: 0;
   }
 }
-@keyframes balanca {
-  from {
-    rotate: -5deg;
-  }
-  to {
-    rotate: 4deg;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
   .ink [pathLength],
   .ink .nota,
-  .ink .etiqueta-corpo,
   .ink .agua-onda {
     animation: none !important;
     stroke-dashoffset: 0;
@@ -1858,3 +1801,273 @@ details[open] > summary.desvio .desvio-seta {
   }
 }
 
+
+/* relógio do dia (topo da página inicial): a linha se desenha, depois um ponto percorre o dia e
+   cada parada acende quando ele chega. Ciclo de 14s; as chegadas (0, 15, 30, 45, 60 e 80%) batem
+   com o --chega de cada parada. Parado fora da tela; sem movimento pedido, o ponto fica nas 18h. */
+.relogio .relogio-hora {
+  font-size: var(--fs-hora);
+}
+.relogio .relogio-nome {
+  fill: var(--muted);
+  stroke: none;
+  font-family: var(--font-sans);
+  font-size: var(--fs-nome);
+  font-weight: 500;
+  transition: fill var(--dur) var(--ease-chegada);
+  animation: fade-in 500ms ease 0.9s both;
+}
+.relogio .relogio-alvo {
+  fill: transparent;
+  stroke: none;
+}
+.relogio .relogio-marca {
+  animation: fade-in 400ms ease var(--d, 0s) both;
+}
+.relogio .relogio-anel {
+  fill: var(--papel);
+  stroke: var(--tinta);
+  stroke-width: 1.5;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation:
+    relogio-anel-entra 420ms var(--ease-chegada) 0.6s both,
+    relogio-acende 14s var(--ease-chegada) calc(1.8s + var(--chega)) infinite;
+}
+.relogio .relogio-ponto {
+  fill: var(--tinta);
+  stroke: none;
+  opacity: 0;
+  animation: relogio-ponto 14s var(--ease-trajeto) 1.8s infinite both;
+}
+.relogio-parada {
+  cursor: pointer;
+  outline: none;
+}
+.relogio-parada:hover .relogio-nome,
+.relogio-parada:focus-visible .relogio-nome {
+  fill: var(--fg);
+}
+.relogio-parada:focus-visible .relogio-anel {
+  stroke-width: 3;
+}
+@keyframes relogio-anel-entra {
+  from {
+    scale: 0;
+  }
+}
+/* a parada acende quando o ponto chega e apaga devagar enquanto ele segue viagem */
+@keyframes relogio-acende {
+  0%,
+  4% {
+    fill: color-mix(in srgb, var(--tinta) 22%, var(--papel));
+    scale: 1.25;
+  }
+  14%,
+  100% {
+    fill: var(--papel);
+    scale: 1;
+  }
+}
+@keyframes relogio-ponto {
+  0% {
+    translate: var(--x0) 0;
+    opacity: 0;
+  }
+  2%,
+  5% {
+    translate: var(--x0) 0;
+    opacity: 1;
+  }
+  15%,
+  20% {
+    translate: var(--x1) 0;
+  }
+  30%,
+  35% {
+    translate: var(--x2) 0;
+  }
+  45%,
+  50% {
+    translate: var(--x3) 0;
+  }
+  60%,
+  65% {
+    translate: var(--x4) 0;
+  }
+  80%,
+  94% {
+    translate: var(--x5) 0;
+    opacity: 1;
+  }
+  98%,
+  100% {
+    translate: var(--x5) 0;
+    opacity: 0;
+  }
+}
+@media (scripting: enabled) {
+  [data-inview="false"] .relogio :is(.relogio-anel, .relogio-ponto, .relogio-nome, .relogio-marca) {
+    animation-play-state: paused;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .relogio :is(.relogio-anel, .relogio-nome, .relogio-marca) {
+    animation: none;
+  }
+  .relogio .relogio-ponto {
+    animation: none;
+    opacity: 1;
+    translate: var(--x5) 0;
+  }
+}
+
+/* um dia na revenda: a linha à esquerda é o trajeto do dia. Quando a parada aparece, o marco da hora
+   surge, o trecho até a próxima parada se desenha de cima para baixo e o texto e a tela entram. */
+.dia-parada {
+  position: relative;
+  padding-left: 2.25rem;
+  padding-bottom: 6rem;
+}
+.dia-parada.dia-ultima {
+  padding-bottom: 0;
+}
+@media (min-width: 640px) {
+  .dia-parada {
+    padding-left: 4.5rem;
+    padding-bottom: 8rem;
+  }
+}
+.dia-parada::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 1.25rem;
+  bottom: -0.25rem;
+  width: 1px;
+  background: color-mix(in srgb, var(--marca) 45%, transparent);
+  transform-origin: top;
+  scale: 1 0;
+}
+.dia-parada.dia-ultima::before {
+  display: none;
+}
+.dia-parada::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.2rem;
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  border: 1.5px solid var(--marca);
+  background: var(--bg);
+  scale: 0;
+}
+.dia-parada.dia-ultima::after {
+  background: var(--marca);
+  box-shadow: 0 0 0 4px var(--accent-soft);
+}
+[data-inview="true"].dia-parada::after {
+  animation: dia-marco 420ms var(--ease-chegada) both;
+}
+[data-inview="true"].dia-parada::before {
+  animation: dia-trecho 1.4s var(--ease-trajeto) 250ms both;
+}
+@media (scripting: enabled) {
+  [data-inview="false"] :is(.dia-texto, .dia-figura) {
+    opacity: 0;
+  }
+}
+[data-inview="true"] .dia-texto {
+  animation: 600ms var(--ease-chegada) 80ms both hero-up;
+}
+[data-inview="true"] .dia-figura {
+  animation: 700ms var(--ease-chegada) 200ms both hero-up;
+}
+.dia-tela {
+  max-width: 34rem;
+  margin-inline: auto;
+}
+@keyframes dia-marco {
+  from {
+    scale: 0;
+  }
+  to {
+    scale: 1;
+  }
+}
+@keyframes dia-trecho {
+  to {
+    scale: 1 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dia-parada::before,
+  .dia-parada::after {
+    animation: none !important;
+    scale: 1;
+  }
+  [data-inview] :is(.dia-texto, .dia-figura) {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}
+
+/* perguntas: o sinal de mais vira menos ao abrir (o traço em pé deita), e a resposta desce com altura animada */
+.pergunta > summary {
+  list-style: none;
+}
+.pergunta > summary::-webkit-details-marker {
+  display: none;
+}
+.pergunta-sinal {
+  position: relative;
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+.pergunta-sinal::before,
+.pergunta-sinal::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 5.25px;
+  width: 12px;
+  height: 1.5px;
+  border-radius: 1px;
+  background: currentColor;
+  transition: rotate var(--dur-slow) var(--ease-chegada);
+}
+.pergunta-sinal::after {
+  rotate: 90deg;
+}
+.pergunta[open] .pergunta-sinal::after {
+  rotate: 0deg;
+}
+.pergunta > summary:hover .pergunta-sinal,
+.pergunta[open] .pergunta-sinal {
+  color: var(--fg);
+}
+@supports (interpolate-size: allow-keywords) {
+  .pergunta {
+    interpolate-size: allow-keywords;
+  }
+  .pergunta::details-content {
+    height: 0;
+    overflow: clip;
+    transition:
+      height var(--dur-slow) var(--ease-chegada),
+      content-visibility var(--dur-slow) allow-discrete;
+  }
+  .pergunta[open]::details-content {
+    height: auto;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pergunta-sinal::after,
+  .pergunta::details-content {
+    transition: none !important;
+  }
+}

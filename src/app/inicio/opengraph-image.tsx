@@ -25,9 +25,9 @@ export default function Image() {
             <span style={{ fontSize: 30, fontWeight: 700, color: texto, letterSpacing: -0.5 }}>Depósito</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontSize: 76, fontWeight: 700, color: texto, lineHeight: 1.02, letterSpacing: -3 }}>Do pedido ao acerto, sem conta de cabeça.</span>
+            <span style={{ fontSize: 76, fontWeight: 700, color: texto, lineHeight: 1.02, letterSpacing: -3 }}>Todo casco volta. Todo real fecha.</span>
             <span style={{ marginTop: 22, fontSize: 26, color: "#555", lineHeight: 1.35 }}>
-              Pedidos, entregas, botijões cheios e vazios e o dinheiro de cada entregador.
+              Pedido, entrega, cascos e o dinheiro de cada entregador, do primeiro pedido da manhã ao acerto da noite.
             </span>
           </div>
         </div>

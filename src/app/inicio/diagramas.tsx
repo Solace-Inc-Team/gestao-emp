@@ -1,4 +1,4 @@
-// Esquemas em linha para os quatro extras da página inicial, no mesmo traço do galão e do botijão.
+// Esquemas em linha para as garantias da página inicial, no mesmo traço do galão e do botijão.
 // Cada um explica a ideia em vez de enfeitar, numa cor só. Os traços se desenham quando o bloco
 // aparece (classe ink + data-inview do InView em volta); depois, ao passar o cursor (ou sozinho, no
 // celular), a história acontece: um traço curto corre pela ligação (classe fluxo) e cada esquema
@@ -6,28 +6,6 @@
 
 type P = { className?: string };
 const d = (s: number) => ({ "--d": `${s}s` }) as React.CSSProperties;
-
-/** O celular guarda a entrega sem sinal e manda quando a conexão volta. */
-export function SemInternet({ className }: P) {
-  return (
-    <svg viewBox="0 0 200 84" className={`ink ${className ?? ""}`} aria-hidden="true">
-      <rect pathLength={1} x="18" y="14" width="30" height="54" rx="6" />
-      <path pathLength={1} d="M29 19h8" />
-      <rect pathLength={1} x="25" y="34" width="16" height="10" rx="2" style={d(0.3)} />
-      <path pathLength={1} d="M54 41h30" className="tracejado" style={d(0.4)} />
-      <path pathLength={1} d="M90 37l8 8M98 37l-8 8" className="cota" style={d(0.5)} />
-      <path pathLength={1} d="M104 41h40" className="tracejado" style={d(0.4)} />
-      <rect pathLength={1} x="150" y="22" width="32" height="40" rx="4" style={d(0.2)} />
-      <path pathLength={1} d="M156 32h20M156 40h20M156 48h12" style={d(0.5)} />
-      <path pathLength={1} d="M33 12C70 -6 120 -6 160 18" style={d(1)} />
-      <path pathLength={1} d="M152 13l8 5l-9 3" style={d(1.5)} />
-      <path pathLength={1} d="M33 12C70 -6 120 -6 160 18" className="fluxo" />
-      <circle cx="160" cy="18" r="2.2" className="ponto marco" />
-      <text x="14" y="80" className="nota">GUARDADO</text>
-      <text x="152" y="76" className="nota">LOJA</text>
-    </svg>
-  );
-}
 
 /** Estorno, ajuste e inventário só passam pelo cadeado com a senha de quem está logado. */
 export function SenhaDeNovo({ className }: P) {
