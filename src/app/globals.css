@@ -1427,3 +1427,19 @@ li > span > .fig {
     animation: none;
   }
 }
+
+/* menu do celular rolando de lado: esmaece só a borda que ainda tem itens */
+@media (max-width: 1023px) {
+  .nav-rola {
+    --esq: 0px;
+    --dir: 0px;
+    scrollbar-width: none;
+    mask-image: linear-gradient(to right, transparent 0, #000 var(--esq), #000 calc(100% - var(--dir)), transparent 100%);
+  }
+  .nav-rola[data-mais-esq] {
+    --esq: 28px;
+  }
+  .nav-rola[data-mais-dir] {
+    --dir: 40px;
+  }
+}

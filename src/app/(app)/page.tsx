@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { ShieldAlert } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { dashboard, listDrivers } from "@/domain/queries";
 import { todayISO } from "@/lib/period";
 import { LiveNumber } from "@/components/live-number";
+import { FiltroPainel } from "./filtro-painel";
 import { Money, StatusBadge, Empty, fmtTime, paymentLabel } from "@/components/ui";
 
 export const metadata = { title: "Painel" };
@@ -24,6 +25,30 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
   );
   const noDia = ehHoje ? "hoje" : `em ${dia.split("-").reverse().slice(0, 2).join("/")}`;
 
+  // grave: dinheiro ou cliente esperando agora; aviso: precisa de conferência; dica: configuração
+  const alertas: Alerta[] = [];
+  if (d.late > 0) alertas.push({ tom: "grave", texto: `${d.late} ${d.late === 1 ? "pedido atrasado" : "pedidos atrasados"}`, href: "/entregas", acao: "Ver entregas" });
+  if (d.pendingDifferences > 0)
+    alertas.push({
+      tom: "grave",
+      texto: `${d.pendingDifferences} ${d.pendingDifferences === 1 ? "acerto com diferença esperando" : "acertos com diferença esperando"} resolução`,
+      href: "/caixa",
+      acao: "Ver acertos",
+    });
+  if (d.returned > 0)
+    alertas.push({ tom: "aviso", texto: `${d.returned} ${d.returned === 1 ? "pedido voltou" : "pedidos voltaram"} da rua sem entrega`, href: "/entregas", acao: "Resolver" });
+  if (d.pixToCheck > 0)
+    alertas.push({
+      tom: "aviso",
+      texto: `${d.pixToCheck} ${d.pixToCheck === 1 ? "Pix entregue ainda não conferido" : "Pix entregues ainda não conferidos"} no extrato`,
+      href: "/pedidos?status=entregue",
+      acao: "Conferir",
+    });
+  for (const p of d.lowStock)
+    alertas.push({ tom: "aviso", texto: `${p.name}: ${p.fullStore} cheios na loja (mínimo ${p.minStock})`, href: "/estoque", acao: "Ver estoque" });
+  if (user.role === "dono" && !user.totpEnabled)
+    alertas.push({ tom: "dica", texto: "Proteja o acesso ao caixa: ative a verificação em duas etapas", href: "/senha", acao: "Ativar" });
+
   return (
     <>
       <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
@@ -31,27 +56,24 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
           <p className="text-muted first-letter:uppercase">{hoje}</p>
           <h1 className="h1">Painel do dia{entregador ? `: ${entregador.name}` : ""}</h1>
         </div>
-        <div className="flex flex-wrap items-end gap-2">
-          {/* filtro: as vendas mudam com o dia e o entregador; fila e dinheiro na rua são sempre de agora */}
-          <form className="flex flex-wrap items-end gap-2" aria-label="Filtrar o painel">
-            <div>
-              <label className="label" htmlFor="dia">Dia</label>
-              <input id="dia" name="dia" type="date" max={hojeISO} defaultValue={dia} className="input" />
-            </div>
-            <div>
-              <label className="label" htmlFor="entregador">Entregador</label>
-              <select id="entregador" name="entregador" defaultValue={entregador?.id ?? ""} className="input">
-                <option value="">Todos</option>
-                {entregadores.map((e) => (
-                  <option key={e.id} value={e.id}>{e.name}</option>
-                ))}
-              </select>
-            </div>
-            <button className="btn">Ver</button>
-            {filtrado && <Link href="/" className="btn">Hoje, todos</Link>}
-          </form>
-          <Link href="/pedidos/novo" className="btn btn-primary">Novo pedido</Link>
-        </div>
+        {/* filtro: as vendas mudam com o dia e o entregador; fila e dinheiro na rua são sempre de agora */}
+        <FiltroPainel ativo={filtrado} acao={<Link href="/pedidos/novo" className="btn btn-primary">Novo pedido</Link>}>
+          <div>
+            <label className="label" htmlFor="dia">Dia</label>
+            <input id="dia" name="dia" type="date" max={hojeISO} defaultValue={dia} className="input" />
+          </div>
+          <div className="min-w-0 flex-1 sm:flex-none">
+            <label className="label" htmlFor="entregador">Entregador</label>
+            <select id="entregador" name="entregador" defaultValue={entregador?.id ?? ""} className="input">
+              <option value="">Todos</option>
+              {entregadores.map((e) => (
+                <option key={e.id} value={e.id}>{e.name}</option>
+              ))}
+            </select>
+          </div>
+          <button className="btn">Ver</button>
+          {filtrado && <Link href="/" className="btn">Hoje, todos</Link>}
+        </FiltroPainel>
       </div>
 
       <section className="panel mb-6 grid divide-line sm:grid-cols-3 sm:divide-x">
@@ -76,58 +98,27 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
         </div>
       </section>
 
-      {user.role === "dono" && !user.totpEnabled && (
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-line bg-surface px-4 py-3">
-          <p className="flex items-center gap-2.5 text-[13px]">
-            <ShieldAlert size={16} strokeWidth={1.75} className="shrink-0 text-warn" aria-hidden="true" />
-            Proteja o acesso ao caixa: ative a verificação em duas etapas.
-          </p>
-          <Link href="/senha" className="btn h-8 text-[13px]">Ativar</Link>
-        </div>
-      )}
-
-      {(d.pendingDifferences > 0 || d.lowStock.length > 0 || d.late > 0 || d.returned > 0 || d.pixToCheck > 0) && (
-        <section aria-label="Alertas" className="mb-6 space-y-2">
-          {d.late > 0 && (
-            <Link href="/entregas" className="flex items-center justify-between gap-3 rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-danger">
-              <span className="font-semibold">
-                {d.late} {d.late === 1 ? "pedido atrasado" : "pedidos atrasados"}
-              </span>
-              <span className="text-sm underline">Ver entregas</span>
-            </Link>
-          )}
-          {d.pixToCheck > 0 && (
-            <Link href="/pedidos?status=entregue" className="flex items-center justify-between gap-3 rounded-md border border-warn/40 bg-warn-soft px-4 py-3 text-warn-fg">
-              <span className="font-semibold">
-                {d.pixToCheck} {d.pixToCheck === 1 ? "Pix entregue ainda não conferido" : "Pix entregues ainda não conferidos"} no extrato
-              </span>
-              <span className="text-sm underline">Conferir</span>
-            </Link>
-          )}
-          {d.returned > 0 && (
-            <Link href="/entregas" className="flex items-center justify-between gap-3 rounded-md border border-warn/40 bg-warn-soft px-4 py-3 text-warn-fg">
-              <span className="font-semibold">
-                {d.returned} {d.returned === 1 ? "pedido voltou" : "pedidos voltaram"} da rua sem entrega
-              </span>
-              <span className="text-sm underline">Resolver</span>
-            </Link>
-          )}
-          {d.pendingDifferences > 0 && (
-            <Link href="/caixa" className="flex items-center justify-between gap-3 rounded-md border border-danger/30 bg-danger-soft px-4 py-3 text-danger">
-              <span className="font-semibold">
-                {d.pendingDifferences} {d.pendingDifferences === 1 ? "acerto com diferença esperando" : "acertos com diferença esperando"} resolução
-              </span>
-              <span className="text-sm underline">Ver acertos</span>
-            </Link>
-          )}
-          {d.lowStock.map((p) => (
-            <Link key={p.id} href="/estoque" className="flex items-center justify-between gap-3 rounded-md border border-warn/40 bg-warn-soft px-4 py-3 text-warn-fg">
-              <span className="font-semibold">
-                {p.name}: {p.fullStore} cheios na loja (mínimo {p.minStock})
-              </span>
-              <span className="text-sm underline">Ver estoque</span>
-            </Link>
-          ))}
+      {alertas.length > 0 && (
+        // um bloco só, do mais grave para o menos: a cor fica no ponto, o texto fica legível
+        <section aria-labelledby="atencao" className="panel mb-6">
+          <h2 id="atencao" className="h2 border-b border-line px-4 py-3">Precisa de atenção</h2>
+          <ul>
+            {alertas.map((a) => (
+              <li key={a.texto} className="border-b border-line last:border-0">
+                <Link href={a.href} className="group flex items-center gap-3 px-4 py-3 hover:bg-subtle">
+                  <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${tomPonto[a.tom]}`} />
+                  <span className={`flex-1 ${a.tom === "grave" ? "font-semibold text-danger" : ""}`}>
+                    {a.texto}
+                    <span className="sr-only">{tomLeitura[a.tom]}</span>
+                  </span>
+                  <span className="flex shrink-0 items-center gap-1 text-sm text-accent">
+                    {a.acao}
+                    <ChevronRight size={14} strokeWidth={2} aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" />
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </section>
       )}
 
@@ -221,3 +212,8 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
     </>
   );
 }
+
+type Alerta = { tom: "grave" | "aviso" | "dica"; texto: string; href: string; acao: string };
+const tomPonto = { grave: "bg-danger", aviso: "bg-warn", dica: "bg-accent" };
+// a cor do ponto não chega a quem usa leitor de tela
+const tomLeitura = { grave: " (urgente)", aviso: " (conferir)", dica: "" };
