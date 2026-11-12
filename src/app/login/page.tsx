@@ -5,7 +5,7 @@ import { getUser } from "@/lib/auth";
 import { login } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
 import { MarcaDaSessao } from "@/components/logo";
-import { Galao, Registro } from "@/app/inicio/prancha";
+import { Galao } from "@/app/inicio/prancha";
 
 export const metadata = { title: "Entrar" };
 
@@ -14,12 +14,6 @@ export default async function LoginPage() {
   if (user) redirect(user.platformAdmin ? "/admin" : user.role === "entregador" ? "/entregador" : "/");
   return (
     <main className="prancha relative isolate flex min-h-screen flex-col items-center justify-center overflow-hidden px-6 py-16">
-      <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10">
-        <Registro className="absolute top-6 left-6 size-6" />
-        <Registro className="absolute top-6 right-6 size-6" />
-        <Registro className="absolute bottom-6 left-6 size-6" />
-        <Registro className="absolute right-6 bottom-6 size-6" />
-      </div>
       {/* o galão fica preso ao formulário, centrado na altura dele e a uma distância fixa, como figura ao lado do texto */}
       <div className="relative w-full max-w-[22rem]">
         <div aria-hidden="true" className="pointer-events-none absolute top-1/2 left-[calc(100%+6rem)] hidden w-[18rem] -translate-y-1/2 opacity-60 xl:block">

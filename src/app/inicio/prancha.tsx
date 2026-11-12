@@ -133,18 +133,6 @@ export function Galao({ id, className = "" }: { id: string; className?: string }
   );
 }
 
-/** Marcas de registro nos cantos, como numa prancha impressa. */
-export function Registro({ className = "" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" className={`ink ${className}`} aria-hidden="true">
-      <g style={d(0)}>
-        <circle pathLength={1} cx={12} cy={12} r={6} />
-        <path pathLength={1} d="M12 0 V24 M0 12 H24" />
-      </g>
-    </svg>
-  );
-}
-
 /** Régua vertical em centímetros, na margem da prancha. */
 export function Regua({ className = "" }: { className?: string }) {
   const marcas = Array.from({ length: 41 }, (_, i) => i);
