@@ -5,6 +5,7 @@ import { parsePeriod } from "@/lib/period";
 import { paymentsByDay } from "@/domain/receivables";
 import { expensesTotal } from "@/domain/expenses";
 import { Difference, Empty, Money, PageHeader, fmtDateTime } from "@/components/ui";
+import { DivisaoPagamento } from "@/components/divisao-pagamento";
 
 export const metadata = { title: "Relatórios" };
 
@@ -101,6 +102,15 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
             className={`mt-1 block text-2xl font-semibold tracking-[-0.03em] ${sum("total") - spent < 0 ? "text-danger" : ""}`}
           />
         </div>
+        <DivisaoPagamento
+          className="border-t border-line p-5 sm:col-span-3"
+          partes={[
+            { rotulo: "Dinheiro", cents: sum("cash") },
+            { rotulo: "Pix", cents: sum("pix") },
+            { rotulo: "Cartão", cents: sum("card") },
+            { rotulo: "Fiado", cents: sum("credit") },
+          ]}
+        />
         <p className="border-t border-line px-5 py-3 text-[13px] text-muted sm:col-span-3">
           Fiado recebido no período: <Money cents={fiadoTotal} className="font-medium text-fg" />. Já contado como venda no dia da entrega. Devoluções de pedidos estornados não entram nas despesas acima, porque a venda estornada já saiu das vendas.
         </p>

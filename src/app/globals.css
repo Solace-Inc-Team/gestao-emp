@@ -1748,3 +1748,125 @@ details[open] > summary.desvio .desvio-seta {
     animation: none;
   }
 }
+
+/* histórico do pedido como trilho de rota: cada passo é uma parada ligada à seguinte, e a parada
+   mais recente fica marcada. Ao abrir, os trechos se desenham de cima para baixo, um depois do outro. */
+.trilho > li {
+  position: relative;
+  padding-left: 1.5rem;
+  padding-bottom: 0.875rem;
+}
+.trilho > li:last-child {
+  padding-bottom: 0;
+}
+.trilho > li::before {
+  content: "";
+  position: absolute;
+  left: 4.5px;
+  top: 15px;
+  bottom: 1px;
+  width: 1px;
+  background: color-mix(in srgb, var(--muted) 50%, transparent);
+  transform-origin: top;
+  animation: trilho-trecho var(--dur-slow) var(--ease-chegada) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+.trilho > li:last-child::before {
+  display: none;
+}
+.trilho > li::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1.5px solid var(--muted);
+  background: var(--surface);
+}
+.trilho > li:last-child::after {
+  border-color: var(--marca);
+  background: var(--marca);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  animation: trilho-chega var(--dur-slow) var(--ease-chegada) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+@keyframes trilho-trecho {
+  from {
+    transform: scaleY(0);
+  }
+}
+@keyframes trilho-chega {
+  from {
+    transform: scale(0.4);
+    box-shadow: 0 0 0 0 var(--accent-soft);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .trilho > li::before,
+  .trilho > li::after {
+    animation: none;
+  }
+}
+
+/* estoque: o vasilhame de cada produto enche até a proporção de cheios na loja quando a tela abre */
+.nivel-vasilhame {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+.nivel-vasilhame .nivel {
+  fill: var(--marca);
+  stroke: none;
+  opacity: 0.35;
+  transform-box: fill-box;
+  transform-origin: bottom;
+  scale: 1 var(--nivel);
+  animation: vasilhame-enche 700ms var(--ease-chegada) calc(120ms + var(--i, 0) * 80ms) both;
+}
+.nivel-vasilhame.text-danger .nivel {
+  fill: currentColor;
+}
+@keyframes vasilhame-enche {
+  from {
+    scale: 1 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nivel-vasilhame .nivel {
+    animation: none;
+  }
+}
+
+/* divisão do dinheiro: cada trecho da barra se estende da esquerda, um depois do outro */
+.divisao > span {
+  transform-origin: left;
+  animation: divisao-trecho 520ms var(--ease-chegada) calc(150ms + var(--i, 0) * 110ms) both;
+}
+@keyframes divisao-trecho {
+  from {
+    scale: 0 1;
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .divisao > span {
+    animation: none;
+  }
+}
+
+/* topo da página inicial: os vasilhames inclinam para o cursor apoiados na base, sem pressa,
+   e a água do galão gira ao contrário para ficar nivelada */
+.inclina .vasilhame-topo {
+  rotate: calc(var(--mx, 0) * 2.5deg);
+  transform-origin: 50% 92%;
+  transition: rotate 900ms var(--ease-chegada);
+}
+.inclina .vasilhame-topo .agua {
+  rotate: calc(var(--mx, 0) * -2.5deg);
+  transform-origin: 160px 366px;
+  transition: rotate 900ms var(--ease-chegada);
+}

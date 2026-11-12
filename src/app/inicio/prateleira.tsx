@@ -2,7 +2,7 @@
 // por onde passa uma onda que esvazia e enche cada um: saiu cheio, voltou vazio.
 // Sem movimento pedido, a fileira fica parada com cheios e vazios misturados.
 
-function Galao() {
+export function ContornoGalao() {
   return (
     <>
       <path d="M8 2.5h6M8.5 2.5v3.5h5V2.5" />
@@ -11,7 +11,7 @@ function Galao() {
   );
 }
 
-function Botijao() {
+export function ContornoBotijao() {
   return (
     <>
       <path d="M6.5 7.5V4.5a1.5 1.5 0 0 1 1.5-1.5h6a1.5 1.5 0 0 1 1.5 1.5v3" />
@@ -31,7 +31,7 @@ export function Prateleira({ quantos = 14, className = "" }: { quantos?: number;
           <svg key={i} viewBox="0 0 22 32" className="vasilhame h-11 w-[30px] shrink-0" style={{ "--i": i } as React.CSSProperties}>
             {/* o nível é o que esvazia e enche; fica atrás do contorno, preso ao fundo */}
             <rect className="nivel" x="4" y={galao ? 9 : 10} width="14" height={galao ? 20.5 : 17} rx="3" data-parado={i % 3 === 1 ? "vazio" : undefined} />
-            {galao ? <Galao /> : <Botijao />}
+            {galao ? <ContornoGalao /> : <ContornoBotijao />}
           </svg>
         );
       })}

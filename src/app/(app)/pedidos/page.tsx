@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ViewTransition } from "react";
 import { Plus, Search, ReceiptText } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { countOrdersByStatus, listOrders } from "@/domain/queries";
@@ -52,12 +53,18 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
               key={v}
               href={href(v)}
               aria-current={on ? "page" : undefined}
-              className={`-mb-px flex shrink-0 items-center gap-1.5 border-b-2 pb-2.5 text-[13px] font-medium transition-colors ${
-                on ? "border-fg text-fg" : "border-transparent text-muted hover:text-fg"
+              className={`relative flex shrink-0 items-center gap-1.5 pb-2.5 text-[13px] font-medium transition-colors ${
+                on ? "text-fg" : "text-muted hover:text-fg"
               }`}
             >
               {l}
               <span className="num text-xs text-muted">{n}</span>
+              {/* o traço da aba ativa é um só: ao trocar de filtro ele corre da aba antiga até a clicada */}
+              {on && (
+                <ViewTransition name="aba-pedidos" share="move" default="none">
+                  <span aria-hidden="true" className="absolute inset-x-0 -bottom-px h-0.5 bg-fg" />
+                </ViewTransition>
+              )}
             </Link>
           );
         })}

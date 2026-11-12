@@ -4,6 +4,7 @@ import { listProducts, listSuppliers, recentMovements, stockOverview } from "@/d
 import { ActionForm } from "@/components/action-form";
 import { adjustAction, damagedAction, purchaseAction } from "@/app/actions";
 import { PageHeader, fmtDateTime } from "@/components/ui";
+import { NivelVasilhame } from "@/components/nivel-vasilhame";
 
 export const metadata = { title: "Estoque" };
 
@@ -37,11 +38,21 @@ export default async function Estoque() {
             </tr>
           </thead>
           <tbody>
-            {stock.filter((p) => p.active).map((p) => (
+            {stock.filter((p) => p.active).map((p, i) => (
               <tr key={p.id}>
                 <td className="font-medium">
-                  {p.name}
-                  {!p.returnable && <p className="text-sm font-normal text-muted">não retornável</p>}
+                  <div className="flex items-center gap-3">
+                    {/* sem casco que volta não há cheio e vazio para comparar; o espaço fica para alinhar os nomes */}
+                    {p.returnable ? (
+                      <NivelVasilhame nome={p.name} cheios={p.fullStore} vazios={p.emptyStore} baixo={p.low} ordem={i} />
+                    ) : (
+                      <span className="w-[25px] shrink-0" />
+                    )}
+                    <div>
+                      {p.name}
+                      {!p.returnable && <p className="text-sm font-normal text-muted">não retornável</p>}
+                    </div>
+                  </div>
                 </td>
                 <td className={`num text-right text-xl font-semibold ${p.low ? "text-danger" : ""}`}>
                   {p.fullStore}

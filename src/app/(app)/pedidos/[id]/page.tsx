@@ -114,10 +114,10 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
 
           <section className="panel p-4">
             <h2 className="h2 mb-3">Histórico</h2>
-            <ol className="space-y-2">
+            <ol className="trilho">
               {o.history.map((h, i) => (
                 // no celular a data vai sempre para baixo; no computador, sempre à direita
-                <li key={i} className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-3">
+                <li key={i} style={{ "--i": i } as React.CSSProperties} className="flex flex-col gap-0.5 sm:flex-row sm:justify-between sm:gap-3">
                   <span>
                     {h.action === "pedido.criar" && o.origin === "portal" ? (
                       "Pedido feito pelo cliente no site"

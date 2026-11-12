@@ -10,6 +10,7 @@ import { cashEntryAction, resolveDifferenceAction, voidCashEntryAction } from "@
 import { expenseCategories } from "@/domain/expenses";
 import { resolutions } from "@/domain/shifts";
 import { formatBRL } from "@/lib/money";
+import { DivisaoPagamento } from "@/components/divisao-pagamento";
 import { CloseShiftForm } from "./close-form";
 
 export const metadata = { title: "Acerto" };
@@ -80,6 +81,15 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
             Depois do acerto, {formatBRL(refundedAfter)} em vendas em dinheiro deste turno foram estornados. O acerto continua valendo como foi feito.
           </p>
         )}
+        <DivisaoPagamento
+          className="mt-6 border-t border-line pt-6"
+          partes={[
+            { rotulo: "Dinheiro", cents: cashSales },
+            { rotulo: "Pix", cents: s.summary.pix },
+            { rotulo: "Cartão", cents: s.summary.cartao },
+            { rotulo: "Fiado", cents: s.summary.fiado },
+          ]}
+        />
         <p className="mt-5 text-sm text-muted">
           Pix {formatBRL(s.summary.pix)}, cartão {formatBRL(s.summary.cartao)} e fiado {formatBRL(s.summary.fiado)} não passam pela mão do entregador.
         </p>
