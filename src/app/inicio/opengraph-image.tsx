@@ -25,9 +25,11 @@ export default function Image() {
             <span style={{ fontSize: 30, fontWeight: 700, color: texto, letterSpacing: -0.5 }}>Depósito</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <span style={{ fontSize: 76, fontWeight: 700, color: texto, lineHeight: 1.02, letterSpacing: -3 }}>Todo casco volta. Todo real fecha.</span>
+            {/* uma pergunta por linha, como no topo da página */}
+            <span style={{ fontSize: 52, fontWeight: 700, color: texto, lineHeight: 1.08, letterSpacing: -2, whiteSpace: "nowrap" }}>Onde está cada casco.</span>
+            <span style={{ fontSize: 52, fontWeight: 700, color: texto, lineHeight: 1.08, letterSpacing: -2, whiteSpace: "nowrap" }}>Quanto cada entregador te deve.</span>
             <span style={{ marginTop: 22, fontSize: 26, color: "#555", lineHeight: 1.35 }}>
-              Pedido, entrega, cascos e o dinheiro de cada entregador, do primeiro pedido da manhã ao acerto da noite.
+              Pedido, entrega, estoque e acerto no mesmo lugar. Sem caderno e sem conta de cabeça.
             </span>
           </div>
         </div>

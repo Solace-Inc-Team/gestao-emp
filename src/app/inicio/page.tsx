@@ -20,10 +20,11 @@ import { PRECO, WHATSAPP, linkWhatsApp } from "./contato";
 export const metadata = {
   title: { absolute: "Depósito: gestão para revendas de água e gás" },
   description:
-    "Pedido, entrega, cascos e o dinheiro de cada entregador num sistema só, do primeiro pedido da manhã ao acerto da noite.",
+    "Pedido, entrega, estoque e acerto anotados no mesmo lugar, do primeiro pedido da manhã ao fechamento da noite. Sem caderno e sem conta de cabeça.",
 };
 
-const titulo = "Todo casco volta. Todo real fecha.".split(" ");
+// as duas perguntas que o dono faz todo dia, uma por linha
+const titulo = ["Onde está cada casco.", "Quanto cada entregador te deve."].map((l) => l.split(" "));
 const atraso = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
 const temZap = WHATSAPP !== "";
 const zap = linkWhatsApp("Olá! Quero conhecer o Depósito para a minha revenda.");
@@ -192,18 +193,22 @@ export default function Inicio() {
               <span className="size-1.5 rounded-full bg-ok" />
               Para revendas de água e gás
             </p>
-            <h1 className="mx-auto mt-6 max-w-[14ch] text-[2.6rem] leading-[1.02] font-semibold tracking-[-0.045em] text-balance sm:text-[4.25rem]">
-              {/* cada palavra entra sozinha; o espaço fica fora para não ser comido pelo inline-block */}
-              {titulo.map((w, i) => (
-                <Fragment key={i}>
-                  <span style={atraso(60 + i * 35)} className="hero-word">
-                    {w}
-                  </span>{" "}
-                </Fragment>
+            <h1 className="mx-auto mt-6 max-w-[16ch] text-[2.5rem] leading-[1.04] font-semibold tracking-[-0.045em] text-balance sm:max-w-none sm:text-[3.25rem] lg:text-[4.25rem]">
+              {/* cada palavra entra sozinha, na ordem de leitura; o espaço fica fora para não ser comido pelo inline-block */}
+              {titulo.map((linha, l) => (
+                <span key={l} className="block">
+                  {linha.map((w, i) => (
+                    <Fragment key={i}>
+                      <span style={atraso(60 + (l * titulo[0].length + i) * 35)} className="hero-word">
+                        {w}
+                      </span>{" "}
+                    </Fragment>
+                  ))}
+                </span>
               ))}
             </h1>
-            <p style={atraso(300)} className="hero-in mx-auto mt-5 max-w-[36rem] text-[16px] leading-relaxed text-muted sm:text-[17px]">
-              Pedido, entrega, cascos e o dinheiro de cada entregador num sistema só, do primeiro pedido da manhã ao acerto da noite.
+            <p style={atraso(320)} className="hero-in mx-auto mt-5 max-w-[40rem] text-[16px] leading-relaxed text-balance text-muted sm:text-[17px]">
+              Pedido, entrega, estoque e acerto anotados no mesmo lugar, do primeiro pedido da manhã ao fechamento da noite. Sem caderno e sem conta de cabeça.
             </p>
             <div style={atraso(380)} className="hero-in mt-8 flex flex-wrap justify-center gap-3">
               <BotaoContato />
@@ -334,7 +339,7 @@ export default function Inicio() {
             <BairroRota className="pointer-events-none absolute inset-0 -z-10 h-full w-full" />
             <p className="font-mono text-[12px] tracking-[0.14em] text-white/80 uppercase">18:00 · Acerto</p>
             <h2 className="reveal mx-auto mt-3 max-w-[20ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] text-balance sm:text-[2.75rem]">
-              Fechar o dia sem conta de cabeça.
+              Feche o dia sabendo de tudo.
             </h2>
             <p className="mx-auto mt-4 max-w-[32rem] text-white/80">
               {temZap ? "Chame no WhatsApp e veja o Depósito funcionando com a rotina da sua revenda." : "Dono, caixa, atendente e entregador, cada um vendo só o que é seu."}
