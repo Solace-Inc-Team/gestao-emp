@@ -26,28 +26,28 @@
   color-scheme: light;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --marca: #6d9dff;
-    --papel: #0b0f17;
-    --gota: #0b0f17;
-    --bg: #0a0a0a;
-    --surface: #111111;
-    --subtle: #1b1b1c;
-    --line: #262628;
-    --fg: #ededed;
-    --muted: #a1a1a1;
-    --accent: var(--marca);
-    --accent-soft: rgb(109 157 255 / 0.14);
-    --ok: #46c06a;
-    --ok-soft: rgb(70 192 106 / 0.14);
-    --warn: #e5a50a;
-    --warn-fg: #f2bd4b;
-    --warn-soft: rgb(229 165 10 / 0.14);
-    --danger: #ff6b6b;
-    --danger-soft: rgb(255 107 107 / 0.14);
-    color-scheme: dark;
-  }
+/* o tema vem do atributo que o script do layout põe antes de desenhar a página:
+   a escolha da pessoa (claro ou escuro) ou, no automático, o tema do aparelho */
+:root[data-tema="escuro"] {
+  --marca: #6d9dff;
+  --papel: #0b0f17;
+  --gota: #0b0f17;
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --subtle: #1b1b1c;
+  --line: #262628;
+  --fg: #ededed;
+  --muted: #a1a1a1;
+  --accent: var(--marca);
+  --accent-soft: rgb(109 157 255 / 0.14);
+  --ok: #46c06a;
+  --ok-soft: rgb(70 192 106 / 0.14);
+  --warn: #e5a50a;
+  --warn-fg: #f2bd4b;
+  --warn-soft: rgb(229 165 10 / 0.14);
+  --danger: #ff6b6b;
+  --danger-soft: rgb(255 107 107 / 0.14);
+  color-scheme: dark;
 }
 
 @theme inline {

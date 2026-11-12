@@ -1,5 +1,6 @@
 import { Fragment } from "react";
 import Link from "next/link";
+import { TemaBotao } from "@/components/tema-botao";
 import { ArrowRight, Building2, FileSpreadsheet, KeyRound, WifiOff } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { InView } from "@/components/in-view";
@@ -50,6 +51,7 @@ export default function Inicio() {
           <nav className="flex items-center gap-6 text-[13px] text-muted">
             <a href="#como-funciona" className="hidden hover:text-fg sm:inline">Como funciona</a>
             <a href="#recursos" className="hidden hover:text-fg sm:inline">Recursos</a>
+            <TemaBotao className="size-9 sm:size-8" />
             <Link href="/login" className="btn px-3 text-[13px] sm:h-8">Entrar</Link>
           </nav>
         </div>

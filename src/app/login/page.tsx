@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { TemaBotao } from "@/components/tema-botao";
 import { getUser } from "@/lib/auth";
 import { login } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
@@ -59,10 +60,11 @@ export default async function LoginPage() {
           )}
         </div>
       </div>
-      <footer className="mt-16 flex gap-4 text-xs text-muted">
+      <footer className="mt-16 flex items-center gap-4 text-xs text-muted">
         <span>Solace</span>
         <Link href="/termos" className="hover:text-fg">Termos de uso</Link>
         <Link href="/privacidade" className="hover:text-fg">Privacidade</Link>
+        <TemaBotao className="size-8" />
       </footer>
     </main>
   );

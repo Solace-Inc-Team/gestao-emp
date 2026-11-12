@@ -1,5 +1,6 @@
 import { ViewTransition } from "react";
 import Link from "next/link";
+import { TemaBotao } from "@/components/tema-botao";
 import { CircleHelp, Clock3, KeyRound, LogOut, MapPin, Phone } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { getShift, getSettings, itemsForOrders, listOrders, openShiftFor, getOrder } from "@/domain/queries";
@@ -32,6 +33,7 @@ export default async function Entregador() {
           <Link href="/ajuda" aria-label="Ajuda" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
             <CircleHelp size={17} strokeWidth={1.75} />
           </Link>
+          <TemaBotao className="size-11" />
           <Link href="/senha" aria-label="Trocar senha" className="grid size-11 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
             <KeyRound size={17} strokeWidth={1.75} />
           </Link>

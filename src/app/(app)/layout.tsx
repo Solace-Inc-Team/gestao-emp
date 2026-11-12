@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { TemaBotao } from "@/components/tema-botao";
 import { KeyRound, LogOut } from "lucide-react";
 import { requireUser } from "@/lib/auth";
 import { logout } from "@/app/actions";
@@ -61,9 +62,13 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       <aside className="border-b border-line lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
         <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3 lg:pt-5">
           <MarcaDaSessao />
-          <form action={logout} className="lg:hidden">
-            <button className="tap px-2 text-[13px] text-muted hover:text-fg">Sair</button>
-          </form>
+          {/* o tema fica no alto nas duas larguras; Sair aqui só no celular (no computador está no rodapé) */}
+          <div className="flex items-center gap-1">
+            <TemaBotao className="size-11 lg:size-8" />
+            <form action={logout} className="lg:hidden">
+              <button className="tap px-2 text-[13px] text-muted hover:text-fg">Sair</button>
+            </form>
+          </div>
         </div>
         <p className="hidden truncate px-5 pb-5 text-[13px] text-muted lg:block">{user.tenantName}</p>
         <NavLinks groups={groups} />
