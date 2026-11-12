@@ -14,6 +14,7 @@ import { DemoPortal } from "./demo-portal";
 import { Prateleira } from "./prateleira";
 import { DadosSeus, EmpresaIsolada, SenhaDeNovo } from "./diagramas";
 import { RelogioDoDia, paradas } from "./relogio-do-dia";
+import { MapaVivo } from "./mapa-vivo";
 import { PRECO, WHATSAPP, linkWhatsApp } from "./contato";
 
 export const metadata = {
@@ -187,8 +188,9 @@ export default function Inicio() {
       </header>
 
       <main>
-        <section className="prancha border-b border-line">
-          <div className="mx-auto max-w-6xl px-4 pt-20 pb-16 text-center sm:px-6 sm:pt-28 sm:pb-20">
+        {/* o topo ocupa a primeira tela inteira: o bairro preenche o que sobra embaixo dos botões */}
+        <section className="prancha flex min-h-[calc(100svh-3.5rem)] flex-col overflow-hidden border-b border-line pt-20 sm:pt-24">
+          <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
             <p style={atraso(0)} className="hero-in inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[12px] text-muted">
               <span className="size-1.5 rounded-full bg-ok" />
               Para revendas de água e gás
@@ -215,10 +217,9 @@ export default function Inicio() {
                 Já é cliente? <Link href="/login" className="text-fg underline-offset-4 hover:underline">Entrar</Link>
               </p>
             )}
-            <InView className="hero-in mx-auto mt-14 max-w-5xl sm:mt-20">
-              <RelogioDoDia />
-            </InView>
           </div>
+          {/* o bairro com as entregas acontecendo, de ponta a ponta da tela */}
+          <MapaVivo className="hero-in mt-12 flex-1 sm:mt-14" />
         </section>
 
         <section id="dia" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6 sm:py-32">
@@ -226,6 +227,10 @@ export default function Inicio() {
           <h2 className="reveal mt-2 max-w-[22ch] text-[2rem] leading-tight font-semibold tracking-[-0.035em] sm:text-[2.5rem]">
             Das 7h às 18h, cada coisa anotada no lugar certo.
           </h2>
+          {/* o índice do dia: cada parada leva à sua hora logo abaixo */}
+          <InView className="mt-12 max-w-5xl">
+            <RelogioDoDia />
+          </InView>
 
           <ol className="mt-16 sm:mt-20">
             {paradas.map((p, i) => {

@@ -1,8 +1,8 @@
 // Esquemas em linha para as garantias da página inicial, no mesmo traço do galão e do botijão.
 // Cada um explica a ideia em vez de enfeitar, numa cor só. Os traços se desenham quando o bloco
-// aparece (classe ink + data-inview do InView em volta); depois, ao passar o cursor (ou sozinho, no
-// celular), a história acontece: um traço curto corre pela ligação (classe fluxo) e cada esquema
-// tem o seu detalhe, como o cadeado que abre e a planilha que se preenche.
+// aparece (classe ink + data-inview do InView em volta); depois a história se repete sozinha:
+// um traço curto corre pela ligação (classe fluxo) e cada esquema tem o seu detalhe, como o
+// cadeado que abre e a planilha que se preenche.
 
 type P = { className?: string };
 const d = (s: number) => ({ "--d": `${s}s` }) as React.CSSProperties;

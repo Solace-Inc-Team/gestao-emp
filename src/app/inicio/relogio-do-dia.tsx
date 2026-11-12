@@ -20,8 +20,12 @@ const CICLO = 14;
 function Linha({ xs, largura, curto }: { xs: number[]; largura: number; curto: boolean }) {
   const y = 70;
   const vars = Object.fromEntries(xs.map((x, i) => [`--x${i}`, `${x}px`])) as React.CSSProperties;
-  // no computador a régua mostra todas as horas de 7h às 19h; no celular só as paradas
-  const marcas = curto ? [] : Array.from({ length: 13 }, (_, i) => xs[0] + (i * (xs[5] - xs[0])) / 11);
+  // no computador a régua marca as horas de 7h às 19h que não são parada (embaixo do anel a marca vira um pino)
+  const marcas = curto
+    ? []
+    : Array.from({ length: 13 }, (_, i) => i)
+        .filter((i) => !paradas.some((p) => p.hora === 7 + i))
+        .map((i) => xs[0] + (i * (xs[5] - xs[0])) / 11);
   return (
     <svg
       viewBox={`0 0 ${largura} 130`}
