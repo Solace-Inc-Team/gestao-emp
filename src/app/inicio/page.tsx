@@ -7,7 +7,6 @@ import { Logo } from "@/components/logo";
 import { InView } from "@/components/in-view";
 import { LiveNumber } from "@/components/live-number";
 import { BairroRota, Botijao, Galao, Regua } from "./prancha";
-import { Inclina } from "./inclina";
 import { DemoAcerto } from "./demo-acerto";
 import { DemoCelular } from "./demo-celular";
 import { DemoEntrega } from "./demo-entrega";
@@ -64,11 +63,11 @@ export default function Inicio() {
       <main>
         <section className="prancha relative isolate overflow-hidden border-b border-line">
           {/* prancha técnica: régua e os dois vasilhames em desenho de engenharia */}
-          <Inclina className="pointer-events-none absolute inset-0 -z-10 mx-auto max-w-[90rem]">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 -z-10 mx-auto max-w-[90rem]">
             <Regua className="absolute top-28 left-8 hidden h-[26rem] lg:block" />
-            <Botijao className="vasilhame-topo absolute top-28 left-[max(1rem,calc(50%-40rem))] hidden w-[17rem] lg:block" />
-            <Galao id="galao-topo" className="vasilhame-topo absolute top-28 right-[max(1rem,calc(50%-40rem))] hidden w-[17rem] lg:block" />
-          </Inclina>
+            <Botijao className="absolute top-28 left-[max(1rem,calc(50%-40rem))] hidden w-[17rem] lg:block" />
+            <Galao id="galao-topo" className="absolute top-28 right-[max(1rem,calc(50%-40rem))] hidden w-[17rem] lg:block" />
+          </div>
           <div className="mx-auto max-w-6xl px-4 pt-20 text-center sm:px-6 sm:pt-28">
             <p style={atraso(0)} className="hero-in inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[12px] text-muted">
               <span className="size-1.5 rounded-full bg-ok" />

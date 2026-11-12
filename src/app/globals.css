@@ -1858,15 +1858,3 @@ details[open] > summary.desvio .desvio-seta {
   }
 }
 
-/* topo da página inicial: os vasilhames inclinam para o cursor apoiados na base, sem pressa,
-   e a água do galão gira ao contrário para ficar nivelada */
-.inclina .vasilhame-topo {
-  rotate: calc(var(--mx, 0) * 2.5deg);
-  transform-origin: 50% 92%;
-  transition: rotate 900ms var(--ease-chegada);
-}
-.inclina .vasilhame-topo .agua {
-  rotate: calc(var(--mx, 0) * -2.5deg);
-  transform-origin: 160px 366px;
-  transition: rotate 900ms var(--ease-chegada);
-}
