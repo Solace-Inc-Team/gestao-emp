@@ -98,8 +98,21 @@ Faça isso uma vez antes de entrar qualquer dado real, e repita a cada poucos me
 
 1. Baixe o backup mais recente do bucket R2.
 2. No Coolify, crie um banco temporário e use **Import Backup** com esse arquivo.
-3. Aponte uma cópia da aplicação para esse banco (ou consulte direto) e confira se empresas, pedidos e acertos estão lá.
+3. Aponte uma cópia da aplicação para esse banco e abra o sistema com um dono: confira empresas, pedidos e acertos.
 4. Apague o banco temporário.
+
+Num Postgres novo, a importação reclama de `role "app_tenant" does not exist` (dezenas de linhas). É esperado: o backup
+leva o banco, não os papéis do servidor. Ao subir, a aplicação recria o papel, as permissões e as regras de isolamento
+entre empresas. Para conferir, no terminal do banco, depois da aplicação subir:
+
+```sql
+-- tabelas protegidas sem regra; o certo é não voltar nenhuma linha
+select relname from pg_class c
+where relrowsecurity and not exists (select 1 from pg_policy p where p.polrelid = c.oid);
+```
+
+Se voltar alguma tabela, a aplicação não subiu apontando para esse banco. Não libere o acesso antes disso: sem as regras, as telas
+das empresas falham.
 
 Backup que nunca foi restaurado não é garantia de nada.
 

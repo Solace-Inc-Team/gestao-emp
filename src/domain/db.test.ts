@@ -733,3 +733,22 @@ test("painel: filtro de entregador mostra só o turno e as vendas dele", async (
   assert.equal(vazio.revenue, 0);
   assert.equal(vazio.recent.length, 0);
 });
+
+test("backup restaurado sem as regras de isolamento: a subida recria", async () => {
+  const { db, withTenant, runMigrations } = m.db;
+  const { orders } = m.schema;
+  const { sql } = await import("drizzle-orm");
+  // como o pg_restore deixa o banco quando o papel app_tenant não existia no servidor novo
+  await db.execute(sql`drop policy tenant_isolation on suppliers`);
+  await db.execute(sql`revoke all on orders from app_tenant`);
+
+  await runMigrations();
+
+  const [{ n }] = await db.execute<{ n: number }>(
+    sql`select count(*)::int n from pg_policy where polrelid = 'suppliers'::regclass and polname = 'tenant_isolation'`,
+  );
+  assert.equal(n, 1);
+  const visiveis = await withTenant(A.t.id, () => db.select({ t: orders.tenantId }).from(orders));
+  assert.ok(visiveis.length > 0 && visiveis.every((o) => o.t === A.t.id));
+  await assert.rejects(withTenant(A.t.id, () => db.execute(sql`insert into suppliers (tenant_id, name) values (${B.t.id}, 'x')`)));
+});

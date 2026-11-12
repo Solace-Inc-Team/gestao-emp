@@ -57,7 +57,42 @@ export function scoped<A extends [string, ...unknown[]], R>(fn: (...args: A) => 
 /** cliente postgres direto, para quando o drizzle atrapalha (ex.: linhas como listas na exportação) */
 export const pgClient = conn.client;
 
-export const runMigrations = () => migrate(conn.db, { migrationsFolder: "drizzle" });
+export async function runMigrations() {
+  await migrate(conn.db, { migrationsFolder: "drizzle" });
+  await conn.db.execute(garantirIsolamento);
+}
+
+// O backup (pg_dump) guarda o banco, mas não os papéis do servidor. Restaurado num Postgres novo,
+// o app_tenant não existe e as permissões e políticas dele ficam de fora, mesmo com as migrações
+// já marcadas como feitas. Toda subida refaz o que faltar; as tabelas com RLS ligado dizem onde.
+const garantirIsolamento = sql.raw(`
+DO $$
+DECLARE
+  t text;
+  col text;
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'app_tenant') THEN
+    CREATE ROLE app_tenant NOLOGIN;
+  END IF;
+  IF NOT pg_has_role(current_user, 'app_tenant', 'MEMBER') THEN
+    EXECUTE format('GRANT app_tenant TO %I', current_user);
+  END IF;
+  GRANT USAGE ON SCHEMA public TO app_tenant;
+  GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO app_tenant;
+  ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO app_tenant;
+  FOR t IN
+    SELECT c.relname FROM pg_class c JOIN pg_namespace n ON n.oid = c.relnamespace
+    WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relrowsecurity
+      AND NOT EXISTS (SELECT 1 FROM pg_policy p WHERE p.polrelid = c.oid AND p.polname = 'tenant_isolation')
+  LOOP
+    col := CASE WHEN t = 'tenants' THEN 'id' ELSE 'tenant_id' END;
+    EXECUTE format(
+      'CREATE POLICY tenant_isolation ON %I TO app_tenant
+         USING (%2$I = current_setting(''app.tenant_id'')::uuid)
+         WITH CHECK (%2$I = current_setting(''app.tenant_id'')::uuid)', t, col);
+  END LOOP;
+END
+$$`);
 
 /** Transação de escrita de uma empresa, já dentro do escopo dela (RLS ativo). */
 export const tenantTransaction = <T>(ctx: { tenantId: string }, fn: (tx: Tx) => Promise<T>) =>
