@@ -1,12 +1,24 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useState, useTransition, type FormEvent, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
 
 // No celular o filtro fica recolhido para os números do dia aparecerem primeiro;
 // no computador ele está sempre à vista. Começa aberto quando já há filtro aplicado.
+// Escolher o dia ou o entregador já aplica: sem botão "Ver" e sem recarregar a página.
 export function FiltroPainel({ ativo, children, acao }: { ativo: boolean; children: ReactNode; acao: ReactNode }) {
   const [aberto, setAberto] = useState(ativo);
+  const router = useRouter();
+  const [, iniciar] = useTransition();
+  const aplicar = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    // o padrão fica fora do endereço: "Todos" (vazio) e o dia de hoje (o máximo do campo de data)
+    const busca = new URLSearchParams();
+    for (const campo of Array.from(e.currentTarget.elements) as HTMLInputElement[])
+      if (campo.name && campo.value && campo.value !== campo.max) busca.set(campo.name, campo.value);
+    iniciar(() => router.replace(busca.size ? `/?${busca}` : "/", { scroll: false }));
+  };
   return (
     <div className="flex flex-wrap items-end gap-2">
       <button
@@ -22,6 +34,8 @@ export function FiltroPainel({ ativo, children, acao }: { ativo: boolean; childr
       {acao}
       <form
         id="filtro-painel"
+        onSubmit={aplicar}
+        onChange={(e) => e.currentTarget.requestSubmit()}
         aria-label="Filtrar o painel"
         className={`${aberto ? "flex" : "hidden"} order-last w-full flex-wrap items-end gap-2 sm:order-first sm:flex sm:w-auto`}
       >

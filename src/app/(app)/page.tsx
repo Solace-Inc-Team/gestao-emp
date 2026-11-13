@@ -78,7 +78,6 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
               ))}
             </select>
           </div>
-          <button className="btn">Ver</button>
           {filtrado && <Link href="/" className="btn">Hoje, todos</Link>}
         </FiltroPainel>
       </div>
@@ -86,7 +85,8 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
       {passos && <PrimeirosPassos feito={passos} />}
 
       <section className="panel mb-6 grid divide-line sm:grid-cols-3 sm:divide-x">
-        <div className="p-5">
+        {/* cada número no alto e a explicação no pé: os três cartões ficam alinhados mesmo com o gráfico só no primeiro */}
+        <div className="flex flex-col p-5">
           <p className="text-muted">Vendido {noDia}</p>
           <LiveNumber value={d.revenue} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
           <p className="mt-1 text-sm text-muted">
@@ -100,19 +100,19 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
           </p>
           <SemanaBarras semana={d.week} />
         </div>
-        <div className="border-t border-line p-5 sm:border-t-0">
+        <div className="flex flex-col border-t border-line p-5 sm:border-t-0">
           <p className="text-muted">Dinheiro na rua agora</p>
           <LiveNumber value={d.cashInStreet} cents fromZero="once" className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]" />
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 text-sm text-muted sm:mt-auto">
             com {d.openShifts.length} {d.openShifts.length === 1 ? "entregador" : "entregadores"}, a acertar
           </p>
         </div>
-        <div className="border-t border-line p-5 sm:border-t-0">
+        <div className="flex flex-col border-t border-line p-5 sm:border-t-0">
           <p className="text-muted">Fila agora</p>
           <p className="num text-[2rem] leading-tight font-semibold tracking-[-0.03em]">
             <LiveNumber value={d.pending} fromZero="once" /> <span className="text-xl font-medium text-muted">aguardando</span>
           </p>
-          <p className="mt-1 text-sm text-muted">{d.inRoute} em rota</p>
+          <p className="mt-1 text-sm text-muted sm:mt-auto">{d.inRoute} em rota</p>
         </div>
       </section>
 
