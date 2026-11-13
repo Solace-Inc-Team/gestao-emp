@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import QRCode from "qrcode";
@@ -80,10 +81,14 @@ export default async function Senha() {
               aria-label="QR code para o app autenticador"
               dangerouslySetInnerHTML={{ __html: qr! }}
             />
-            <div>
+            <div className="min-w-0 flex-1">
               <ol className="list-decimal space-y-1.5 pl-4 text-[13px] text-muted">
                 <li>No app autenticador, adicione uma conta pelo QR code.</li>
-                <li>Sem câmera? Digite a chave: <code className="num break-all text-fg">{u.secret!.match(/.{1,4}/g)!.join(" ")}</code></li>
+                <li>Sem câmera? Digite a chave: <code className="num text-fg">
+                    {u.secret!.match(/.{1,4}/g)!.map((g, i) => (
+                      <Fragment key={i}>{i ? " " : ""}<span className="whitespace-nowrap">{g}</span></Fragment>
+                    ))}
+                  </code></li>
                 <li>Digite abaixo o código de 6 dígitos que aparecer.</li>
               </ol>
               <ActionForm action={confirmTotpAction} className="mt-4 flex flex-wrap items-end gap-3">

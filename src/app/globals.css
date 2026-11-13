@@ -837,20 +837,6 @@ body[data-confirmando] .deliver-btn {
   }
 }
 
-/* recursos na linguagem da prancha: número de figura */
-.fig {
-  display: block;
-  margin-bottom: 0.75rem;
-  color: var(--marca);
-  font-family: var(--font-mono);
-  font-size: 10.5px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-}
-li > span > .fig {
-  margin: 0;
-}
-
 /* ícones animados ---------------------------------------------------------------------------------
    Movimentos inspirados na lucide-animated, feitos em CSS sobre os mesmos ícones Lucide (sem a Motion):
    animam com o mouse sobre o link ou botão inteiro, e uma vez quando o item do menu vira a tela atual. */

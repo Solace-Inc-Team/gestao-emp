@@ -32,7 +32,7 @@ export default async function Admin() {
                 <tr>
                   <th>Empresa</th>
                   <th className="text-right">Pessoas</th>
-                  <th className="text-right">Pedidos 30d</th>
+                  <th className="text-right">Pedidos em 30 dias</th>
                   <th>Último pedido</th>
                 </tr>
               </thead>
@@ -104,7 +104,7 @@ export default async function Admin() {
         </section>
 
         {deletions.length > 0 && (
-          <section className="panel lg:col-start-1">
+          <section className="panel lg:col-start-1 lg:self-start">
             <h2 className="h2 border-b border-line px-4 py-3">Exclusões feitas</h2>
             <ul>
               {deletions.map((d) => (
@@ -122,7 +122,7 @@ export default async function Admin() {
           </section>
         )}
 
-        <section className="panel p-4 lg:self-start">
+        <section className="panel p-4 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:self-start">
           <h2 className="h2 mb-1">Nova empresa</h2>
           <p className="mb-3 text-sm text-muted">
             Cria a empresa e o acesso do dono. Ele cadastra produtos, equipe e estoque inicial na implantação.

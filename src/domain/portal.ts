@@ -22,8 +22,8 @@ export async function portalTenant(slug: string, filial?: string) {
     .from(branches)
     .where(and(eq(branches.tenantId, t.id), eq(branches.active, true)));
   const loja = lojas.find((b) => filial && b.slug === filial) ?? lojas.find((b) => b.main) ?? lojas[0];
-  // com uma filial só, o nome dela não aparece para o cliente
-  return { ...t, branchId: loja.id, branchName: lojas.length > 1 ? loja.name : null };
+  // só o nome de outra filial aparece para o cliente; "Principal" não diz nada a quem pede
+  return { ...t, branchId: loja.id, branchName: loja.main ? null : loja.name };
 }
 
 export const portalProducts = (tenantId: string) =>

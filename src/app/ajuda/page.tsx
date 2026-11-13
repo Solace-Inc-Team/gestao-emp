@@ -24,7 +24,7 @@ const secoes: Secao[] = [
         <h3>Lançar um pedido</h3>
         <ol>
           <li>Em <B>Novo pedido</B>, digite nome, telefone ou endereço em <B>Buscar por nome, telefone ou endereço</B> (a tecla <kbd>/</kbd> leva direto para a busca). Cliente novo: cadastre ali mesmo.</li>
-          <li>Use <B>+</B> e <B>−</B> em cada produto. Se o cliente não tem vasilhame vazio para trocar, marque a opção embaixo do produto: o casco entra no preço.</li>
+          <li>Use <B>+</B> e <B>−</B> em cada produto. Se o cliente não tem vasilhame vazio para trocar, marque <B>Cliente não tem vasilhame para trocar</B> e escolha: <B>Vender o vasilhame</B> (o casco entra no preço) ou <B>Emprestar (comodato)</B> (a loja empresta e não cobra; precisa do cliente identificado).</li>
           <li>Escolha o pagamento. Em dinheiro, preencha <B>Troco para</B> quando o cliente avisar a nota; o entregador já sai sabendo o troco.</li>
           <li>Desconto só até o limite que o dono definiu, sempre com motivo.</li>
           <li>Clique em <B>Lançar pedido</B> (ou <kbd>Ctrl</kbd> + <kbd>Enter</kbd>). O preço sempre vem do cadastro; não dá para mudar na hora.</li>
@@ -32,6 +32,10 @@ const secoes: Secao[] = [
         <p>Venda no balcão: use a aba <B>Venda no balcão</B>. O pedido já nasce entregue.</p>
         <h3>Despachar</h3>
         <p>Em <B>Entregas</B>, os pedidos esperando ficam à esquerda, do mais antigo para o mais novo. Escolha o entregador e clique em <B>Saiu para entrega</B>. Só aparece quem está com turno aberto.</p>
+        <h3>O cliente acompanha o pedido</h3>
+        <p>No pedido, <B>Mandar no WhatsApp</B> ou <B>Copiar link</B> manda ao cliente uma página que mostra se o pedido foi recebido, saiu ou foi entregue, sem login. Quem pede pelo site já recebe esse link no fim do pedido.</p>
+        <h3>Vasilhame emprestado (comodato)</h3>
+        <p>Na tela do cliente, <B>Vasilhames em comodato</B> mostra quantos cascos da loja estão com ele e a caução que deixou. Quando ele devolver, use <B>Receber vasilhames de volta</B>: os cascos voltam como vazios e, se houver caução, você registra quanto devolveu.</p>
         <h3>Quando o pedido volta</h3>
         <p>Se o entregador não conseguiu entregar, o pedido volta para a fila com o motivo em amarelo. Dá para mandar de novo, trocar o entregador ou cancelar. Cancelar só antes de sair; depois de sair, quem decide é o caixa ou o dono.</p>
       </>
@@ -94,7 +98,15 @@ const secoes: Secao[] = [
           <li><B>Produtos e preços</B>, <B>Equipe</B> (incluir pessoas, redefinir senha, desativar quem saiu) e <B>Configurações</B> (limite de desconto, prazo de atraso, chave Pix, pedido pelo site).</li>
           <li><B>Relatórios</B>: vendas por dia, entregador e produto; <B>Fechamento do dia</B> para imprimir; vendas em planilha.</li>
           <li><B>Auditoria</B>: quem fez o quê e quando, com o antes e depois de preços e ajustes.</li>
+          <li>Comodato de antes do sistema: na tela do cliente, <B>Registrar comodato que já existia</B>, com sua senha. Não mexe no estoque; os vasilhames emprestados aparecem em <B>Em comodato</B> no estoque.</li>
           <li>Ative a verificação em duas etapas em <B>Trocar senha</B>: é a sua conta que aprova o caixa.</li>
+        </ul>
+        <h3>Filiais</h3>
+        <ul>
+          <li>Em <B>Configurações</B>, <B>Nova filial</B>. Cada filial tem o próprio estoque, equipe, turnos e despesas; clientes, produtos e preços valem para todas.</li>
+          <li>Com mais de uma filial, o menu ganha a escolha da filial: tudo que você vê e lança passa a ser dela. A equipe só vê a filial onde trabalha.</li>
+          <li>Em <B>Equipe</B>, cada pessoa tem sua filial; use <B>Mudar de filial</B> para trocar (entregador só depois do acerto).</li>
+          <li>Cada filial ganha o próprio link de pedidos em <B>Configurações</B>. Em <B>Relatórios</B> e <B>Despesas</B>, escolha <B>Todas as filiais</B> para ver a empresa somada.</li>
         </ul>
       </>
     ),
@@ -144,7 +156,7 @@ export default async function Ajuda() {
         </div>
       </header>
       <main className="stagger mx-auto max-w-3xl px-6 py-12">
-        <p className="fig">Manual de operação · {roleLabel[user.role]}</p>
+        <p className="text-[13px] text-muted">Manual de operação, {roleLabel[user.role].toLowerCase()}</p>
         <h1 className="text-[2rem] leading-tight font-semibold tracking-[-0.03em]">Como usar o Depósito</h1>
         <p className="mt-2 max-w-xl text-muted">O passo a passo de cada função e o que fazer quando algo sai do normal. Começa pelo que é seu.</p>
         <nav aria-label="Seções" className="mt-8 flex flex-wrap gap-2">
