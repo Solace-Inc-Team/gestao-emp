@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { TemaBotao } from "@/components/tema-botao";
 import { getUser } from "@/lib/auth";
 import { login } from "@/app/actions";
 import { ActionForm } from "@/components/action-form";
@@ -12,8 +11,8 @@ export default async function LoginPage() {
   const user = await getUser();
   if (user) redirect(user.platformAdmin ? "/admin" : user.role === "entregador" ? "/entregador" : "/");
   return (
-    <main className="relative isolate flex min-h-screen flex-col items-center justify-center px-6 py-16">
-      {/* o mesmo padrão da página inicial: fundo limpo e só a luz da marca vindo de cima, nada desenhado */}
+    <main className="pagina-escura relative isolate flex min-h-screen flex-col items-center justify-center px-6 py-16">
+      {/* o mesmo padrão da página inicial: sempre escuro, fundo limpo e só a luz da marca vindo de cima */}
       <div aria-hidden="true" className="topo-luz absolute inset-0 -z-10" />
       <div className="w-full max-w-[22rem]">
         <div className="stagger">
@@ -33,11 +32,18 @@ export default async function LoginPage() {
             </div>
             <button className="btn btn-primary h-11 w-full">Entrar</button>
           </ActionForm>
-          <p className="mt-4 text-center text-[13px] text-muted">Esqueceu a senha? Peça ao dono da empresa para redefinir. Se você é o dono, fale com a Solace.</p>
+          {/* a explicação só aparece para quem precisa: um link curto no lugar de um parágrafo fixo */}
+          <details className="pergunta mt-4 text-center text-[13px]">
+            <summary className="alvo cursor-pointer text-muted hover:text-fg">Esqueci a senha</summary>
+            <p className="mt-2 text-muted">Peça ao dono da empresa para redefinir. Se você é o dono, fale com a Solace.</p>
+          </details>
           {process.env.SEED_DEMO === "true" && (
-            <div className="mt-10 rounded-xl border border-line bg-surface/60 p-4 text-[13px] text-muted">
-              <p className="mb-2 font-medium text-fg">Acessos de demonstração</p>
-              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1">
+            <details className="pergunta mt-10 rounded-xl border border-line bg-surface/60 text-[13px] text-muted">
+              <summary className="flex cursor-pointer items-center justify-between gap-4 px-4 py-3 font-medium text-fg">
+                Acessos de demonstração
+                <span aria-hidden="true" className="pergunta-sinal" />
+              </summary>
+              <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 px-4 pb-4">
                 <dt>Dono</dt>
                 <dd className="text-fg">dono@demo.com</dd>
                 <dt>Atendente</dt>
@@ -49,7 +55,7 @@ export default async function LoginPage() {
                 <dt>Senha</dt>
                 <dd className="text-fg">demo1234</dd>
               </dl>
-            </div>
+            </details>
           )}
         </div>
       </div>
@@ -57,7 +63,6 @@ export default async function LoginPage() {
         <span>Solace</span>
         <Link href="/termos" className="alvo hover:text-fg">Termos de uso</Link>
         <Link href="/privacidade" className="alvo hover:text-fg">Privacidade</Link>
-        <TemaBotao className="size-10 sm:size-8" />
       </footer>
     </main>
   );

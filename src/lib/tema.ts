@@ -1,19 +1,21 @@
 // Tema claro, escuro ou automático (segue o aparelho). A escolha fica no próprio aparelho
 // (localStorage) e vira o atributo data-tema no <html>, que é o que o CSS lê.
+// Sem escolha guardada, o sistema abre escuro: é a identidade da página inicial e do login,
+// que são sempre escuros; o claro e o automático ficam a um toque no botão de tema.
 
 export type Escolha = "auto" | "claro" | "escuro";
 
 const CHAVE = "tema";
 
 /** Roda no <head>, antes de desenhar: sem isso a página piscaria clara antes de escurecer. */
-export const scriptTema = `(function(){try{var m=matchMedia("(prefers-color-scheme: dark)");function a(){var t=localStorage.getItem("${CHAVE}");document.documentElement.dataset.tema=t==="escuro"||(t!=="claro"&&m.matches)?"escuro":"claro"}a();m.addEventListener("change",a);window.addEventListener("storage",a)}catch(e){document.documentElement.dataset.tema="claro"}})()`;
+export const scriptTema = `(function(){try{var m=matchMedia("(prefers-color-scheme: dark)");function a(){var t=localStorage.getItem("${CHAVE}");document.documentElement.dataset.tema=t!=="claro"&&(t!=="auto"||m.matches)?"escuro":"claro"}a();m.addEventListener("change",a);window.addEventListener("storage",a)}catch(e){document.documentElement.dataset.tema="escuro"}})()`;
 
 export function lerEscolha(): Escolha {
   try {
     const t = localStorage.getItem(CHAVE);
-    return t === "claro" || t === "escuro" ? t : "auto";
+    return t === "claro" || t === "auto" ? t : "escuro";
   } catch {
-    return "auto";
+    return "escuro";
   }
 }
 
@@ -23,8 +25,8 @@ export function lerEscolha(): Escolha {
  */
 export function aplicar(escolha: Escolha, origem?: { x: number; y: number }) {
   try {
-    if (escolha === "auto") localStorage.removeItem(CHAVE);
-    else localStorage.setItem(CHAVE, escolha);
+    // o automático também fica guardado: sem nada guardado, vale o escuro padrão
+    localStorage.setItem(CHAVE, escolha);
   } catch {
     // aparelho sem armazenamento: vale só nesta página
   }
