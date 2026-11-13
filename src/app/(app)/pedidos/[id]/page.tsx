@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
 import { getOrder, getSettings, listDrivers, listShifts } from "@/domain/queries";
-import { orderPix } from "@/domain/portal";
+import { conferirPixMp, pixDoPedido } from "@/domain/pix";
 import { PixBox } from "@/components/pix-box";
 import { ActionForm } from "@/components/action-form";
 import { cancelAction, confirmPixAction, deliverAction, dispatchAction, reassignAction, refundOrderAction } from "@/app/actions";
@@ -25,6 +25,7 @@ const actionLabel: Record<string, string> = {
   "pedido.ocorrencia": "Entrega não realizada, voltou para a fila",
   "pedido.trocar_entregador": "Trocou de entregador",
   "pedido.pix_conferido": "Pix conferido no extrato",
+  "pedido.pix_mercadopago": "Pix confirmado pelo Mercado Pago",
   "pedido.cancelar": "Pedido cancelado",
   "pedido.estornar": "Pedido estornado",
 };
@@ -33,13 +34,15 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
   const user = await requireUser("dono", "atendente", "caixa");
   const { id } = await params;
   if (!isUuid(id)) notFound();
+  // Pix pelo Mercado Pago: pergunta antes de mostrar, para a tela já abrir com o pedido pago se o cliente pagou
+  await conferirPixMp(user.tenantId, id);
   const o = await getOrder(user.tenantId, id);
   // a equipe só abre pedidos da própria filial; o dono abre de qualquer uma (pelo cliente, por exemplo)
   if (!o || (user.role !== "dono" && o.branchId !== user.branchId)) notFound();
   // entregadores e turnos da filial do pedido, não da que o dono está vendo
   const [drivers, open, settings] = await Promise.all([listDrivers(user.tenantId, o.branchId), listShifts(user.tenantId, o.branchId, "aberto"), getSettings(user.tenantId)]);
   const pixOpen = o.paymentMethod === "pix" && !o.pixConfirmedAt && ["aberto", "em_rota", "entregue"].includes(o.status);
-  const pixCode = pixOpen ? orderPix(settings, { number: o.number, totalCents: o.totalCents - o.cashPartCents }) : null;
+  const pix = pixOpen ? await pixDoPedido(user.tenantId, o.id) : null;
   const onShift = drivers.filter((d) => open.some((s) => s.driverId === d.id));
   const driverName = (id?: string) => drivers.find((d) => d.id === id)?.name ?? "outro entregador";
   // link de acompanhamento só para entrega que ainda vai acontecer (balcão e cancelado não têm o que acompanhar)
@@ -191,21 +194,26 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
 
           {pixOpen && (
             <section className="panel p-4">
-              <h2 className="h2 mb-1">Pix a conferir</h2>
+              <h2 className="h2 mb-1">{pix?.automatico ? "Pix aguardando pagamento" : "Pix a conferir"}</h2>
               <p className="mb-3 text-sm text-muted">
-                O pedido só conta como pago depois que alguém vê o valor no extrato. Comprovante enviado pelo cliente não basta.
+                {pix?.automatico
+                  ? "Cobrança no Mercado Pago: quando o cliente pagar, o pedido fica pago sozinho. Comprovante enviado pelo cliente não conta."
+                  : "O pedido só conta como pago depois que alguém vê o valor no extrato. Comprovante enviado pelo cliente não basta."}
               </p>
-              {pixCode && <div className="mb-4"><PixBox code={pixCode} size={144} /></div>}
+              {pix && <div className="mb-4"><PixBox code={pix.codigo} size={144} /></div>}
               {(user.role === "dono" || user.role === "caixa") && (
-                <ActionForm action={confirmPixAction}>
+                // com Mercado Pago a conferência à mão fica de reserva (Pix pago fora da cobrança, Mercado Pago fora do ar)
+                <ActionForm action={confirmPixAction} confirm={pix?.automatico ? "Marcar como pago à mão? Faça isso só se viu o valor no extrato." : undefined}>
                   <input type="hidden" name="orderId" value={o.id} />
-                  <button className="btn btn-primary w-full">Pix conferido no extrato</button>
+                  <button className={`btn w-full ${pix?.automatico ? "" : "btn-primary"}`}>Pix conferido no extrato</button>
                 </ActionForm>
               )}
             </section>
           )}
           {o.paymentMethod === "pix" && o.pixConfirmedAt && (
-            <p className="rounded-md bg-ok-soft px-4 py-3 text-sm text-ok">Pix conferido em {fmtDateTime(o.pixConfirmedAt)}.</p>
+            <p className="rounded-md bg-ok-soft px-4 py-3 text-sm text-ok">
+              {o.pixConfirmedBy ? "Pix conferido" : "Pix confirmado pelo Mercado Pago"} em {fmtDateTime(o.pixConfirmedAt)}.
+            </p>
           )}
 
           {o.status === "aberto" && (

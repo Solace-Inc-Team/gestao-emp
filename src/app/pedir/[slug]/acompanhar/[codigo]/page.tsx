@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { orderPix, pedidoAcompanhado } from "@/domain/portal";
+import { pedidoAcompanhado } from "@/domain/portal";
+import { conferirPixMp, pixDoPedido } from "@/domain/pix";
 import { PixBox } from "@/components/pix-box";
 import { fmtDateTime, fmtTime } from "@/components/ui";
 import { formatBRL } from "@/lib/money";
@@ -17,8 +18,11 @@ const pagamento = { dinheiro: "Dinheiro na entrega", cartao: "Cartão na entrega
 
 export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/acompanhar/[codigo]">) {
   const { slug, codigo } = await params;
-  const achado = await pedidoAcompanhado(slug, codigo);
+  let achado = await pedidoAcompanhado(slug, codigo);
   if (!achado) notFound();
+  // a página se atualiza sozinha a cada 20 s; com Mercado Pago, cada vez pergunta se o Pix caiu
+  if (achado.pedido.paymentMethod === "pix" && !achado.pedido.pixConfirmedAt && (await conferirPixMp(achado.loja.id, achado.pedidoId)))
+    achado = (await pedidoAcompanhado(slug, codigo))!;
   const { loja, pedido: p, itens } = achado;
 
   const cancelado = p.status === "cancelado" || p.status === "estornado";
@@ -33,7 +37,7 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
         ? `Saiu para entrega${quem}`
         : "Recebido, a loja está separando";
   // Pix que ainda não caiu: o cliente pode pagar daqui mesmo
-  const pix = p.paymentMethod === "pix" && !p.pixConfirmedAt && !cancelado ? orderPix(loja, { number: p.number, totalCents: p.totalCents - p.cashPartCents }) : null;
+  const pix = p.paymentMethod === "pix" && !p.pixConfirmedAt && !cancelado ? await pixDoPedido(loja.id, achado.pedidoId) : null;
 
   const etapas = [
     { nome: "Pedido recebido", hora: p.createdAt, feita: true },
@@ -94,8 +98,10 @@ export default async function Acompanhar({ params }: PageProps<"/pedir/[slug]/ac
       {pix && (
         <section className="panel mt-4 space-y-3 p-5">
           <p className="font-semibold">Pague com Pix</p>
-          <PixBox code={pix} />
-          <p className="text-[13px] text-muted">O pedido sai normalmente; a loja confere o Pix no extrato.</p>
+          <PixBox code={pix.codigo} />
+          <p className="text-[13px] text-muted">
+            {pix.automatico ? "Assim que o Pix cair, esta página mostra que foi recebido." : "O pedido sai normalmente; a loja confere o Pix no extrato."}
+          </p>
         </section>
       )}
 

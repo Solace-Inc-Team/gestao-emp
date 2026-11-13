@@ -47,6 +47,10 @@ export const tenants = pgTable("tenants", {
   pixKey: text("pix_key").notNull().default(""),
   pixName: text("pix_name").notNull().default(""),
   pixCity: text("pix_city").notNull().default(""),
+  // conta do Mercado Pago da própria empresa: cada pedido no Pix vira uma cobrança com confirmação automática.
+  // O token fica cifrado (lib/segredo); a conta é só para mostrar a qual conta está ligada.
+  mpTokenEnc: text("mp_token_enc"),
+  mpConta: text("mp_conta"),
   // portal de pedidos: endereço público /pedir/<slug>
   slug: text("slug").notNull().unique(),
   portalEnabled: boolean("portal_enabled").notNull().default(false),
@@ -255,6 +259,12 @@ export const orders = pgTable(
     // Pix só conta como recebido depois que alguém confere no extrato do banco
     pixConfirmedAt: timestamp("pix_confirmed_at", { withTimezone: true }),
     pixConfirmedBy: uuid("pix_confirmed_by").references(() => users.id),
+    // cobrança Pix no Mercado Pago: o código copia e cola dela e o valor que cobra. Se o total muda
+    // (entrega parcial) ou ela vence, nasce outra.
+    mpPaymentId: text("mp_payment_id"),
+    mpPixCode: text("mp_pix_code"),
+    mpAmountCents: integer("mp_amount_cents"),
+    mpExpiresAt: timestamp("mp_expires_at", { withTimezone: true }),
     changeForCents: integer("change_for_cents"),
     notes: text("notes").notNull().default(""),
     cancelReason: text("cancel_reason"),

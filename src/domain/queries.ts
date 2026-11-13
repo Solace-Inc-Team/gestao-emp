@@ -159,6 +159,7 @@ export const getOrder = scoped(async function getOrder(tenantId: string, id: str
       discountReason: orders.discountReason,
       occurrenceAt: orders.occurrenceAt,
       pixConfirmedAt: orders.pixConfirmedAt,
+      pixConfirmedBy: orders.pixConfirmedBy,
       changeForCents: orders.changeForCents,
       notes: orders.notes,
       cancelReason: orders.cancelReason,
@@ -211,6 +212,8 @@ export const getSettings = scoped(async function getSettings(tenantId: string) {
       pixCity: tenants.pixCity,
       slug: tenants.slug,
       portalEnabled: tenants.portalEnabled,
+      // só a conta, nunca o token
+      mpConta: tenants.mpConta,
     })
     .from(tenants)
     .where(eq(tenants.id, tenantId));
@@ -669,7 +672,7 @@ export const primeirosPassos = scoped(async function primeirosPassos(tenantId: s
       produtos: sql<boolean>`exists (select 1 from ${products} where ${products.tenantId} = ${tenantId})`,
       estoque: sql<boolean>`exists (select 1 from ${stockMovements} where ${stockMovements.tenantId} = ${tenantId})`,
       equipe: sql<boolean>`exists (select 1 from ${users} where ${users.tenantId} = ${tenantId} and ${users.role} = 'entregador' and ${users.active})`,
-      pix: sql<boolean>`(select ${tenants.pixKey} <> '' from ${tenants} where ${tenants.id} = ${tenantId})`,
+      pix: sql<boolean>`(select ${tenants.pixKey} <> '' or ${tenants.mpTokenEnc} is not null from ${tenants} where ${tenants.id} = ${tenantId})`,
       turno: sql<boolean>`exists (select 1 from ${shifts} where ${shifts.tenantId} = ${tenantId})`,
       pedido: sql<boolean>`exists (select 1 from ${orders} where ${orders.tenantId} = ${tenantId})`,
     })

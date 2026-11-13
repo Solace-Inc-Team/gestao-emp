@@ -3,8 +3,8 @@ import Link from "next/link";
 import { TemaBotao } from "@/components/tema-botao";
 import { CircleHelp, Clock3, KeyRound, LogOut, MapPin, Phone } from "lucide-react";
 import { requireUser } from "@/lib/auth";
-import { getShift, getSettings, itemsForOrders, listOrders, openShiftFor, getOrder } from "@/domain/queries";
-import { orderPix } from "@/domain/portal";
+import { getShift, itemsForOrders, listOrders, openShiftFor, getOrder } from "@/domain/queries";
+import { conferirPixMp, pixDoPedido } from "@/domain/pix";
 import { PixBox } from "@/components/pix-box";
 import { logout } from "@/app/actions";
 import { MarcaDaSessao } from "@/components/logo";
@@ -20,8 +20,12 @@ export default async function Entregador() {
   const shift = await openShiftFor(user.tenantId, user.userId);
   const s = shift ? await getShift(user.tenantId, shift.id) : null;
   const route = shift ? await listOrders(user.tenantId, { status: "em_rota", driverId: user.userId }) : [];
+  // Pix pelo Mercado Pago: confere antes, para não mostrar QR de pedido já pago
+  await Promise.all(route.filter((o) => o.paymentMethod === "pix").map((o) => conferirPixMp(user.tenantId, o.id)));
   const details = await Promise.all(route.map((o) => getOrder(user.tenantId, o.id)));
-  const settings = await getSettings(user.tenantId);
+  const pixes = new Map(
+    await Promise.all(details.filter((o) => o?.paymentMethod === "pix" && !o.pixConfirmedAt).map(async (o) => [o!.id, await pixDoPedido(user.tenantId, o!.id)] as const)),
+  );
   const items = await itemsForOrders(user.tenantId, route.map((o) => o.id));
   const done = s ? s.orders.filter((o) => o.status === "entregue") : [];
 
@@ -126,11 +130,11 @@ export default async function Entregador() {
                           </p>
                         ) : null}
                         {o.notes && <p className="mt-2 text-sm">Obs.: {o.notes}</p>}
-                        {o.paymentMethod === "pix" && !o.pixConfirmedAt && settings.pixKey && (
+                        {pixes.get(o.id) && (
                           <details className="mt-2">
                             <summary className="tap cursor-pointer text-accent">Mostrar QR do Pix para o cliente</summary>
                             <div className="mt-2">
-                              <PixBox code={orderPix(settings, { number: o.number, totalCents: o.totalCents - o.cashPartCents })!} size={200} />
+                              <PixBox code={pixes.get(o.id)!.codigo} size={200} />
                             </div>
                           </details>
                         )}

@@ -25,7 +25,7 @@ export default async function Pedir({ params, searchParams }: PageProps<"/pedir/
       {t.branchName && <p className="mt-0.5 font-medium">{t.branchName}</p>}
       <p className="mt-1 mb-6 text-muted">Escolha os produtos e informe onde entregar. A loja confirma pelo telefone se precisar.</p>
       {products.length ? (
-        <PortalForm action={portalOrderAction.bind(null, slug, typeof filial === "string" ? filial : "")} products={products} pixEnabled={!!t.pixKey} />
+        <PortalForm action={portalOrderAction.bind(null, slug, typeof filial === "string" ? filial : "")} products={products} pixEnabled={!!t.pixKey || t.mp} />
       ) : (
         <p className="panel p-4 text-muted">Nenhum produto disponível agora. Ligue para a loja.</p>
       )}

@@ -3,7 +3,6 @@ import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { db, withTenant } from "@/db";
 import { branches, customers, orderItems, orders, products, tenants, users } from "@/db/schema";
 import { type Ctx, DomainError, isUuid } from "@/lib/ctx";
-import { pixPayload } from "@/lib/pix";
 import { createOrder } from "./orders";
 import { audit } from "./stock";
 
@@ -13,7 +12,7 @@ import { audit } from "./stock";
  */
 export async function portalTenant(slug: string, filial?: string) {
   const [t] = await db
-    .select({ id: tenants.id, name: tenants.name, pixKey: tenants.pixKey, pixName: tenants.pixName, pixCity: tenants.pixCity })
+    .select({ id: tenants.id, name: tenants.name, pixKey: tenants.pixKey, pixName: tenants.pixName, pixCity: tenants.pixCity, mp: sql<boolean>`${tenants.mpTokenEnc} is not null` })
     .from(tenants)
     .where(and(eq(tenants.slug, slug), eq(tenants.active, true), eq(tenants.portalEnabled, true)));
   if (!t) return null;
@@ -109,12 +108,6 @@ export async function placePortalOrder(tenantId: string, branchId: string, input
   );
 }
 
-/** Código Pix do pedido, quando a empresa cadastrou a chave. */
-export function orderPix(t: { pixKey: string; pixName: string; pixCity: string }, order: { number: number; totalCents: number }) {
-  if (!t.pixKey) return null;
-  return pixPayload({ key: t.pixKey, name: t.pixName, city: t.pixCity, amountCents: order.totalCents, txid: `PED${order.number}` });
-}
-
 /**
  * O pedido como o cliente vê pelo link de acompanhamento: sem login, achado pelo código secreto do pedido
  * dentro da loja do endereço. Mostra só o que o cliente precisa (itens, situação, total, primeiro nome do
@@ -156,6 +149,7 @@ export async function pedidoAcompanhado(slug: string, codigo: string) {
       .innerJoin(products, eq(products.id, orderItems.productId))
       .where(and(eq(orderItems.tenantId, t.id), eq(orderItems.orderId, id)))
       .orderBy(asc(products.name));
-    return { loja: t, pedido: { ...pedido, entregador: driverName?.split(" ")[0] ?? null }, itens };
+    // o id fica fora do pedido mostrado; serve só para o servidor cobrar e conferir o Pix
+    return { loja: t, pedidoId: id, pedido: { ...pedido, entregador: driverName?.split(" ")[0] ?? null }, itens };
   });
 }

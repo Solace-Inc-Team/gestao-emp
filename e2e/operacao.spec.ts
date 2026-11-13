@@ -6,6 +6,8 @@ const SENHA = "demo1234";
 async function entrar(page: Page, email: string) {
   await page.context().clearCookies();
   await page.goto("/login");
+  // espera a página ficar pronta: com o servidor frio, o React chegava depois e limpava os campos já digitados
+  await page.waitForLoadState("networkidle");
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Senha").fill(SENHA);
   await page.getByRole("button", { name: "Entrar" }).click();

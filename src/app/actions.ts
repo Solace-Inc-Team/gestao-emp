@@ -15,7 +15,8 @@ import { formatBRL, parseBRL } from "@/lib/money";
 import { clientIp } from "@/lib/request";
 import type { ActionState } from "@/components/action-form";
 import { createOrder, dispatchOrder, deliverOrder, cancelOrder, refundOrder, newOrderSchema, reportOccurrence, reassignOrder, confirmPix } from "@/domain/orders";
-import { orderPix, placePortalOrder, portalOrderSchema, portalTenant } from "@/domain/portal";
+import { placePortalOrder, portalOrderSchema, portalTenant } from "@/domain/portal";
+import { conectarMercadoPago, desconectarMercadoPago, pixDoPedido } from "@/domain/pix";
 import { devolverVasilhame, registrarComodato } from "@/domain/comodato";
 import { createExpense, expenseSchema, voidExpense } from "@/domain/expenses";
 import { openShift, closeShift, addCashEntry, cashEntrySchema, voidCashEntry, resolveDifference } from "@/domain/shifts";
@@ -252,7 +253,7 @@ export async function portalOrderAction(slug: string, filial: string, fd: FormDa
     return {
       number: order.number,
       totalCents: order.totalCents,
-      pix: order.paymentMethod === "pix" ? orderPix(t, order) : null,
+      pix: order.paymentMethod === "pix" ? ((await pixDoPedido(t.id, order.id))?.codigo ?? null) : null,
       acompanhar: `/pedir/${slug}/acompanhar/${order.trackingId}`,
     };
   } catch (e) {
@@ -715,4 +716,22 @@ export async function escolherFilialAction(fd: FormData) {
   if (!user.branches.some((b) => b.id === id)) return;
   (await cookies()).set(FILIAL_COOKIE, id, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 365 });
   revalidatePath("/", "layout");
+}
+
+/** O dono liga a conta do Mercado Pago da empresa (com a senha: o token mexe com dinheiro). */
+export async function conectarMercadoPagoAction(fd: FormData) {
+  const user = await requireUser("dono");
+  return run(
+    async () => {
+      await confirmPassword(user, fd);
+      await conectarMercadoPago(user, str(fd, "token"));
+    },
+    ["/"],
+    "Mercado Pago conectado.",
+  );
+}
+
+export async function desconectarMercadoPagoAction() {
+  const user = await requireUser("dono");
+  return run(() => desconectarMercadoPago(user), ["/"], "Mercado Pago desconectado.");
 }

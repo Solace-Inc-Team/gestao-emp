@@ -220,6 +220,17 @@ export function descrever(action: string, dados: Dados, nomes: Record<string, st
       l.titulo = "Apagou os dados pessoais de um cliente";
       break;
 
+    case "empresa.mp_conectar":
+      l.titulo = "Conectou o Mercado Pago";
+      det(`Conta ${txt(d.conta)}${d.teste ? " (teste)" : ""}`);
+      break;
+    case "empresa.mp_desconectar":
+      l.titulo = "Desconectou o Mercado Pago";
+      break;
+    case "pedido.pix_mercadopago":
+      l.titulo = `Mercado Pago confirmou o Pix do pedido ${alvo}`;
+      det(`Valor ${din(d.valor)}`);
+      break;
     case "empresa.filial_criar":
       l.titulo = `Criou a filial ${txt(d.name)}`;
       break;

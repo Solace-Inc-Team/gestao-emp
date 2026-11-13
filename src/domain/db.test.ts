@@ -632,9 +632,10 @@ test("Pix: só conta como recebido depois de conferido pelo dono ou caixa", asyn
   await m.orders.confirmPix({ ...A.ctx, role: "caixa" }, order.id);
   assert.ok((await m.q.getOrder(A.t.id, order.id))!.pixConfirmedAt);
   await assert.rejects(m.orders.confirmPix(A.ctx, order.id), /não tem Pix a conferir/);
-  const code = m.portal.orderPix({ pixKey: "chave@teste.com", pixName: "Loja A", pixCity: "Campinas" }, order);
+  const { orderPix } = await import("@/domain/pix");
+  const code = orderPix({ pixKey: "chave@teste.com", pixName: "Loja A", pixCity: "Campinas" }, order);
   assert.match(code!, /5406110\.00/);
-  assert.equal(m.portal.orderPix({ pixKey: "", pixName: "", pixCity: "" }, order), null);
+  assert.equal(orderPix({ pixKey: "", pixName: "", pixCity: "" }, order), null);
 });
 
 test("RLS: dentro do escopo de A, consulta sem filtro só enxerga A", async () => {
@@ -919,4 +920,101 @@ test("filiais: estoque, equipe e turno separados; o dono mexe em todas e a equip
   // outra empresa não acha a filial
   await assert.rejects(fil.ativarFilial(B.ctx, centro.id, true), /não encontrada/);
   await assert.rejects(fil.mudarDeFilial(B.ctx, u.id, B.branch.id), /não encontrada/);
+});
+
+test("Mercado Pago: conecta com o token da loja, cobra o Pix do pedido, confirma só o pagamento certo e cai na chave se falhar", async () => {
+  const { db } = m.db;
+  const { tenants } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const { randomBytes } = await import("node:crypto");
+  process.env.SEGREDO_CHAVE = randomBytes(32).toString("base64");
+  const mp = await import("@/lib/mercadopago");
+  const pix = await import("@/domain/pix");
+
+  // Mercado Pago de mentira: guarda as cobranças e responde como a API
+  const TOKEN = "TEST-1234567890123456-loja-a";
+  const cobrancas = new Map<string, { ref: string; valor: number; pago: boolean; outraRef?: string }>();
+  const chaves = new Map<string, string>();
+  let fora = false;
+  mp.usarRede(async (url, init) => {
+    if (fora) throw new Error("rede");
+    const auth = new Headers(init?.headers).get("Authorization");
+    if (auth !== `Bearer ${TOKEN}`) return new Response("{}", { status: 401 });
+    const caminho = String(url).replace("https://api.mercadopago.com", "");
+    const json = (o: unknown) => new Response(JSON.stringify(o), { status: 200 });
+    if (caminho === "/users/me") return json({ id: 77, email: "financeiro@loja-a.com" });
+    if (caminho === "/v1/payments" && init?.method === "POST") {
+      const chave = new Headers(init.headers).get("X-Idempotency-Key")!;
+      const b = JSON.parse(String(init.body));
+      let id = chaves.get(chave);
+      if (!id) {
+        id = String(9000 + cobrancas.size);
+        chaves.set(chave, id);
+        cobrancas.set(id, { ref: b.external_reference, valor: Math.round(b.transaction_amount * 100), pago: false });
+      }
+      return json({ id: Number(id), status: "pending", point_of_interaction: { transaction_data: { qr_code: `000201MP${id}` } } });
+    }
+    const c = cobrancas.get(caminho.split("/").pop()!);
+    if (!c) return new Response("{}", { status: 404 });
+    if (init?.method === "PUT") return json({});
+    return json({ status: c.pago ? "approved" : "pending", external_reference: c.outraRef ?? c.ref, transaction_amount: c.valor / 100 });
+  });
+
+  await assert.rejects(pix.conectarMercadoPago(A.ctx, "abc"), /Access Token inteiro/);
+  await assert.rejects(pix.conectarMercadoPago(A.ctx, "TEST-0000000000000000-outra-loja"), /não aceitou/);
+  await assert.rejects(pix.conectarMercadoPago({ ...A.ctx, role: "atendente" }, TOKEN), /Sem permissão/);
+  assert.equal((await pix.conectarMercadoPago(A.ctx, TOKEN)).nome, "financeiro@loja-a.com");
+  const [t] = await db.select().from(tenants).where(eq(tenants.id, A.t.id));
+  assert.equal(t.mpConta, "financeiro@loja-a.com");
+  assert.ok(t.mpTokenEnc && !t.mpTokenEnc.includes(TOKEN));
+  await m.registry.saveSettings(A.ctx, { pixKey: "chave@loja-a.com", pixName: "Loja A", pixCity: "Campinas" });
+
+  const novo = (paymentMethod: "pix" | "dinheiro") =>
+    m.orders.createOrder(A.ctx, {
+      mode: "entrega", customerId: A.customer.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
+      paymentMethod, deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null,
+    });
+  const o = await novo("pix");
+  const p1 = await pix.pixDoPedido(A.t.id, o.id);
+  assert.deepEqual(p1, { codigo: "000201MP9000", automatico: true });
+  // a mesma cobrança serve de novo, sem criar outra
+  assert.deepEqual(await pix.pixDoPedido(A.t.id, o.id), p1);
+  assert.equal(cobrancas.size, 1);
+  assert.equal(cobrancas.get("9000")!.valor, o.totalCents);
+  // pedido em dinheiro não tem Pix; outra empresa não acha o pedido
+  assert.equal(await pix.pixDoPedido(A.t.id, (await novo("dinheiro")).id), null);
+  assert.equal(await pix.pixDoPedido(B.t.id, o.id), null);
+
+  // ainda não pago: nada muda
+  assert.equal(await pix.conferirPixMp(A.t.id, o.id), false);
+  // pago, mas o pagamento diz ser de outro pedido: não vale
+  cobrancas.get("9000")!.pago = true;
+  cobrancas.get("9000")!.outraRef = crypto.randomUUID();
+  assert.equal(await pix.conferirPixMp(A.t.id, o.id), false);
+  // o aviso (webhook) com outro pagamento é ignorado; com o certo, confirma
+  const aviso = await import("@/app/api/mercadopago/route");
+  delete cobrancas.get("9000")!.outraRef;
+  const avisar = (id: string) => aviso.POST(new Request(`http://x/api/mercadopago?pedido=${o.id}`, { method: "POST", body: JSON.stringify({ data: { id } }) }));
+  assert.equal((await avisar("1234")).status, 200);
+  assert.equal((await m.q.getOrder(A.t.id, o.id))!.pixConfirmedAt, null);
+  await avisar("9000");
+  const pago = (await m.q.getOrder(A.t.id, o.id))!;
+  assert.ok(pago.pixConfirmedAt);
+  assert.equal(pago.pixConfirmedBy, null);
+  assert.equal(await pix.pixDoPedido(A.t.id, o.id), null);
+  assert.equal(await pix.conferirPixMp(A.t.id, o.id), true);
+
+  // Mercado Pago fora do ar: o pedido não fica sem Pix, vai o da chave da loja
+  fora = true;
+  const o2 = await novo("pix");
+  const reserva = await pix.pixDoPedido(A.t.id, o2.id);
+  assert.equal(reserva?.automatico, false);
+  assert.match(reserva!.codigo, /chave@loja-a\.com/);
+  fora = false;
+
+  // desconectado: volta a conferência à mão e o token some do banco
+  await pix.desconectarMercadoPago(A.ctx);
+  const [semMp] = await db.select({ enc: tenants.mpTokenEnc }).from(tenants).where(eq(tenants.id, A.t.id));
+  assert.equal(semMp.enc, null);
+  assert.equal((await pix.pixDoPedido(A.t.id, o2.id))?.automatico, false);
 });
