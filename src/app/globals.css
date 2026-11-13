@@ -2498,3 +2498,26 @@ html:has(.pagina-escura) body {
   background: linear-gradient(to bottom, var(--bg), var(--tom) 22%, var(--tom) 78%, var(--bg));
   border-color: transparent;
 }
+
+/* passagens sem corte seco na página inicial ------------------------------------------------------ */
+/* luz do fechamento: redonda e centrada atrás da frase, no âmbar de fim de tarde; some em todas as direções */
+.fecho-luz {
+  background: radial-gradient(ellipse 42% 46% at 50% 52%, color-mix(in srgb, var(--chama) 15%, transparent), transparent 72%);
+}
+/* fundo atrás de uma tela dentro do cartão: o tom sobe em degradê, sem retângulo */
+.fundo-sobe {
+  background: linear-gradient(to bottom, transparent, var(--subtle) 35%);
+}
+/* divisória que some nas pontas, no lugar de uma linha de ponta a ponta */
+.linha-suave {
+  position: relative;
+}
+.linha-suave::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 80%, transparent);
+}

@@ -132,7 +132,7 @@ export default function InicioNova() {
 
         {/* capítulo 1, o maior: a entrega acontecendo nas duas pontas, celular e loja. É a virada da página:
             uma faixa sempre escura, de ponta a ponta, com a demonstração acesa no meio; o rótulo vem no âmbar do gás */}
-        <section id="rua" style={{ "--luz": "color-mix(in srgb, var(--marca) 75%, var(--chama))" } as React.CSSProperties} className="faixa-escura mt-32 scroll-mt-14 border-y border-line py-28 sm:mt-44 sm:py-36">
+        <section id="rua" style={{ "--luz": "color-mix(in srgb, var(--marca) 75%, var(--chama))" } as React.CSSProperties} className="faixa-escura mt-32 scroll-mt-14 py-28 sm:mt-44 sm:py-36">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <Capitulo
             tom="text-chama"
@@ -181,7 +181,7 @@ export default function InicioNova() {
               <div
                 role="img"
                 aria-label="No celular, o cliente põe um Gás P13, escolhe Pix e faz o pedido; aparece Pedido #62 recebido com o QR do Pix"
-                className="-mx-6 -mb-6 mt-6 bg-subtle"
+                className="fundo-sobe -mx-6 -mb-6 mt-6"
               >
                 <DemoPortal escuro />
               </div>
@@ -284,8 +284,8 @@ export default function InicioNova() {
         </section>
 
         {/* fechamento: a mesma luz do topo, uma frase e o botão; nada mais */}
-        <section style={{ "--luz": "var(--chama)", "--luz-forca": "26%" } as React.CSSProperties} className="relative isolate mt-32 overflow-hidden border-t border-line px-4 py-32 text-center sm:mt-44 sm:px-6 sm:py-40">
-          <div aria-hidden="true" className="topo-luz absolute inset-0 -z-10" />
+        <section className="relative isolate mt-32 overflow-hidden px-4 py-32 text-center sm:mt-44 sm:px-6 sm:py-40">
+          <div aria-hidden="true" className="fecho-luz absolute inset-0 -z-10" />
           <h2 className="reveal mx-auto max-w-[18ch] text-[2.25rem] leading-[1.06] font-semibold tracking-[-0.04em] text-balance sm:text-[3.25rem]">
             Feche o dia sabendo de tudo.
           </h2>
@@ -298,7 +298,7 @@ export default function InicioNova() {
         </section>
       </main>
 
-      <footer className="border-t border-line">
+      <footer className="linha-suave">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-4 py-8 text-[13px] text-muted sm:px-6">
           <span className="flex flex-wrap items-center gap-x-5 gap-y-2">
             <Logo size={18} />
