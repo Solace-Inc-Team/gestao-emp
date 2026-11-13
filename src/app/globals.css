@@ -2317,3 +2317,31 @@ details[open] > summary.desvio .desvio-seta {
     border-color: color-mix(in srgb, var(--fg) 32%, var(--line));
   }
 }
+
+/* mosaico de detalhes da página inicial: peças com a mesma borda fina, e a borda ganha luz com o mouse */
+.bento {
+  overflow: hidden;
+  padding: 1.5rem;
+  border: 1px solid var(--line);
+  border-radius: 1rem;
+  background: var(--surface);
+  transition:
+    border-color var(--dur) var(--ease-chegada),
+    box-shadow var(--dur-slow) var(--ease-chegada);
+}
+@media (hover: hover) {
+  .bento:hover {
+    border-color: color-mix(in srgb, var(--fg) 18%, var(--line));
+    box-shadow: 0 12px 32px -16px color-mix(in srgb, #000 22%, transparent);
+  }
+}
+/* vasilhames do mosaico: maiores, e só enchem quando o bloco aparece */
+.estoque-mosaico .nivel-vasilhame {
+  width: 44px;
+  height: 64px;
+}
+@media (scripting: enabled) {
+  [data-inview="false"] .estoque-mosaico .nivel {
+    animation-play-state: paused;
+  }
+}
