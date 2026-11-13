@@ -28,9 +28,11 @@
 
 /* o tema vem do atributo que o script do layout põe antes de desenhar a página:
    a escolha da pessoa (claro ou escuro) ou, no automático, o tema do aparelho */
-/* .faixa-escura: uma seção da página inicial que é sempre escura, mesmo com o tema claro (o momento de virada) */
+/* .faixa-escura e .pagina-escura: partes da página inicial que são sempre escuras, qualquer que seja o tema
+   (a vitrine tem um visual só, ajustado uma vez; o sistema segue a escolha da pessoa) */
 :root[data-tema="escuro"],
-.faixa-escura {
+.faixa-escura,
+.pagina-escura {
   --marca: #6d9dff;
   --papel: #0b0f17;
   --gota: #0b0f17;
@@ -2180,7 +2182,7 @@ details[open] > summary.desvio .desvio-seta {
 /* topo novo (proposta em /inicio/nova): o produto é o protagonista ----------------------------- */
 /* luz de cima atrás do título: sem desenho, só um clarão suave da cor da marca */
 .topo-luz {
-  background: radial-gradient(ellipse 75% 75% at 50% -25%, color-mix(in srgb, var(--marca) 13%, transparent), transparent 72%);
+  background: radial-gradient(ellipse 75% 75% at 50% -25%, color-mix(in srgb, var(--luz, var(--marca)) var(--luz-forca, 13%), transparent), transparent 72%);
 }
 /* luz da marca atrás da tela, como se ela estivesse acesa */
 .topo-palco::before {
@@ -2188,7 +2190,7 @@ details[open] > summary.desvio .desvio-seta {
   position: absolute;
   inset: -6% 8% 30%;
   z-index: -1;
-  background: radial-gradient(50% 50% at 50% 40%, color-mix(in srgb, var(--marca) 32%, transparent), transparent 70%);
+  background: radial-gradient(50% 50% at 50% 40%, color-mix(in srgb, var(--luz, var(--marca)) 32%, transparent), transparent 70%);
   filter: blur(40px);
   /* a tela acesa respira devagar: a luz cresce e recua, sem chamar atenção */
   animation: topo-respira 7s ease-in-out infinite alternate;
@@ -2301,13 +2303,13 @@ details[open] > summary.desvio .desvio-seta {
 /* botões no escuro: sombra preta não aparece em fundo preto, e misturar o branco do botão com o fundo
    o deixava mais apagado ao passar o mouse. Aqui a luz é o que muda: borda de cima mais clara em repouso
    e, com o mouse, o botão vai para o branco puro com um halo claro em volta */
-:root[data-tema="escuro"] .btn-primary:not([disabled]) {
+:is(:root[data-tema="escuro"], .pagina-escura) .btn-primary:not([disabled]) {
   box-shadow:
     inset 0 1px 0 rgb(255 255 255 / 0.75),
     0 1px 2px rgb(0 0 0 / 0.5);
 }
 @media (hover: hover) {
-  :root[data-tema="escuro"] .btn-primary:not([disabled]):hover {
+  :is(:root[data-tema="escuro"], .pagina-escura) .btn-primary:not([disabled]):hover {
     background: #fff;
     border-color: #fff;
     box-shadow:
@@ -2315,7 +2317,7 @@ details[open] > summary.desvio .desvio-seta {
       0 0 0 4px rgb(255 255 255 / 0.08),
       0 8px 24px -6px rgb(255 255 255 / 0.22);
   }
-  :root[data-tema="escuro"] .btn:not(.btn-primary):hover {
+  :is(:root[data-tema="escuro"], .pagina-escura) .btn:not(.btn-primary):hover {
     border-color: color-mix(in srgb, var(--fg) 32%, var(--line));
   }
 }
@@ -2365,7 +2367,7 @@ details[open] > summary.desvio .desvio-seta {
   inset: 0;
   z-index: -1;
   border-radius: inherit;
-  background: radial-gradient(260px circle at var(--luz-x, 50%) var(--luz-y, 50%), color-mix(in srgb, var(--marca) 12%, transparent), transparent 70%);
+  background: radial-gradient(260px circle at var(--luz-x, 50%) var(--luz-y, 50%), color-mix(in srgb, var(--luz, var(--marca)) 12%, transparent), transparent 70%);
   opacity: 0;
   transition: opacity var(--dur-slow) var(--ease-chegada);
 }
@@ -2476,4 +2478,20 @@ details[open] > summary.desvio .desvio-seta {
 .desvanece {
   -webkit-mask-image: linear-gradient(to bottom, #000 var(--ate, 72%), transparent);
   mask-image: linear-gradient(to bottom, #000 var(--ate, 72%), transparent);
+}
+
+/* página inicial sempre escura: o fundo da janela também, para a rolagem elástica não mostrar claro */
+.pagina-escura {
+  color-scheme: dark;
+  color: var(--fg);
+  background: var(--bg);
+}
+html:has(.pagina-escura),
+html:has(.pagina-escura) body {
+  background: #0a0a0a;
+}
+
+/* na página que já é escura, a faixa sobe um tom em vez de descer: continua marcando a virada */
+.pagina-escura .faixa-escura {
+  background: color-mix(in srgb, var(--bg) 93%, #fff);
 }

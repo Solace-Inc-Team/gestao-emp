@@ -1,7 +1,6 @@
 import { Fragment } from "react";
 import Link from "next/link";
 import { ArrowRight, BadgeCheck, Check, MessageCircle, MonitorSmartphone, Users, WifiOff } from "lucide-react";
-import { TemaBotao } from "@/components/tema-botao";
 import { StatusSistema } from "@/components/status-sistema";
 import { Logo } from "@/components/logo";
 import { InView } from "@/components/in-view";
@@ -65,14 +64,13 @@ function Capitulo({ rotulo, titulo, apoio, centro = false, tom = "text-accent" }
 
 export default function InicioNova() {
   return (
-    <div className="overflow-x-clip">
+    <div className="pagina-escura overflow-x-clip">
       <header className="site-header sticky top-0 z-20 border-b">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link href="/" aria-label="Depósito, início" className="alvo">
             <Logo />
           </Link>
           <nav className="flex items-center gap-6 text-[13px] text-muted">
-            <TemaBotao className="size-9 sm:size-8" />
             <Link href="/login" className="btn px-3 text-[13px] sm:h-8">Entrar</Link>
           </nav>
         </div>
@@ -134,7 +132,7 @@ export default function InicioNova() {
 
         {/* capítulo 1, o maior: a entrega acontecendo nas duas pontas, celular e loja. É a virada da página:
             uma faixa sempre escura, de ponta a ponta, com a demonstração acesa no meio; o rótulo vem no âmbar do gás */}
-        <section id="rua" className="faixa-escura mt-32 scroll-mt-14 border-y border-line py-28 sm:mt-44 sm:py-36">
+        <section id="rua" style={{ "--luz": "color-mix(in srgb, var(--marca) 75%, var(--chama))" } as React.CSSProperties} className="faixa-escura mt-32 scroll-mt-14 border-y border-line py-28 sm:mt-44 sm:py-36">
           <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <Capitulo
             tom="text-chama"
@@ -161,7 +159,7 @@ export default function InicioNova() {
             className="desvanece"
             style={{ "--ate": "88%" } as React.CSSProperties}
           >
-            <DemoAcerto />
+            <DemoAcerto escuro />
           </div>
           <div className="order-first lg:order-none">
             <Capitulo
@@ -173,7 +171,7 @@ export default function InicioNova() {
         </section>
 
         {/* mosaico: os detalhes em peças menores, cada uma com a sua prova */}
-        <section className="mx-auto max-w-6xl px-4 pt-32 sm:px-6 sm:pt-44">
+        <section style={{ "--luz": "color-mix(in srgb, var(--marca) 45%, var(--chama))" } as React.CSSProperties} className="mx-auto max-w-6xl px-4 pt-32 sm:px-6 sm:pt-44">
           <Capitulo centro rotulo="Os detalhes" titulo="Feito em cima do que dá errado numa revenda." apoio="O que não aparece no dia bom e salva o dia ruim." />
           <LuzCursor>
           <InView className="mt-14 grid gap-4 lg:grid-cols-3">
@@ -185,7 +183,7 @@ export default function InicioNova() {
                 aria-label="No celular, o cliente põe um Gás P13, escolhe Pix e faz o pedido; aparece Pedido #62 recebido com o QR do Pix"
                 className="-mx-6 -mb-6 mt-6 bg-subtle"
               >
-                <DemoPortal />
+                <DemoPortal escuro />
               </div>
             </article>
 
@@ -286,7 +284,7 @@ export default function InicioNova() {
         </section>
 
         {/* fechamento: a mesma luz do topo, uma frase e o botão; nada mais */}
-        <section className="relative isolate mt-32 overflow-hidden border-t border-line px-4 py-32 text-center sm:mt-44 sm:px-6 sm:py-40">
+        <section style={{ "--luz": "var(--chama)", "--luz-forca": "26%" } as React.CSSProperties} className="relative isolate mt-32 overflow-hidden border-t border-line px-4 py-32 text-center sm:mt-44 sm:px-6 sm:py-40">
           <div aria-hidden="true" className="topo-luz absolute inset-0 -z-10" />
           <h2 className="reveal mx-auto max-w-[18ch] text-[2.25rem] leading-[1.06] font-semibold tracking-[-0.04em] text-balance sm:text-[3.25rem]">
             Feche o dia sabendo de tudo.

@@ -36,8 +36,9 @@ async function script(a: Act<S>) {
   await a.wait(2000);
 }
 
-export function DemoAcerto() {
-  const dark = useEscuro();
+/** `escuro` força o tema escuro, para a página inicial que é sempre escura. */
+export function DemoAcerto({ escuro = false }: { escuro?: boolean }) {
+  const dark = useEscuro() || escuro;
   return (
     <Stage<S>
       width={560}

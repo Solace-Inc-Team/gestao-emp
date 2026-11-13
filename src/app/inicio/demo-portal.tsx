@@ -45,8 +45,9 @@ async function script(a: Act<S>) {
   await a.wait(2400);
 }
 
-export function DemoPortal() {
-  const dark = useEscuro();
+/** `escuro` força o tema escuro, para a página inicial que é sempre escura. */
+export function DemoPortal({ escuro = false }: { escuro?: boolean }) {
+  const dark = useEscuro() || escuro;
   return (
     <Stage<S>
       width={360}
