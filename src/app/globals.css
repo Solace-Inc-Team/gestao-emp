@@ -2244,3 +2244,88 @@ details[open] > summary.desvio .desvio-seta {
     animation: none;
   }
 }
+
+/* topo novo (proposta em /inicio/nova): o produto é o protagonista ----------------------------- */
+/* planta ao fundo: linhas finas em quadrícula, visíveis só em volta do título */
+.topo-grade {
+  background-image:
+    linear-gradient(to right, var(--line) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
+  background-size: 72px 72px;
+  background-position: center top;
+  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 0%, #000 20%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 55% at 50% 0%, #000 20%, transparent 75%);
+  opacity: 0.7;
+}
+/* luz da marca atrás da tela, como se ela estivesse acesa */
+.topo-palco::before {
+  content: "";
+  position: absolute;
+  inset: -6% 8% 30%;
+  z-index: -1;
+  background: radial-gradient(50% 50% at 50% 40%, color-mix(in srgb, var(--marca) 32%, transparent), transparent 70%);
+  filter: blur(40px);
+}
+/* sombra em camadas e o pé da tela se dissolvendo no fundo da página */
+.topo-tela {
+  box-shadow:
+    0 1px 0 color-mix(in srgb, #fff 8%, transparent) inset,
+    0 2px 4px color-mix(in srgb, #000 4%, transparent),
+    0 24px 64px -16px color-mix(in srgb, #000 22%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 62%, transparent 100%);
+}
+/* a tela chega deitada e endireita conforme a página rola: o movimento é a própria rolagem */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .topo-inclina {
+      transform-origin: 50% 0%;
+      animation: topo-endireita linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 40%;
+    }
+  }
+}
+@keyframes topo-endireita {
+  from {
+    transform: perspective(1600px) rotateX(16deg) scale(0.94);
+  }
+  to {
+    transform: none;
+  }
+}
+/* painel vivo: a linha que mudou acende de leve; a situação nova entra desfocada e firma */
+.pv-mudou {
+  animation: pv-acende 1.4s var(--ease-chegada);
+}
+@keyframes pv-acende {
+  from {
+    background: var(--accent-soft);
+  }
+}
+.pv-troca {
+  animation: pv-troca 360ms var(--ease-chegada) both;
+}
+@keyframes pv-troca {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    translate: 0 3px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pv-mudou,
+  .pv-troca {
+    animation: none;
+  }
+}
+/* pedido novo entra no alto da lista descendo um pouco, em vez de aparecer de repente */
+.pv-linha {
+  transition:
+    opacity 420ms var(--ease-chegada),
+    translate 420ms var(--ease-chegada);
+  @starting-style {
+    opacity: 0;
+    translate: 0 -8px;
+  }
+}
