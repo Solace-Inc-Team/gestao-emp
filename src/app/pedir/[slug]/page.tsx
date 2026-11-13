@@ -10,9 +10,11 @@ export async function generateMetadata({ params }: PageProps<"/pedir/[slug]">): 
   return { title: t ? `Pedido em ${t.name}` : "Pedidos", robots: { index: false } };
 }
 
-export default async function Pedir({ params }: PageProps<"/pedir/[slug]">) {
+export default async function Pedir({ params, searchParams }: PageProps<"/pedir/[slug]">) {
   const { slug } = await params;
-  const t = await portalTenant(slug);
+  // cada filial tem seu link: /pedir/<empresa>?filial=<slug da filial>
+  const filial = (await searchParams).filial;
+  const t = await portalTenant(slug, typeof filial === "string" ? filial : "");
   if (!t) notFound();
   const products = await portalProducts(t.id);
 
@@ -20,9 +22,10 @@ export default async function Pedir({ params }: PageProps<"/pedir/[slug]">) {
     <main className="stagger mx-auto min-h-screen max-w-lg px-4 py-8">
       <p className="text-[13px] text-muted">Pedido pelo site</p>
       <h1 className="h1">{t.name}</h1>
+      {t.branchName && <p className="mt-0.5 font-medium">{t.branchName}</p>}
       <p className="mt-1 mb-6 text-muted">Escolha os produtos e informe onde entregar. A loja confirma pelo telefone se precisar.</p>
       {products.length ? (
-        <PortalForm action={portalOrderAction.bind(null, slug)} products={products} pixEnabled={!!t.pixKey} />
+        <PortalForm action={portalOrderAction.bind(null, slug, typeof filial === "string" ? filial : "")} products={products} pixEnabled={!!t.pixKey} />
       ) : (
         <p className="panel p-4 text-muted">Nenhum produto disponível agora. Ligue para a loja.</p>
       )}

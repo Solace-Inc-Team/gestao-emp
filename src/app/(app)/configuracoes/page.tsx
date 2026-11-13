@@ -1,7 +1,8 @@
 import { requireUser } from "@/lib/auth";
 import { getSettings } from "@/domain/queries";
 import { ActionForm } from "@/components/action-form";
-import { saveSettingsAction } from "@/app/actions";
+import { ativarFilialAction, criarFilialAction, saveSettingsAction } from "@/app/actions";
+import { listFiliais } from "@/domain/filiais";
 import { PageHeader } from "@/components/ui";
 import { headers } from "next/headers";
 import QRCode from "qrcode";
@@ -12,10 +13,19 @@ export const metadata = { title: "Configurações" };
 
 export default async function Configuracoes() {
   const user = await requireUser("dono");
-  const s = await getSettings(user.tenantId);
+  const [s, filiais] = await Promise.all([getSettings(user.tenantId), listFiliais(user.tenantId)]);
   const h = await headers();
   const portalUrl = `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}/pedir/${s.slug}`;
-  const qr = s.portalEnabled ? await QRCode.toString(portalUrl, { type: "svg", margin: 1, width: 160 }) : null;
+  // um link por filial ativa; a principal fica com o link de sempre, sem o ?filial
+  const ativas = filiais.filter((b) => b.active);
+  const links = s.portalEnabled
+    ? await Promise.all(
+        ativas.map(async (b) => {
+          const url = b.main ? portalUrl : `${portalUrl}?filial=${b.slug}`;
+          return { id: b.id, nome: ativas.length > 1 ? b.name : null, url, qr: await QRCode.toString(url, { type: "svg", margin: 1, width: 160 }) };
+        }),
+      )
+    : [];
   return (
     <>
       <PageHeader title="Configurações" description="Regras da casa. Valem para toda a equipe a partir do próximo pedido." />
@@ -76,19 +86,55 @@ export default async function Configuracoes() {
           </fieldset>
         </ActionForm>
       </section>
-      {s.portalEnabled && qr && (
-        <section className="panel mt-6 flex max-w-xl flex-wrap items-center gap-5 p-4">
-          <div className="rounded-md bg-white p-2" dangerouslySetInnerHTML={{ __html: qr }} />
+      {links.map((l) => (
+        <section key={l.id} className="panel mt-6 flex max-w-xl flex-wrap items-center gap-5 p-4">
+          <div className="rounded-md bg-white p-2" dangerouslySetInnerHTML={{ __html: l.qr }} />
           <div className="min-w-0 flex-1">
-            <h2 className="h2 mb-1">Link de pedidos</h2>
-            <p className="text-[13px] text-muted">Mande no WhatsApp, coloque na bio ou imprima o QR para a porta da loja.</p>
-            <a href={portalUrl} target="_blank" rel="noreferrer" className="mt-2 block break-all text-accent underline">{portalUrl}</a>
+            <h2 className="h2 mb-1">{l.nome ? `Link de pedidos: ${l.nome}` : "Link de pedidos"}</h2>
+            <p className="text-[13px] text-muted">
+              {l.nome ? "Os pedidos deste link caem na fila desta filial. " : ""}Mande no WhatsApp, coloque na bio ou imprima o QR para a porta da loja.
+            </p>
+            <a href={l.url} target="_blank" rel="noreferrer" className="mt-2 block break-all text-accent underline">{l.url}</a>
             <div className="mt-3">
-              <CopyButton text={portalUrl} label="Copiar link" />
+              <CopyButton text={l.url} label="Copiar link" />
             </div>
           </div>
         </section>
-      )}
+      ))}
+      <section className="panel mt-6 max-w-xl">
+        <div className="border-b border-line p-4">
+          <h2 className="h2">Filiais</h2>
+          <p className="mt-0.5 text-[13px] text-muted">Cada filial tem o próprio estoque, equipe e caixa. Clientes, produtos e preços valem para todas.</p>
+        </div>
+        <ul>
+          {filiais.map((b) => (
+            <li key={b.id} className={`flex items-center justify-between gap-3 border-b border-line px-4 py-2.5 ${b.active ? "" : "text-muted"}`}>
+              <div className="min-w-0">
+                <p className="font-medium">
+                  {b.name}
+                  {b.main && <span className="ml-2 rounded bg-subtle px-1.5 py-0.5 text-xs font-medium text-muted">principal</span>}
+                  {!b.active && <span className="ml-2 rounded bg-subtle px-1.5 py-0.5 text-xs font-medium text-muted">desativada</span>}
+                </p>
+                <p className="text-[13px] text-muted">{b.equipe === 1 ? "1 pessoa na equipe" : `${b.equipe} pessoas na equipe`}</p>
+              </div>
+              {!b.main && (
+                <ActionForm action={ativarFilialAction} confirm={b.active ? `Desativar a filial ${b.name}? O histórico continua guardado.` : undefined}>
+                  <input type="hidden" name="branchId" value={b.id} />
+                  <input type="hidden" name="active" value={String(!b.active)} />
+                  <button className="tap text-[13px] text-muted hover:text-fg">{b.active ? "Desativar" : "Reativar"}</button>
+                </ActionForm>
+              )}
+            </li>
+          ))}
+        </ul>
+        <ActionForm action={criarFilialAction} className="flex flex-wrap items-end gap-3 p-4" reset>
+          <div className="min-w-0 flex-1">
+            <label className="label" htmlFor="filial-nome">Nova filial</label>
+            <input id="filial-nome" name="name" required minLength={2} maxLength={60} className="input" placeholder="Ex.: Centro" />
+          </div>
+          <button className="btn">Criar filial</button>
+        </ActionForm>
+      </section>
     </>
   );
 }

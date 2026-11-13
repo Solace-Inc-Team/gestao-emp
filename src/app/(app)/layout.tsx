@@ -8,6 +8,7 @@ import { MarcaDaSessao } from "@/components/logo";
 import { NavLinks, type NavGroup } from "@/components/nav-links";
 import { roleLabel } from "@/components/ui";
 import { PageTransition } from "@/components/page-transition";
+import { SeletorFilial } from "@/components/seletor-filial";
 
 const initials = (name: string) =>
   name
@@ -82,7 +83,16 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             </form>
           </div>
         </div>
-        <p className="hidden truncate px-5 pb-5 text-[13px] text-muted lg:block">{user.tenantName}</p>
+        <p className="hidden truncate px-5 pb-5 text-[13px] text-muted lg:block">
+          {user.tenantName}
+          {/* a equipe vê a filial em que trabalha; o dono escolhe qual ver logo abaixo */}
+          {user.branches.length > 1 && user.role !== "dono" && <span className="block truncate text-fg">{user.branchName}</span>}
+        </p>
+        {user.branches.length > 1 && user.role === "dono" && (
+          <div className="px-5 pb-4 lg:-mt-3 lg:pb-5">
+            <SeletorFilial atual={user.branchId} filiais={user.branches} />
+          </div>
+        )}
         <NavLinks groups={groups} />
         <div className="mt-auto hidden items-center gap-2.5 border-t border-line px-4 py-3 lg:flex">
           <span className="grid size-8 shrink-0 place-items-center rounded-full bg-subtle text-xs font-semibold">

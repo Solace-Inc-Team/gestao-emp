@@ -12,8 +12,8 @@ export const metadata = { title: "Estoque" };
 export default async function Estoque() {
   const user = await requireUser("dono", "atendente", "caixa");
   const [stock, moves, products, suppliers, comodato] = await Promise.all([
-    stockOverview(user.tenantId),
-    recentMovements(user.tenantId, 20),
+    stockOverview(user.tenantId, user.branchId),
+    recentMovements(user.tenantId, user.branchId, 20),
     listProducts(user.tenantId, true),
     listSuppliers(user.tenantId, true),
     comodatoPorProduto(user.tenantId),

@@ -19,9 +19,9 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
   const hojeISO = todayISO();
   // dia futuro ou malformado volta para hoje; entregador só vale se for da empresa
   const dia = typeof sp.dia === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.dia) && sp.dia <= hojeISO ? sp.dia : hojeISO;
-  const entregadores = await listDrivers(user.tenantId);
+  const entregadores = await listDrivers(user.tenantId, user.branchId);
   const entregador = entregadores.find((e) => e.id === sp.entregador);
-  const d = await dashboard(user.tenantId, { day: dia, driverId: entregador?.id });
+  const d = await dashboard(user.tenantId, { day: dia, driverId: entregador?.id, branchId: user.branchId });
   // os primeiros passos são tarefas do dono; os outros perfis não têm acesso a metade das telas
   const passos = user.role === "dono" ? await primeirosPassos(user.tenantId) : null;
   const ehHoje = dia === hojeISO;

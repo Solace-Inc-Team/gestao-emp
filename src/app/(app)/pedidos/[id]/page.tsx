@@ -34,8 +34,10 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
   const o = await getOrder(user.tenantId, id);
-  if (!o) notFound();
-  const [drivers, open, settings] = await Promise.all([listDrivers(user.tenantId), listShifts(user.tenantId, "aberto"), getSettings(user.tenantId)]);
+  // a equipe só abre pedidos da própria filial; o dono abre de qualquer uma (pelo cliente, por exemplo)
+  if (!o || (user.role !== "dono" && o.branchId !== user.branchId)) notFound();
+  // entregadores e turnos da filial do pedido, não da que o dono está vendo
+  const [drivers, open, settings] = await Promise.all([listDrivers(user.tenantId, o.branchId), listShifts(user.tenantId, o.branchId, "aberto"), getSettings(user.tenantId)]);
   const pixOpen = o.paymentMethod === "pix" && !o.pixConfirmedAt && ["aberto", "em_rota", "entregue"].includes(o.status);
   const pixCode = pixOpen ? orderPix(settings, { number: o.number, totalCents: o.totalCents - o.cashPartCents }) : null;
   const onShift = drivers.filter((d) => open.some((s) => s.driverId === d.id));

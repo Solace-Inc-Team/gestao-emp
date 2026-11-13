@@ -24,10 +24,10 @@ export default async function Entregas() {
   const user = await requireUser("dono", "atendente", "caixa");
   const [waiting, inRoute, drivers, open, settings] = await withTenant(user.tenantId, () =>
     Promise.all([
-      listOrders(user.tenantId, { status: "aberto" }),
-      listOrders(user.tenantId, { status: "em_rota" }),
-      listDrivers(user.tenantId),
-      listShifts(user.tenantId, "aberto"),
+      listOrders(user.tenantId, { status: "aberto", branchId: user.branchId }),
+      listOrders(user.tenantId, { status: "em_rota", branchId: user.branchId }),
+      listDrivers(user.tenantId, user.branchId),
+      listShifts(user.tenantId, user.branchId, "aberto"),
       getSettings(user.tenantId),
     ]),
   );

@@ -1,3 +1,5 @@
+import { filialDoRelatorio } from "@/lib/filial";
+import { CampoFilial } from "@/components/campo-filial";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { periodBreakdown, periodReport } from "@/domain/queries";
@@ -11,23 +13,27 @@ export const metadata = { title: "Relatórios" };
 
 export default async function Relatorios({ searchParams }: PageProps<"/relatorios">) {
   const user = await requireUser("dono", "atendente", "caixa");
-  const { fromStr, toStr, from, to } = parsePeriod(await searchParams);
+  const sp = await searchParams;
+  const { fromStr, toStr, from, to } = parsePeriod(sp);
+  const filial = filialDoRelatorio(user, sp);
   const [{ days, closed }, breakdown, fiadoPaid, spent] = await Promise.all([
-    periodReport(user.tenantId, from, to),
-    periodBreakdown(user.tenantId, from, to),
-    paymentsByDay(user.tenantId, from, to),
-    expensesTotal(user.tenantId, fromStr, toStr, true),
+    periodReport(user.tenantId, from, to, filial),
+    periodBreakdown(user.tenantId, from, to, filial),
+    paymentsByDay(user.tenantId, from, to, filial),
+    expensesTotal(user.tenantId, fromStr, toStr, filial, true),
   ]);
   const fiadoTotal = fiadoPaid.reduce((s, d) => s + d.total, 0);
   const sum = (k: "total" | "cash" | "pix" | "card" | "credit" | "count") => days.reduce((s, d) => s + d[k], 0);
   const diffTotal = closed.reduce((s, c) => s + (c.shift.differenceCents ?? 0), 0);
   const fmtDay = (d: string) => d.split("-").reverse().join("/");
+  // a filial escolhida vai junto para o fechamento e para o CSV
+  const todas = filial === null && user.branches.length > 1 ? "&filial=todas" : "";
 
   return (
     <>
       <PageHeader title="Relatórios">
-        <Link href={`/relatorios/fechamento?dia=${toStr}`} className="btn">Fechamento do dia</Link>
-        <Link href={`/relatorios/csv?de=${fromStr}&ate=${toStr}`} className="btn">Baixar vendas em CSV</Link>
+        <Link href={`/relatorios/fechamento?dia=${toStr}${todas}`} className="btn">Fechamento do dia</Link>
+        <Link href={`/relatorios/csv?de=${fromStr}&ate=${toStr}${todas}`} className="btn">Baixar vendas em CSV</Link>
         {user.role === "dono" && (
           // <a> e não <Link>: é download de arquivo, não navegação
           <a href="/exportar" className="btn" title="Todos os dados da empresa em planilhas, num ZIP">Exportar todos os dados</a>
@@ -43,6 +49,7 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
           <label className="label" htmlFor="ate">Até</label>
           <input id="ate" name="ate" type="date" defaultValue={toStr} className="input" />
         </div>
+        <CampoFilial user={user} valor={sp.filial} />
         <button className="btn btn-primary">Ver período</button>
       </form>
 

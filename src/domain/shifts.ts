@@ -26,7 +26,8 @@ async function lockOpenShift(tx: Tx, ctx: Ctx, shiftId: string) {
     .from(shifts)
     .where(and(eq(shifts.id, shiftId), eq(shifts.tenantId, ctx.tenantId)))
     .for("update");
-  if (!shift) throw new DomainError("Turno não encontrado.");
+  // a equipe só confere turnos da própria filial
+  if (!shift || (ctx.role !== "dono" && shift.branchId !== ctx.branchId)) throw new DomainError("Turno não encontrado.");
   if (shift.status !== "aberto") throw new DomainError("Turno já foi fechado.");
   return shift;
 }
@@ -69,6 +70,7 @@ export async function addCashEntry(ctx: Ctx, input: z.infer<typeof cashEntrySche
         .insert(expenses)
         .values({
           tenantId: ctx.tenantId,
+          branchId: shift.branchId,
           category: input.category,
           description: input.note,
           amountCents: input.amountCents,
@@ -157,6 +159,9 @@ export async function openShift(ctx: Ctx, driverId: string, openingCashCents: nu
       .where(and(eq(users.id, driverId), eq(users.tenantId, ctx.tenantId), eq(users.role, "entregador"), eq(users.active, true)))
       .for("update"); // dois cliques em "Abrir turno" não abrem dois turnos
     if (!driver) throw new DomainError("Entregador não encontrado.");
+    // o turno é da filial do entregador; a equipe de uma filial não abre turno na outra
+    const branchId = driver.branchId ?? ctx.branchId;
+    if (ctx.role !== "dono" && branchId !== ctx.branchId) throw new DomainError("Entregador de outra filial.");
     const [open] = await tx
       .select({ id: shifts.id })
       .from(shifts)
@@ -164,7 +169,7 @@ export async function openShift(ctx: Ctx, driverId: string, openingCashCents: nu
     if (open) throw new DomainError(`${driver.name} já tem um turno aberto.`);
     const [shift] = await tx
       .insert(shifts)
-      .values({ tenantId: ctx.tenantId, driverId, openingCashCents, openedBy: ctx.userId })
+      .values({ tenantId: ctx.tenantId, branchId, driverId, openingCashCents, openedBy: ctx.userId })
       .returning();
     await audit(tx, ctx, "turno.abrir", "shift", shift.id, { driverId, openingCashCents });
     return shift;
@@ -175,6 +180,7 @@ export async function closeShift(ctx: Ctx, shiftId: string, countedCashCents: nu
   assertRole(ctx, ...CONFERENTE);
   return tenantTransaction(ctx, async (tx) => {
     const shift = await lockOpenShift(tx, ctx, shiftId);
+    const c: Ctx = { ...ctx, branchId: shift.branchId };
     const shiftOrders = await shiftOrdersOf(tx, shift.id);
     if (shiftOrders.some((o) => o.status === "em_rota"))
       throw new DomainError("Há pedidos em rota neste turno. Conclua ou cancele antes do acerto.");
@@ -192,12 +198,12 @@ export async function closeShift(ctx: Ctx, shiftId: string, countedCashCents: nu
         qty: sql<number>`sum(${stockMovements.quantity})::int`,
       })
       .from(stockMovements)
-      .where(and(eq(stockMovements.tenantId, ctx.tenantId), eq(stockMovements.driverId, shift.driverId)))
+      .where(and(eq(stockMovements.tenantId, ctx.tenantId), eq(stockMovements.branchId, shift.branchId), eq(stockMovements.driverId, shift.driverId)))
       .groupBy(stockMovements.productId, stockMovements.state);
     for (const h of held.filter((h) => h.qty > 0)) {
       const base = { productId: h.productId, state: h.state, shiftId: shift.id, reason: "devolução no acerto" };
-      await move(tx, ctx, { ...base, driverId: shift.driverId, quantity: -h.qty });
-      await move(tx, ctx, { ...base, driverId: null, quantity: h.qty });
+      await move(tx, c, { ...base, driverId: shift.driverId, quantity: -h.qty });
+      await move(tx, c, { ...base, driverId: null, quantity: h.qty });
     }
 
     const [closed] = await tx

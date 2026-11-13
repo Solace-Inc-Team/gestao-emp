@@ -1,3 +1,5 @@
+import { filialDoRelatorio } from "@/lib/filial";
+import { CampoFilial } from "@/components/campo-filial";
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { withTenant } from "@/db";
@@ -16,12 +18,13 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
   const sp = await searchParams;
   const day = typeof sp.dia === "string" && /^\d{4}-\d{2}-\d{2}$/.test(sp.dia) ? sp.dia : todayISO();
   const { from, to } = parsePeriod({ de: day, ate: day });
+  const filial = filialDoRelatorio(user, sp);
   const [{ days, closed }, b, fiado, expenses] = await withTenant(user.tenantId, () =>
     Promise.all([
-      periodReport(user.tenantId, from, to),
-      periodBreakdown(user.tenantId, from, to),
-      paymentsByDay(user.tenantId, from, to),
-      listExpenses(user.tenantId, day, day),
+      periodReport(user.tenantId, from, to, filial),
+      periodBreakdown(user.tenantId, from, to, filial),
+      paymentsByDay(user.tenantId, from, to, filial),
+      listExpenses(user.tenantId, day, day, filial),
     ]),
   );
   const d = days[0] ?? { count: 0, total: 0, cash: 0, pix: 0, card: 0, credit: 0 };
@@ -47,6 +50,7 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
               <label className="sr-only" htmlFor="dia">Dia</label>
               <input id="dia" name="dia" type="date" defaultValue={day} max={todayISO()} className="input" />
             </div>
+            <CampoFilial user={user} valor={sp.filial} rotulo={false} />
             <button className="btn">Ver</button>
           </form>
           <PrintButton />
@@ -54,7 +58,10 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
       </div>
 
       <header className="mb-6 border-b border-line pb-4">
-        <p className="text-[13px] text-muted">{user.tenantName}</p>
+        <p className="text-[13px] text-muted">
+          {user.tenantName}
+          {user.branches.length > 1 && (filial ? `, filial ${user.branchName}` : ", todas as filiais")}
+        </p>
         <p className="text-xl font-semibold first-letter:uppercase">Fechamento de {longDay}</p>
         <p className="text-[13px] text-muted">Emitido em {fmtDateTime(new Date())} por {user.name}</p>
       </header>

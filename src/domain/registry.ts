@@ -5,6 +5,7 @@ import { auditLog, customerAddresses, customers, orders, products, sessions, ten
 import { type Ctx, DomainError, assertRole } from "@/lib/ctx";
 import { hashPassword } from "@/lib/password";
 import { audit } from "./stock";
+import { filialAtiva } from "./filiais";
 import { fiadoBalance } from "./receivables";
 
 export const customerSchema = z.object({
@@ -162,16 +163,20 @@ export const userSchema = z.object({
   email: z.email("E-mail inválido.").transform((e) => e.toLowerCase()),
   password: z.string().min(8, "Senha precisa de ao menos 8 caracteres."),
   role: z.enum(["dono", "atendente", "caixa", "entregador"], { message: "Escolha a função." }),
+  // filial de quem não é dono; sem ela, a filial atual
+  branchId: z.uuid().nullable().default(null),
 });
 
-export async function createUser(ctx: Ctx, input: z.infer<typeof userSchema>) {
+export async function createUser(ctx: Ctx, input: z.input<typeof userSchema>) {
   assertRole(ctx, "dono");
   const passwordHash = await hashPassword(input.password);
   try {
     return await tenantTransaction(ctx, async (tx) => {
+      // o dono vê todas as filiais; o resto da equipe trabalha numa só
+      const branchId = input.role === "dono" ? null : (await filialAtiva(tx, ctx, input.branchId ?? ctx.branchId)).id;
       const [u] = await tx
         .insert(users)
-        .values({ tenantId: ctx.tenantId, name: input.name, email: input.email, role: input.role, passwordHash })
+        .values({ tenantId: ctx.tenantId, name: input.name, email: input.email, role: input.role, passwordHash, branchId })
         .returning({ id: users.id });
       await audit(tx, ctx, "usuario.criar", "user", u.id, { email: input.email, role: input.role });
       return u;

@@ -7,7 +7,7 @@ import { todayISO } from "@/lib/period";
 
 type State = "cheio" | "vazio" | "avariado";
 
-export async function audit(tx: Tx, ctx: Ctx, action: string, entity: string, entityId: string, data?: unknown) {
+export async function audit(tx: Tx, ctx: Pick<Ctx, "tenantId" | "userId">, action: string, entity: string, entityId: string, data?: unknown) {
   await tx.insert(auditLog).values({ tenantId: ctx.tenantId, userId: ctx.userId, action, entity, entityId, data });
 }
 
@@ -27,6 +27,7 @@ export async function balanceOf(tx: Tx, ctx: Ctx, productId: string, state: Stat
     .where(
       and(
         eq(stockMovements.tenantId, ctx.tenantId),
+        eq(stockMovements.branchId, ctx.branchId),
         eq(stockMovements.productId, productId),
         eq(stockMovements.state, state),
         driverId ? eq(stockMovements.driverId, driverId) : isNull(stockMovements.driverId),
@@ -55,7 +56,7 @@ export async function move(tx: Tx, ctx: Ctx, m: Move, productName = "produto") {
       throw new DomainError(`Estoque insuficiente de ${productName} (${m.state}) ${onde}: há ${have}.`);
     }
   }
-  await tx.insert(stockMovements).values({ ...m, tenantId: ctx.tenantId, userId: ctx.userId });
+  await tx.insert(stockMovements).values({ ...m, tenantId: ctx.tenantId, branchId: ctx.branchId, userId: ctx.userId });
 }
 
 export async function receivePurchase(
@@ -92,6 +93,7 @@ export async function receivePurchase(
     if (input.costCents) {
       await tx.insert(expenses).values({
         tenantId: ctx.tenantId,
+        branchId: ctx.branchId,
         category: "fornecedor",
         description: `Compra: ${input.full} x ${p.name}${supplier ? ` (${supplier.name})` : ""}`.slice(0, 160),
         amountCents: input.costCents,

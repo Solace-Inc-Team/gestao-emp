@@ -55,12 +55,15 @@ async function loadOrder(tx: Tx, ctx: Ctx, orderId: string) {
     .from(orders)
     .where(and(eq(orders.id, orderId), eq(orders.tenantId, ctx.tenantId)))
     .for("update");
-  if (!o) throw new DomainError("Pedido não encontrado.");
+  // a equipe só mexe nos pedidos da própria filial; o dono, em qualquer uma
+  if (!o || (ctx.role !== "dono" && o.branchId !== ctx.branchId)) throw new DomainError("Pedido não encontrado.");
   const items = await tx.select().from(orderItems).where(eq(orderItems.orderId, o.id));
   const prods = await lockProducts(tx, ctx, [...new Set(items.map((i) => i.productId))]);
   const name = (id: string) => prods.find((p) => p.id === id)?.name ?? "produto";
   const returnable = (id: string) => prods.find((p) => p.id === id)?.returnable ?? false;
-  return { o, items, name, returnable };
+  // o estoque que se mexe é o da filial do pedido, não o da filial que o dono está vendo
+  const c: Ctx = { ...ctx, branchId: o.branchId };
+  return { o, items, name, returnable, c };
 }
 
 export async function createOrder(ctx: Ctx, raw: NewOrder) {
@@ -127,6 +130,7 @@ export async function createOrder(ctx: Ctx, raw: NewOrder) {
       .insert(orders)
       .values({
         tenantId: ctx.tenantId,
+        branchId: ctx.branchId,
         number: next,
         customerId: input.customerId,
         paymentMethod: input.paymentMethod,
@@ -172,20 +176,20 @@ export async function createOrder(ctx: Ctx, raw: NewOrder) {
 }
 
 async function dispatchInTx(tx: Tx, ctx: Ctx, orderId: string, driverId: string) {
-  const { o, items, name } = await loadOrder(tx, ctx, orderId);
+  const { o, items, name, c } = await loadOrder(tx, ctx, orderId);
   if (o.status !== "aberto") throw new DomainError("Só pedidos em aberto podem sair para entrega.");
   const [shift] = await tx
     .select()
     .from(shifts)
-    .where(and(eq(shifts.tenantId, ctx.tenantId), eq(shifts.driverId, driverId), eq(shifts.status, "aberto")))
+    .where(and(eq(shifts.tenantId, ctx.tenantId), eq(shifts.branchId, o.branchId), eq(shifts.driverId, driverId), eq(shifts.status, "aberto")))
     // espera um acerto em andamento terminar; se ele fechar o turno, esta busca não acha mais nada
     .for("update");
-  if (!shift) throw new DomainError("Este entregador não tem turno aberto. Abra o turno no Caixa.");
+  if (!shift) throw new DomainError("Este entregador não tem turno aberto nesta filial. Abra o turno no Caixa.");
 
   for (const i of items) {
     const base = { productId: i.productId, orderId: o.id, shiftId: shift.id, reason: `saída pedido #${o.number}` };
-    await move(tx, ctx, { ...base, state: "cheio", driverId: null, quantity: -i.quantity }, name(i.productId));
-    await move(tx, ctx, { ...base, state: "cheio", driverId, quantity: i.quantity }, name(i.productId));
+    await move(tx, c, { ...base, state: "cheio", driverId: null, quantity: -i.quantity }, name(i.productId));
+    await move(tx, c, { ...base, state: "cheio", driverId, quantity: i.quantity }, name(i.productId));
   }
   await tx
     .update(orders)
@@ -195,12 +199,12 @@ async function dispatchInTx(tx: Tx, ctx: Ctx, orderId: string, driverId: string)
 }
 
 // tira da conta do entregador os cheios de um pedido que não vai mais ser entregue por ele
-async function returnToStore(tx: Tx, ctx: Ctx, loaded: Awaited<ReturnType<typeof loadOrder>>, reason: string) {
-  const { o, items, name } = loaded;
+async function returnToStore(tx: Tx, loaded: Awaited<ReturnType<typeof loadOrder>>, reason: string) {
+  const { o, items, name, c } = loaded;
   for (const i of items) {
     const base = { productId: i.productId, orderId: o.id, shiftId: o.shiftId ?? undefined, state: "cheio" as const, reason };
-    await move(tx, ctx, { ...base, driverId: o.driverId, quantity: -i.quantity }, name(i.productId));
-    await move(tx, ctx, { ...base, driverId: null, quantity: i.quantity }, name(i.productId));
+    await move(tx, c, { ...base, driverId: o.driverId, quantity: -i.quantity }, name(i.productId));
+    await move(tx, c, { ...base, driverId: null, quantity: i.quantity }, name(i.productId));
   }
 }
 
@@ -213,7 +217,7 @@ export async function reportOccurrence(ctx: Ctx, orderId: string, kind: string, 
     const { o } = loaded;
     if (ctx.role === "entregador" && o.driverId !== ctx.userId) throw new DomainError("Pedido de outro entregador.");
     if (o.status !== "em_rota" || !o.driverId) throw new DomainError("Pedido não está em rota.");
-    await returnToStore(tx, ctx, loaded, `retorno sem entrega #${o.number}`);
+    await returnToStore(tx, loaded, `retorno sem entrega #${o.number}`);
     const text = [occurrenceKinds[kind as keyof typeof occurrenceKinds], note.trim()].filter(Boolean).join(": ");
     await tx
       .update(orders)
@@ -234,6 +238,7 @@ export async function confirmPix(ctx: Ctx, orderId: string) {
         and(
           eq(orders.id, orderId),
           eq(orders.tenantId, ctx.tenantId),
+          ctx.role === "dono" ? undefined : eq(orders.branchId, ctx.branchId),
           eq(orders.paymentMethod, "pix"),
           isNull(orders.pixConfirmedAt),
           inArray(orders.status, ["aberto", "em_rota", "entregue"]),
@@ -249,19 +254,19 @@ export async function confirmPix(ctx: Ctx, orderId: string) {
 export async function reassignOrder(ctx: Ctx, orderId: string, driverId: string) {
   assertRole(ctx, "dono", "atendente", "caixa");
   await tenantTransaction(ctx, async (tx) => {
-    const { o, items, name } = await loadOrder(tx, ctx, orderId);
+    const { o, items, name, c } = await loadOrder(tx, ctx, orderId);
     if (o.status !== "em_rota" || !o.driverId) throw new DomainError("Só pedidos em rota podem trocar de entregador.");
     if (o.driverId === driverId) throw new DomainError("O pedido já está com este entregador.");
     const [shift] = await tx
       .select()
       .from(shifts)
-      .where(and(eq(shifts.tenantId, ctx.tenantId), eq(shifts.driverId, driverId), eq(shifts.status, "aberto")))
+      .where(and(eq(shifts.tenantId, ctx.tenantId), eq(shifts.branchId, o.branchId), eq(shifts.driverId, driverId), eq(shifts.status, "aberto")))
       .for("update");
-    if (!shift) throw new DomainError("Este entregador não tem turno aberto. Abra o turno no Caixa.");
+    if (!shift) throw new DomainError("Este entregador não tem turno aberto nesta filial. Abra o turno no Caixa.");
     for (const i of items) {
       const base = { productId: i.productId, orderId: o.id, state: "cheio" as const, reason: `troca de entregador #${o.number}` };
-      await move(tx, ctx, { ...base, shiftId: o.shiftId ?? undefined, driverId: o.driverId, quantity: -i.quantity }, name(i.productId));
-      await move(tx, ctx, { ...base, shiftId: shift.id, driverId, quantity: i.quantity }, name(i.productId));
+      await move(tx, c, { ...base, shiftId: o.shiftId ?? undefined, driverId: o.driverId, quantity: -i.quantity }, name(i.productId));
+      await move(tx, c, { ...base, shiftId: shift.id, driverId, quantity: i.quantity }, name(i.productId));
     }
     await tx.update(orders).set({ driverId, shiftId: shift.id }).where(eq(orders.id, o.id));
     await audit(tx, ctx, "pedido.trocar_entregador", "order", o.id, { from: o.driverId, to: driverId });
@@ -279,7 +284,7 @@ export async function dispatchOrder(ctx: Ctx, orderId: string, driverId: string)
  */
 export async function deliverOrder(ctx: Ctx, orderId: string, partial?: { delivered: Record<string, number>; note: string }) {
   return tenantTransaction(ctx, async (tx) => {
-    const { o, items, name } = await loadOrder(tx, ctx, orderId);
+    const { o, items, name, c } = await loadOrder(tx, ctx, orderId);
     if (ctx.role === "entregador" && o.driverId !== ctx.userId) throw new DomainError("Pedido de outro entregador.");
     // confirmação repetida (celular sem rede reenviando): já está entregue, não faz nada de novo
     if (o.status === "entregue" && !partial) return o.totalCents;
@@ -300,8 +305,8 @@ export async function deliverOrder(ctx: Ctx, orderId: string, partial?: { delive
     for (const i of got.filter((i) => i.got > 0)) {
       const base = { productId: i.productId, orderId: o.id, shiftId: o.shiftId ?? undefined, driverId: o.driverId };
       const reason = `entrega pedido #${o.number}`;
-      await move(tx, ctx, { ...base, state: "cheio", quantity: -i.got, reason }, name(i.productId));
-      if (i.returnsEmpty) await move(tx, ctx, { ...base, state: "vazio", quantity: i.got, reason }, name(i.productId));
+      await move(tx, c, { ...base, state: "cheio", quantity: -i.got, reason }, name(i.productId));
+      if (i.returnsEmpty) await move(tx, c, { ...base, state: "vazio", quantity: i.got, reason }, name(i.productId));
     }
 
     const changes: Partial<typeof orders.$inferInsert> = { status: "entregue", deliveredAt: new Date() };
@@ -335,7 +340,7 @@ export async function cancelOrder(ctx: Ctx, orderId: string, reason: string) {
     if (o.status === "entregue") throw new DomainError("Pedido entregue não pode ser cancelado. Use o estorno.");
     if (o.status === "estornado") throw new DomainError("Pedido já estornado.");
     if (o.status === "cancelado") throw new DomainError("Pedido já cancelado.");
-    if (o.status === "em_rota" && o.driverId) await returnToStore(tx, ctx, loaded, `retorno cancelamento #${o.number}`);
+    if (o.status === "em_rota" && o.driverId) await returnToStore(tx, loaded, `retorno cancelamento #${o.number}`);
     await tx.update(orders).set({ status: "cancelado", cancelReason: reason.trim() }).where(eq(orders.id, o.id));
     await audit(tx, ctx, "pedido.cancelar", "order", o.id, { reason, previous: o.status });
   });
@@ -349,7 +354,7 @@ export async function refundOrder(ctx: Ctx, input: { orderId: string; reason: st
   assertRole(ctx, "dono");
   if (input.reason.trim().length < 3) throw new DomainError("Informe o motivo do estorno.");
   await tenantTransaction(ctx, async (tx) => {
-    const { o, items, name } = await loadOrder(tx, ctx, input.orderId);
+    const { o, items, name, c } = await loadOrder(tx, ctx, input.orderId);
     if (o.status !== "entregue") throw new DomainError("Só pedidos entregues podem ser estornados.");
 
     if ((o.paymentMethod === "dinheiro" || o.cashPartCents > 0) && o.shiftId) {
@@ -370,9 +375,9 @@ export async function refundOrder(ctx: Ctx, input: { orderId: string; reason: st
         const qty = i.deliveredQuantity ?? i.quantity;
         if (!qty) continue;
         const base = { productId: i.productId, driverId: null, orderId: o.id, reason: `estorno pedido #${o.number}` };
-        await move(tx, ctx, { ...base, state: "cheio", quantity: qty }, name(i.productId));
+        await move(tx, c, { ...base, state: "cheio", quantity: qty }, name(i.productId));
         // o cliente recebe de volta o vazio que tinha entregado na troca
-        if (i.returnsEmpty) await move(tx, ctx, { ...base, state: "vazio", quantity: -qty }, name(i.productId));
+        if (i.returnsEmpty) await move(tx, c, { ...base, state: "vazio", quantity: -qty }, name(i.productId));
       }
     }
 
@@ -384,6 +389,7 @@ export async function refundOrder(ctx: Ctx, input: { orderId: string; reason: st
     if (o.paymentMethod !== "fiado") {
       await tx.insert(expenses).values({
         tenantId: ctx.tenantId,
+        branchId: o.branchId,
         category: "estorno",
         description: `Devolução do pedido #${o.number}`,
         amountCents: o.totalCents,

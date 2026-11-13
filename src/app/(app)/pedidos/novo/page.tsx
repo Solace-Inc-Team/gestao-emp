@@ -14,9 +14,9 @@ export default async function NovoPedido({ searchParams }: PageProps<"/pedidos/n
     Promise.all([
       listProducts(user.tenantId, true),
       isCustomer ? getCustomer(user.tenantId, cliente as string) : null,
-      listDrivers(user.tenantId),
-      listShifts(user.tenantId, "aberto"),
-      stockOverview(user.tenantId),
+      listDrivers(user.tenantId, user.branchId),
+      listShifts(user.tenantId, user.branchId, "aberto"),
+      stockOverview(user.tenantId, user.branchId),
       getSettings(user.tenantId),
       isCustomer ? listAddresses(user.tenantId, [cliente as string]) : [],
     ]),

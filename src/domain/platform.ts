@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { and, desc, eq, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { sessions, tenantDeletions, tenants, users } from "@/db/schema";
+import { branches, sessions, tenantDeletions, tenants, users } from "@/db/schema";
 import { DomainError } from "@/lib/ctx";
 import { hashPassword } from "@/lib/password";
 import type { SessionUser } from "@/lib/auth";
@@ -37,11 +37,12 @@ export async function createTenant(admin: SessionUser, input: z.infer<typeof new
     const [taken] = await tx.select({ id: users.id }).from(users).where(eq(users.email, input.email));
     if (taken) throw new DomainError("Já existe um usuário com este e-mail.");
     const [t] = await tx.insert(tenants).values({ name: input.company, slug: slugFor(input.company) }).returning();
+    await tx.insert(branches).values({ tenantId: t.id, name: "Principal", slug: "principal", main: true });
     const [owner] = await tx
       .insert(users)
       .values({ tenantId: t.id, name: input.ownerName, email: input.email, role: "dono", passwordHash })
       .returning({ id: users.id });
-    await audit(tx, { tenantId: t.id, userId: admin.userId, role: "dono" }, "empresa.criar", "tenant", t.id, {
+    await audit(tx, { tenantId: t.id, userId: admin.userId }, "empresa.criar", "tenant", t.id, {
       ownerId: owner.id,
       email: input.email,
     });
@@ -55,7 +56,7 @@ export async function setTenantActive(admin: SessionUser, tenantId: string, acti
   await db.transaction(async (tx) => {
     const [t] = await tx.update(tenants).set({ active, suspendedAt: active ? null : new Date() }).where(eq(tenants.id, tenantId)).returning({ id: tenants.id });
     if (!t) throw new DomainError("Empresa não encontrada.");
-    await audit(tx, { tenantId, userId: admin.userId, role: "dono" }, active ? "empresa.reativar" : "empresa.suspender", "tenant", tenantId);
+    await audit(tx, { tenantId, userId: admin.userId }, active ? "empresa.reativar" : "empresa.suspender", "tenant", tenantId);
   });
 }
 
@@ -74,7 +75,7 @@ export async function resetOwnerAccess(admin: SessionUser, tenantId: string, pas
     if (!owner) throw new DomainError("Empresa sem dono cadastrado.");
     await tx.update(users).set({ passwordHash, totpEnabled: false, totpSecret: null }).where(eq(users.id, owner.id));
     await tx.delete(sessions).where(eq(sessions.userId, owner.id));
-    await audit(tx, { tenantId, userId: admin.userId, role: "dono" }, "empresa.redefinir_acesso_dono", "user", owner.id);
+    await audit(tx, { tenantId, userId: admin.userId }, "empresa.redefinir_acesso_dono", "user", owner.id);
     return owner.email;
   });
 }
@@ -122,6 +123,7 @@ export async function deleteTenant(admin: SessionUser, tenantId: string, confirm
            or key in (select p || id::text from users cross join (values ('totp:'), ('senha:')) as k(p) where tenant_id = ${t.id})`,
     );
     await del("usuarios", sql`delete from users where tenant_id = ${t.id}`);
+    await del("filiais", sql`delete from branches where tenant_id = ${t.id}`);
     await tx.delete(tenants).where(eq(tenants.id, t.id));
     await tx.insert(tenantDeletions).values({ tenantId: t.id, tenantName: t.name, deletedBy: admin.email, counts });
     return counts;

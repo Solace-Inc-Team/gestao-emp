@@ -1,5 +1,5 @@
 import { db } from "@/db";
-import { tenants, users, products, customers, stockMovements } from "./schema";
+import { branches, tenants, users, products, customers, stockMovements } from "./schema";
 import { hashPassword } from "@/lib/password";
 import { TERMS_VERSION } from "@/lib/legal";
 import type { Ctx } from "@/lib/ctx";
@@ -18,9 +18,10 @@ export async function seedDemo() {
       pixName: "Distribuidora Fonte Azul",
       pixCity: "São Paulo",
     }).returning();
+  const [loja] = await db.insert(branches).values({ tenantId: t.id, name: "Principal", slug: "principal", main: true }).returning();
   const passwordHash = await hashPassword(DEMO_PASSWORD);
   const mk = (name: string, email: string, role: "dono" | "atendente" | "caixa" | "entregador") =>
-    ({ tenantId: t.id, name, email, role, passwordHash });
+    ({ tenantId: t.id, name, email, role, passwordHash, branchId: role === "dono" ? null : loja.id });
   const [dono, atendente, joao, carlos] = await db
     .insert(users)
     .values([
@@ -32,8 +33,8 @@ export async function seedDemo() {
     ])
     .returning();
 
-  const ctx: Ctx = { tenantId: t.id, userId: atendente.id, role: "atendente" };
-  const owner: Ctx = { tenantId: t.id, userId: dono.id, role: "dono" };
+  const ctx: Ctx = { tenantId: t.id, userId: atendente.id, role: "atendente", branchId: loja.id };
+  const owner: Ctx = { tenantId: t.id, userId: dono.id, role: "dono", branchId: loja.id };
 
   const [gas, agua, gas45, suporte] = await db
     .insert(products)
@@ -55,6 +56,7 @@ export async function seedDemo() {
       [suporte, "cheio", 8],
     ].map(([p, state, quantity]) => ({
       tenantId: t.id,
+      branchId: loja.id,
       productId: (p as typeof gas).id,
       state: state as "cheio" | "vazio",
       quantity: quantity as number,

@@ -2,10 +2,13 @@ import "server-only";
 import { and, asc, desc, eq, gte, lt, inArray, isNull, sql, ilike, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db, scoped } from "@/db";
-import { cashEntries, customerAddresses, customers, orderItems, orders, products, shifts, stockMovements, suppliers, tenants, users, auditLog } from "@/db/schema";
+import { branches, cashEntries, customerAddresses, customers, orderItems, orders, products, shifts, stockMovements, suppliers, tenants, users, auditLog } from "@/db/schema";
 import { expectedCash, paymentSummary } from "@/lib/cash";
 import { todayISO } from "@/lib/period";
 import { isUuid } from "@/lib/ctx";
+
+// Filial: as consultas da operação (estoque, pedidos, turnos, painel, relatórios) recebem a filial;
+// null quer dizer todas (só o dono, nos relatórios). Cliente, fiado e comodato são da empresa inteira.
 
 // meia-noite de Brasília, não a do servidor (o container roda em UTC)
 export const startOfToday = () => new Date(`${todayISO()}T00:00:00-03:00`);
@@ -24,17 +27,18 @@ export const listSuppliers = scoped((tenantId: string, onlyActive: boolean = fal
     .where(and(eq(suppliers.tenantId, tenantId), onlyActive ? eq(suppliers.active, true) : undefined))
     .orderBy(asc(suppliers.name)));
 
-export const listDrivers = scoped((tenantId: string) =>
+export const listDrivers = scoped((tenantId: string, branchId: string | null) =>
   db
     .select({ id: users.id, name: users.name })
     .from(users)
-    .where(and(eq(users.tenantId, tenantId), eq(users.role, "entregador"), eq(users.active, true)))
+    .where(and(eq(users.tenantId, tenantId), branchId ? eq(users.branchId, branchId) : undefined, eq(users.role, "entregador"), eq(users.active, true)))
     .orderBy(asc(users.name)));
 
 export const listUsers = scoped((tenantId: string) =>
   db
-    .select({ id: users.id, name: users.name, email: users.email, role: users.role, active: users.active })
+    .select({ id: users.id, name: users.name, email: users.email, role: users.role, active: users.active, branchId: users.branchId, branchName: branches.name })
     .from(users)
+    .leftJoin(branches, eq(branches.id, users.branchId))
     .where(eq(users.tenantId, tenantId))
     .orderBy(asc(users.role), asc(users.name)));
 
@@ -91,6 +95,7 @@ const orderCols = {
   customerAddress: sql<string | null>`coalesce(${orders.address}, ${customers.address})`,
   driverName: driver.name,
   driverId: orders.driverId,
+  branchId: orders.branchId,
 };
 
 export const listOrders = scoped(function listOrders(
@@ -102,6 +107,7 @@ export const listOrders = scoped(function listOrders(
     deliveredIn?: [Date, Date];
     driverId?: string;
     customerId?: string;
+    branchId?: string | null;
     q?: string;
   } = {},
 ) {
@@ -113,6 +119,7 @@ export const listOrders = scoped(function listOrders(
     .where(
       and(
         eq(orders.tenantId, tenantId),
+        f.branchId ? eq(orders.branchId, f.branchId) : undefined,
         f.status ? eq(orders.status, f.status) : undefined,
         f.since ? gte(orders.createdAt, f.since) : undefined,
         f.until ? lt(orders.createdAt, f.until) : undefined,
@@ -130,11 +137,11 @@ export const listOrders = scoped(function listOrders(
     .limit(300);
 });
 
-export const countOrdersByStatus = scoped(async function countOrdersByStatus(tenantId: string) {
+export const countOrdersByStatus = scoped(async function countOrdersByStatus(tenantId: string, branchId: string | null) {
   const rows = await db
     .select({ status: orders.status, n: sql<number>`count(*)::int` })
     .from(orders)
-    .where(eq(orders.tenantId, tenantId))
+    .where(and(eq(orders.tenantId, tenantId), branchId ? eq(orders.branchId, branchId) : undefined))
     .groupBy(orders.status);
   const by = Object.fromEntries(rows.map((r) => [r.status, r.n])) as Partial<Record<(typeof orders.status.enumValues)[number], number>>;
   return { ...by, total: rows.reduce((s, r) => s + r.n, 0) };
@@ -219,7 +226,7 @@ export const itemsForOrders = scoped(async function itemsForOrders(tenantId: str
     .where(and(eq(orderItems.tenantId, tenantId), inArray(orderItems.orderId, orderIds)));
 });
 
-export const stockOverview = scoped(async function stockOverview(tenantId: string) {
+export const stockOverview = scoped(async function stockOverview(tenantId: string, branchId: string) {
   const prods = await listProducts(tenantId);
   const rows = await db
     .select({
@@ -229,14 +236,14 @@ export const stockOverview = scoped(async function stockOverview(tenantId: strin
       qty: sql<number>`sum(${stockMovements.quantity})::int`,
     })
     .from(stockMovements)
-    .where(eq(stockMovements.tenantId, tenantId))
+    .where(and(eq(stockMovements.tenantId, tenantId), eq(stockMovements.branchId, branchId)))
     .groupBy(stockMovements.productId, stockMovements.state, stockMovements.driverId);
   // pedidos lançados que ainda não saíram já "seguram" os cheios da loja
   const held = await db
     .select({ productId: orderItems.productId, qty: sql<number>`sum(${orderItems.quantity})::int` })
     .from(orderItems)
     .innerJoin(orders, eq(orders.id, orderItems.orderId))
-    .where(and(eq(orders.tenantId, tenantId), eq(orders.status, "aberto")))
+    .where(and(eq(orders.tenantId, tenantId), eq(orders.branchId, branchId), eq(orders.status, "aberto")))
     .groupBy(orderItems.productId);
   return prods.map((p) => {
     const mine = rows.filter((r) => r.productId === p.id);
@@ -258,7 +265,7 @@ export const stockOverview = scoped(async function stockOverview(tenantId: strin
   });
 });
 
-export const recentMovements = scoped((tenantId: string, limit: number = 40) =>
+export const recentMovements = scoped((tenantId: string, branchId: string, limit: number = 40) =>
   db
     .select({
       id: stockMovements.id,
@@ -274,7 +281,7 @@ export const recentMovements = scoped((tenantId: string, limit: number = 40) =>
     .innerJoin(products, eq(products.id, stockMovements.productId))
     .innerJoin(users, eq(users.id, stockMovements.userId))
     .leftJoin(driver, eq(driver.id, stockMovements.driverId))
-    .where(eq(stockMovements.tenantId, tenantId))
+    .where(and(eq(stockMovements.tenantId, tenantId), eq(stockMovements.branchId, branchId)))
     .orderBy(desc(stockMovements.createdAt))
     .limit(limit));
 
@@ -346,12 +353,12 @@ const listShiftOrders = (tenantId: string, shiftId: string) =>
     .where(and(eq(orders.tenantId, tenantId), eq(orders.shiftId, shiftId)))
     .orderBy(asc(orders.number));
 
-export const listShifts = scoped(async function listShifts(tenantId: string, status?: "aberto" | "fechado") {
+export const listShifts = scoped(async function listShifts(tenantId: string, branchId: string | null, status?: "aberto" | "fechado") {
   const rows = await db
     .select({ shift: shifts, driverName: driver.name })
     .from(shifts)
     .innerJoin(driver, eq(driver.id, shifts.driverId))
-    .where(and(eq(shifts.tenantId, tenantId), status ? eq(shifts.status, status) : undefined))
+    .where(and(eq(shifts.tenantId, tenantId), branchId ? eq(shifts.branchId, branchId) : undefined, status ? eq(shifts.status, status) : undefined))
     .orderBy(desc(shifts.openedAt))
     .limit(100);
   const openIds = rows.filter((r) => r.shift.status === "aberto").map((r) => r.shift.id);
@@ -391,20 +398,20 @@ export const openShiftFor = scoped(async function openShiftFor(tenantId: string,
  * Números do painel. `day` (AAAA-MM-DD) e `driverId` filtram as vendas, os pedidos e o que saiu; fila,
  * alertas e dinheiro na rua são sempre do momento (com o entregador, só o turno dele).
  */
-export const dashboard = scoped(async function dashboard(tenantId: string, f: { day?: string; driverId?: string } = {}) {
+export const dashboard = scoped(async function dashboard(tenantId: string, f: { day?: string; driverId?: string; branchId: string }) {
   const since = f.day ? new Date(`${f.day}T00:00:00-03:00`) : startOfToday();
   const until = new Date(since.getTime() + 864e5);
-  const today = await listOrders(tenantId, { since, until, driverId: f.driverId });
+  const today = await listOrders(tenantId, { since, until, driverId: f.driverId, branchId: f.branchId });
   // vendido = entregue no dia, como nos relatórios (pedido de ontem entregue hoje conta hoje)
-  const delivered = await listOrders(tenantId, { status: "entregue", deliveredIn: [since, until], driverId: f.driverId });
+  const delivered = await listOrders(tenantId, { status: "entregue", deliveredIn: [since, until], driverId: f.driverId, branchId: f.branchId });
   const byMethod = paymentSummary(delivered);
-  const open = (await listShifts(tenantId, "aberto")).filter((s) => !f.driverId || s.driverId === f.driverId);
+  const open = (await listShifts(tenantId, f.branchId, "aberto")).filter((s) => !f.driverId || s.driverId === f.driverId);
   const [{ divergent }] = await db
     .select({ divergent: sql<number>`count(*)::int` })
     .from(shifts)
-    .where(and(eq(shifts.tenantId, tenantId), eq(shifts.status, "fechado"), sql`${shifts.differenceCents} <> 0`, isNull(shifts.resolvedAt)));
-  const stock = await stockOverview(tenantId);
-  const now = await exceptionsNow(tenantId);
+    .where(and(eq(shifts.tenantId, tenantId), eq(shifts.branchId, f.branchId), eq(shifts.status, "fechado"), sql`${shifts.differenceCents} <> 0`, isNull(shifts.resolvedAt)));
+  const stock = await stockOverview(tenantId, f.branchId);
+  const now = await exceptionsNow(tenantId, f.branchId);
   const sold = await db
     .select({ name: products.name, qty: sql<number>`sum(coalesce(${orderItems.deliveredQuantity}, ${orderItems.quantity}))::int` })
     .from(orderItems)
@@ -413,6 +420,7 @@ export const dashboard = scoped(async function dashboard(tenantId: string, f: { 
     .where(
       and(
         eq(orders.tenantId, tenantId),
+        eq(orders.branchId, f.branchId),
         eq(orders.status, "entregue"),
         gte(orders.deliveredAt, since),
         lt(orders.deliveredAt, until),
@@ -432,6 +440,7 @@ export const dashboard = scoped(async function dashboard(tenantId: string, f: { 
     .where(
       and(
         eq(orders.tenantId, tenantId),
+        eq(orders.branchId, f.branchId),
         eq(orders.status, "entregue"),
         gte(orders.deliveredAt, weekStart),
         lt(orders.deliveredAt, until),
@@ -453,6 +462,7 @@ export const dashboard = scoped(async function dashboard(tenantId: string, f: { 
     .where(
       and(
         eq(orders.tenantId, tenantId),
+        eq(orders.branchId, f.branchId),
         eq(orders.status, "entregue"),
         gte(orders.deliveredAt, new Date(since.getTime() - 864e5)),
         lt(orders.deliveredAt, prevUntil),
@@ -482,8 +492,9 @@ export const dashboard = scoped(async function dashboard(tenantId: string, f: { 
 });
 
 /** Vendas entregues no período, quebradas por entregador e por produto, mais o que saiu do normal. */
-export const periodBreakdown = scoped(async function periodBreakdown(tenantId: string, from: Date, to: Date) {
-  const delivered = and(eq(orders.tenantId, tenantId), eq(orders.status, "entregue"), gte(orders.deliveredAt, from), lt(orders.deliveredAt, to));
+export const periodBreakdown = scoped(async function periodBreakdown(tenantId: string, from: Date, to: Date, branchId: string | null) {
+  const daFilial = branchId ? eq(orders.branchId, branchId) : undefined;
+  const delivered = and(eq(orders.tenantId, tenantId), daFilial, eq(orders.status, "entregue"), gte(orders.deliveredAt, from), lt(orders.deliveredAt, to));
   const byDriver = await db
     .select({
       name: sql<string>`coalesce(${driver.name}, 'Balcão')`,
@@ -522,19 +533,27 @@ export const periodBreakdown = scoped(async function periodBreakdown(tenantId: s
       refunded: sql<number>`(count(*) filter (where ${orders.status} = 'estornado' and ${orders.refundedAt} >= ${from.toISOString()} and ${orders.refundedAt} < ${to.toISOString()}))::int`,
     })
     .from(orders)
-    .where(eq(orders.tenantId, tenantId));
+    .where(and(eq(orders.tenantId, tenantId), daFilial));
   const [events] = await db
     .select({
       occurrences: sql<number>`(count(*) filter (where ${auditLog.action} = 'pedido.ocorrencia'))::int`,
       partials: sql<number>`(count(*) filter (where ${auditLog.action} = 'pedido.entrega_parcial'))::int`,
     })
     .from(auditLog)
-    .where(and(eq(auditLog.tenantId, tenantId), eq(auditLog.entity, "order"), gte(auditLog.createdAt, from), lt(auditLog.createdAt, to)));
+    .where(
+      and(
+        eq(auditLog.tenantId, tenantId),
+        eq(auditLog.entity, "order"),
+        gte(auditLog.createdAt, from),
+        lt(auditLog.createdAt, to),
+        branchId ? sql`${auditLog.entityId} in (select id::text from ${orders} where ${orders.branchId} = ${branchId})` : undefined,
+      ),
+    );
   return { byDriver, byProduct, ...extra, ...events };
 });
 
 /** O que pede atenção agora: usado no painel. */
-export const exceptionsNow = scoped(async function exceptionsNow(tenantId: string) {
+export const exceptionsNow = scoped(async function exceptionsNow(tenantId: string, branchId: string | null) {
   const [t] = await db.select({ lateAfterMinutes: tenants.lateAfterMinutes }).from(tenants).where(eq(tenants.id, tenantId));
   const limit = new Date(Date.now() - t.lateAfterMinutes * 60000);
   const [r] = await db
@@ -546,11 +565,11 @@ export const exceptionsNow = scoped(async function exceptionsNow(tenantId: strin
       inRoute: sql<number>`(count(*) filter (where ${orders.status} = 'em_rota'))::int`,
     })
     .from(orders)
-    .where(eq(orders.tenantId, tenantId));
+    .where(and(eq(orders.tenantId, tenantId), branchId ? eq(orders.branchId, branchId) : undefined));
   return r;
 });
 
-export const periodReport = scoped(async function periodReport(tenantId: string, from: Date, to: Date) {
+export const periodReport = scoped(async function periodReport(tenantId: string, from: Date, to: Date, branchId: string | null) {
   const days = await db
     .select({
       day: sql<string>`to_char(${orders.deliveredAt} at time zone 'America/Sao_Paulo', 'YYYY-MM-DD')`,
@@ -563,14 +582,14 @@ export const periodReport = scoped(async function periodReport(tenantId: string,
       credit: sql<number>`sum(case when ${orders.paymentMethod} = 'fiado' then ${orders.totalCents} else 0 end)::int`,
     })
     .from(orders)
-    .where(and(eq(orders.tenantId, tenantId), eq(orders.status, "entregue"), gte(orders.deliveredAt, from), lt(orders.deliveredAt, to)))
+    .where(and(eq(orders.tenantId, tenantId), branchId ? eq(orders.branchId, branchId) : undefined, eq(orders.status, "entregue"), gte(orders.deliveredAt, from), lt(orders.deliveredAt, to)))
     .groupBy(sql`1`)
     .orderBy(sql`1`);
   const closed = await db
     .select({ shift: shifts, driverName: driver.name })
     .from(shifts)
     .innerJoin(driver, eq(driver.id, shifts.driverId))
-    .where(and(eq(shifts.tenantId, tenantId), eq(shifts.status, "fechado"), gte(shifts.closedAt, from), lt(shifts.closedAt, to)))
+    .where(and(eq(shifts.tenantId, tenantId), branchId ? eq(shifts.branchId, branchId) : undefined, eq(shifts.status, "fechado"), gte(shifts.closedAt, from), lt(shifts.closedAt, to)))
     .orderBy(desc(shifts.closedAt));
   return { days, closed };
 });

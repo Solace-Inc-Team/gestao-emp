@@ -9,7 +9,7 @@ export const metadata = { title: "Inventário" };
 
 export default async function Inventario() {
   const user = await requireUser("dono");
-  const stock = (await stockOverview(user.tenantId)).filter((p) => p.active);
+  const stock = (await stockOverview(user.tenantId, user.branchId)).filter((p) => p.active);
   const inRoute = stock.some((p) => p.fullTransit + p.emptyTransit > 0);
 
   return (

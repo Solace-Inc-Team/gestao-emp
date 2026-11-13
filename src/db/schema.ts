@@ -53,6 +53,32 @@ export const tenants = pgTable("tenants", {
   createdAt: createdAt(),
 });
 
+// filial: cada uma tem o próprio estoque, equipe, turnos e despesas. Clientes, produtos e preços são da empresa.
+// Toda empresa nasce com a principal; com uma filial só, o sistema não mostra nada de filial.
+export const branches = pgTable(
+  "branches",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    name: text("name").notNull(),
+    // parte do link de pedido da filial: /pedir/<empresa>?filial=<slug>
+    slug: text("slug").notNull(),
+    main: boolean("main").notNull().default(false),
+    active: boolean("active").notNull().default(true),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("branches_tenant_slug_uq").on(t.tenantId, t.slug),
+    uniqueIndex("branches_tenant_name_uq").on(t.tenantId, sql`lower(${t.name})`),
+    // uma principal por empresa
+    uniqueIndex("branches_tenant_main_uq").on(t.tenantId).where(sql`${t.main}`),
+  ],
+);
+const branchId = () =>
+  uuid("branch_id")
+    .notNull()
+    .references(() => branches.id);
+
 // prova de que a exclusão foi feita; fica fora da empresa apagada, por isso sem chave estrangeira
 export const tenantDeletions = pgTable("tenant_deletions", {
   id: id(),
@@ -72,6 +98,8 @@ export const users = pgTable(
     email: text("email").notNull(),
     passwordHash: text("password_hash").notNull(),
     role: roleEnum("role").notNull(),
+    // filial de quem não é dono; o dono fica sem e escolhe qual ver
+    branchId: uuid("branch_id").references(() => branches.id),
     active: boolean("active").notNull().default(true),
     // equipe da Solace: acessa /admin
     platformAdmin: boolean("platform_admin").notNull().default(false),
@@ -148,6 +176,7 @@ export const shifts = pgTable(
   {
     id: id(),
     tenantId: tenantId(),
+    branchId: branchId(),
     driverId: uuid("driver_id")
       .notNull()
       .references(() => users.id),
@@ -203,6 +232,7 @@ export const orders = pgTable(
   {
     id: id(),
     tenantId: tenantId(),
+    branchId: branchId(),
     number: integer("number").notNull(),
     customerId: uuid("customer_id").references(() => customers.id),
     status: orderStatusEnum("status").notNull().default("aberto"),
@@ -242,6 +272,7 @@ export const orders = pgTable(
   (t) => [
     uniqueIndex("orders_tracking_uq").on(t.trackingId),
     index("orders_tenant_status_idx").on(t.tenantId, t.status),
+    index("orders_branch_status_idx").on(t.branchId, t.status),
     index("orders_tenant_created_idx").on(t.tenantId, t.createdAt),
     uniqueIndex("orders_tenant_number_uq").on(t.tenantId, t.number),
   ],
@@ -300,6 +331,8 @@ export const customerPayments = pgTable(
   {
     id: id(),
     tenantId: tenantId(),
+    // filial onde o pagamento foi recebido (entra no caixa dela); o saldo do cliente soma todas
+    branchId: branchId(),
     customerId: uuid("customer_id")
       .notNull()
       .references(() => customers.id),
@@ -323,6 +356,7 @@ export const expenses = pgTable(
   {
     id: id(),
     tenantId: tenantId(),
+    branchId: branchId(),
     category: text("category").notNull(),
     description: text("description").notNull(),
     amountCents: integer("amount_cents").notNull(),
@@ -379,6 +413,7 @@ export const stockMovements = pgTable(
   {
     id: id(),
     tenantId: tenantId(),
+    branchId: branchId(),
     productId: uuid("product_id")
       .notNull()
       .references(() => products.id),
@@ -394,7 +429,7 @@ export const stockMovements = pgTable(
       .references(() => users.id),
     createdAt: createdAt(),
   },
-  (t) => [index("stock_tenant_product_idx").on(t.tenantId, t.productId)],
+  (t) => [index("stock_tenant_product_idx").on(t.tenantId, t.productId), index("stock_branch_product_idx").on(t.branchId, t.productId)],
 );
 
 export const suppliers = pgTable(

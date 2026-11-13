@@ -25,8 +25,8 @@ export default async function Pedidos({ searchParams }: PageProps<"/pedidos">) {
   const current = tabs.find(([v]) => v === sp.status)?.[0] ?? "";
   const q = typeof sp.q === "string" ? sp.q : "";
   const [orders, counts] = await Promise.all([
-    listOrders(user.tenantId, { status: current || undefined, q }),
-    countOrdersByStatus(user.tenantId),
+    listOrders(user.tenantId, { status: current || undefined, q, branchId: user.branchId }),
+    countOrdersByStatus(user.tenantId, user.branchId),
   ]);
   const href = (status: string) => {
     const p = new URLSearchParams();

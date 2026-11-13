@@ -1,6 +1,7 @@
 export type Role = "dono" | "atendente" | "caixa" | "entregador";
 
-export type Ctx = { tenantId: string; userId: string; role: Role };
+// branchId: filial onde a ação acontece (a do usuário, ou a que o dono escolheu ver)
+export type Ctx = { tenantId: string; userId: string; role: Role; branchId: string };
 
 export class DomainError extends Error {}
 

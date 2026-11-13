@@ -21,9 +21,16 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
       header: ["Nome", "Criada em"],
       query: sql`select name, ${when("created_at")} from tenants where id = ${t}`,
     },
+    "filiais.csv": {
+      header: ["Nome", "Link de pedido (filial=)", "Principal", "Ativa", "Criada em"],
+      query: sql`select name, slug, ${yes("main")}, ${yes("active")}, ${when("created_at")} from branches where tenant_id = ${t} order by created_at`,
+    },
     "equipe.csv": {
-      header: ["Nome", "E-mail", "Perfil", "Ativo", "2FA ativo", "Criado em"],
-      query: sql`select name, email, role, ${yes("active")}, ${yes("totp_enabled")}, ${when("created_at")} from users where tenant_id = ${t} order by created_at`,
+      header: ["Nome", "E-mail", "Perfil", "Filial", "Ativo", "2FA ativo", "Criado em"],
+      query: sql`
+        select u.name, u.email, u.role, b.name, ${yes("u.active")}, ${yes("u.totp_enabled")}, ${when("u.created_at")}
+        from users u left join branches b on b.id = u.branch_id
+        where u.tenant_id = ${t} order by u.created_at`,
     },
     "clientes.csv": {
       header: ["ID", "Nome", "Telefone", "Endereço", "Referência", "Observações", "Criado em"],
@@ -46,16 +53,17 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
     },
     "pedidos.csv": {
       header: [
-        "Número", "Situação", "Cliente", "Entregador", "Origem", "Pagamento", "Parte em dinheiro (R$)", "Taxa de entrega (R$)", "Desconto (R$)",
+        "Número", "Filial", "Situação", "Cliente", "Entregador", "Origem", "Pagamento", "Parte em dinheiro (R$)", "Taxa de entrega (R$)", "Desconto (R$)",
         "Motivo do desconto", "Total (R$)", "Troco para (R$)", "Endereço de entrega", "Última ocorrência",
         "Observações", "Motivo do cancelamento", "Motivo do estorno", "Lançado em", "Saiu em", "Entregue em", "Estornado em",
       ],
       query: sql`
-        select o.number, o.status, c.name, u.name, o.origin, o.payment_method, ${money("o.cash_part_cents")}, ${money("o.delivery_fee_cents")},
+        select o.number, b.name, o.status, c.name, u.name, o.origin, o.payment_method, ${money("o.cash_part_cents")}, ${money("o.delivery_fee_cents")},
                ${money("o.discount_cents")}, o.discount_reason, ${money("o.total_cents")},
                ${money("o.change_for_cents")}, coalesce(o.address, c.address), o.occurrence, o.notes, o.cancel_reason, o.refund_reason, ${when("o.created_at")}, ${when("o.dispatched_at")},
                ${when("o.delivered_at")}, ${when("o.refunded_at")}
         from orders o
+        join branches b on b.id = o.branch_id
         left join customers c on c.id = o.customer_id
         left join users u on u.id = o.driver_id
         where o.tenant_id = ${t} order by o.number`,
@@ -79,14 +87,14 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
     },
     "turnos_e_acertos.csv": {
       header: [
-        "Entregador", "Situação", "Troco inicial (R$)", "Esperado (R$)", "Contado (R$)", "Diferença (R$)", "Observação", "Conferido por",
+        "Filial", "Entregador", "Situação", "Troco inicial (R$)", "Esperado (R$)", "Contado (R$)", "Diferença (R$)", "Observação", "Conferido por",
         "Resolução da diferença", "Como foi resolvida", "Aberto em", "Fechado em", "Resolvida em",
       ],
       query: sql`
-        select u.name, s.status, ${money("s.opening_cash_cents")}, ${money("s.expected_cash_cents")}, ${money("s.counted_cash_cents")},
+        select b.name, u.name, s.status, ${money("s.opening_cash_cents")}, ${money("s.expected_cash_cents")}, ${money("s.counted_cash_cents")},
                ${money("s.difference_cents")}, s.closing_notes, c.name, s.resolution, s.resolution_notes,
                ${when("s.opened_at")}, ${when("s.closed_at")}, ${when("s.resolved_at")}
-        from shifts s join users u on u.id = s.driver_id left join users c on c.id = s.closed_by
+        from shifts s join branches b on b.id = s.branch_id join users u on u.id = s.driver_id left join users c on c.id = s.closed_by
         where s.tenant_id = ${t} order by s.opened_at`,
     },
     "repasses_e_saidas.csv": {
@@ -100,10 +108,11 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
         where e.tenant_id = ${t} order by e.created_at`,
     },
     "movimentacoes_de_estoque.csv": {
-      header: ["Data", "Produto", "Estado", "Onde", "Quantidade", "Motivo", "Pedido", "Por"],
+      header: ["Data", "Filial", "Produto", "Estado", "Onde", "Quantidade", "Motivo", "Pedido", "Por"],
       query: sql`
-        select ${when("m.created_at")}, p.name, m.state, coalesce(d.name, 'Loja'), m.quantity, m.reason, o.number, u.name
+        select ${when("m.created_at")}, b.name, p.name, m.state, coalesce(d.name, 'Loja'), m.quantity, m.reason, o.number, u.name
         from stock_movements m
+        join branches b on b.id = m.branch_id
         join products p on p.id = m.product_id
         join users u on u.id = m.user_id
         left join users d on d.id = m.driver_id
@@ -111,17 +120,17 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
         where m.tenant_id = ${t} order by m.created_at`,
     },
     "pagamentos_de_fiado.csv": {
-      header: ["Data", "Cliente", "Valor (R$)", "Forma", "Observação", "Recebido por", "Estornado em", "Motivo do estorno"],
+      header: ["Data", "Filial", "Cliente", "Valor (R$)", "Forma", "Observação", "Recebido por", "Estornado em", "Motivo do estorno"],
       query: sql`
-        select ${when("pm.created_at")}, c.name, ${money("pm.amount_cents")}, pm.method, pm.note, u.name, ${when("pm.voided_at")}, pm.void_reason
-        from customer_payments pm join customers c on c.id = pm.customer_id join users u on u.id = pm.received_by
+        select ${when("pm.created_at")}, b.name, c.name, ${money("pm.amount_cents")}, pm.method, pm.note, u.name, ${when("pm.voided_at")}, pm.void_reason
+        from customer_payments pm join branches b on b.id = pm.branch_id join customers c on c.id = pm.customer_id join users u on u.id = pm.received_by
         where pm.tenant_id = ${t} order by pm.created_at`,
     },
     "despesas.csv": {
-      header: ["Data", "Categoria", "Descrição", "Valor (R$)", "Forma", "Lançada por", "Cancelada em", "Motivo do cancelamento"],
+      header: ["Data", "Filial", "Categoria", "Descrição", "Valor (R$)", "Forma", "Lançada por", "Cancelada em", "Motivo do cancelamento"],
       query: sql`
-        select ${day("e.paid_on")}, e.category, e.description, ${money("e.amount_cents")}, e.method, u.name, ${when("e.voided_at")}, e.void_reason
-        from expenses e join users u on u.id = e.created_by
+        select ${day("e.paid_on")}, b.name, e.category, e.description, ${money("e.amount_cents")}, e.method, u.name, ${when("e.voided_at")}, e.void_reason
+        from expenses e join branches b on b.id = e.branch_id join users u on u.id = e.created_by
         where e.tenant_id = ${t} order by e.paid_on`,
     },
     "historico_de_alteracoes.csv": {

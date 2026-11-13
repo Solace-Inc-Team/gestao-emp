@@ -10,9 +10,9 @@ export const metadata = { title: "Caixa e acertos" };
 export default async function Caixa() {
   const user = await requireUser("dono", "atendente", "caixa");
   const [open, closed, drivers] = await Promise.all([
-    listShifts(user.tenantId, "aberto"),
-    listShifts(user.tenantId, "fechado"),
-    listDrivers(user.tenantId),
+    listShifts(user.tenantId, user.branchId, "aberto"),
+    listShifts(user.tenantId, user.branchId, "fechado"),
+    listDrivers(user.tenantId, user.branchId),
   ]);
   const free = drivers.filter((d) => !open.some((s) => s.driverId === d.id));
   const canSettle = user.role === "dono" || user.role === "caixa";

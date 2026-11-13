@@ -220,6 +220,18 @@ export function descrever(action: string, dados: Dados, nomes: Record<string, st
       l.titulo = "Apagou os dados pessoais de um cliente";
       break;
 
+    case "empresa.filial_criar":
+      l.titulo = `Criou a filial ${txt(d.name)}`;
+      break;
+    case "empresa.filial_desativar":
+      l.titulo = `Desativou a filial ${txt(d.name)}`;
+      break;
+    case "empresa.filial_reativar":
+      l.titulo = `Reativou a filial ${txt(d.name)}`;
+      break;
+    case "usuario.mudar_filial":
+      l.titulo = `Passou ${alvo} para a filial ${txt(d.filial)}`;
+      break;
     case "usuario.criar":
       l.titulo = `Cadastrou ${alvo} na equipe`;
       det(`Perfil: ${txt(d.role)}`);

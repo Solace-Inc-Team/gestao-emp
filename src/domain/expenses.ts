@@ -31,7 +31,7 @@ export const expenseSchema = z.object({
 export async function createExpense(ctx: Ctx, input: z.infer<typeof expenseSchema>) {
   assertRole(ctx, "dono", "atendente", "caixa");
   return tenantTransaction(ctx, async (tx) => {
-    const [e] = await tx.insert(expenses).values({ ...input, tenantId: ctx.tenantId, createdBy: ctx.userId }).returning();
+    const [e] = await tx.insert(expenses).values({ ...input, tenantId: ctx.tenantId, branchId: ctx.branchId, createdBy: ctx.userId }).returning();
     await audit(tx, ctx, "despesa.criar", "expense", e.id, input);
     return e;
   });
@@ -60,7 +60,8 @@ export async function voidExpense(ctx: Ctx, expenseId: string, reason: string) {
 }
 
 /** Despesas do período (datas YYYY-MM-DD, inclusivas), canceladas junto para o histórico. */
-export const listExpenses = scoped(function listExpenses(tenantId: string, fromStr: string, toStr: string) {
+/** branchId null: todas as filiais */
+export const listExpenses = scoped(function listExpenses(tenantId: string, fromStr: string, toStr: string, branchId: string | null) {
   return db
     .select({
       id: expenses.id,
@@ -76,18 +77,19 @@ export const listExpenses = scoped(function listExpenses(tenantId: string, fromS
     })
     .from(expenses)
     .innerJoin(users, eq(users.id, expenses.createdBy))
-    .where(and(eq(expenses.tenantId, tenantId), gte(expenses.paidOn, fromStr), lte(expenses.paidOn, toStr)))
+    .where(and(eq(expenses.tenantId, tenantId), branchId ? eq(expenses.branchId, branchId) : undefined, gte(expenses.paidOn, fromStr), lte(expenses.paidOn, toStr)))
     .orderBy(desc(expenses.paidOn), desc(expenses.createdAt));
 });
 
 // excludeRefunds: no resultado do período a venda estornada já saiu das vendas; contar a devolução seria descontar duas vezes
-export const expensesTotal = scoped(async function expensesTotal(tenantId: string, fromStr: string, toStr: string, excludeRefunds = false) {
+export const expensesTotal = scoped(async function expensesTotal(tenantId: string, fromStr: string, toStr: string, branchId: string | null, excludeRefunds = false) {
   const [r] = await db
     .select({ total: sql<number>`coalesce(sum(${expenses.amountCents}), 0)::int` })
     .from(expenses)
     .where(
       and(
         eq(expenses.tenantId, tenantId),
+        branchId ? eq(expenses.branchId, branchId) : undefined,
         isNull(expenses.voidedAt),
         gte(expenses.paidOn, fromStr),
         lte(expenses.paidOn, toStr),

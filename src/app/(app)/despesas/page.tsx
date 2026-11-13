@@ -1,3 +1,5 @@
+import { filialDoRelatorio } from "@/lib/filial";
+import { CampoFilial } from "@/components/campo-filial";
 import Link from "next/link";
 import { Receipt } from "lucide-react";
 import { requireUser } from "@/lib/auth";
@@ -18,7 +20,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
   const sp = await searchParams;
   const today = todayISO();
   const { fromStr, toStr } = parsePeriod({ de: today.slice(0, 8) + "01", ...sp });
-  const list = await listExpenses(user.tenantId, fromStr, toStr);
+  const list = await listExpenses(user.tenantId, fromStr, toStr, filialDoRelatorio(user, sp));
   const valid = list.filter((e) => !e.voidedAt);
   const total = valid.reduce((s, e) => s + e.amountCents, 0);
   const byCategory = Object.entries(
@@ -38,6 +40,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
           <label className="label" htmlFor="ate">Até</label>
           <input id="ate" name="ate" type="date" defaultValue={toStr} className="input" />
         </div>
+        <CampoFilial user={user} valor={sp.filial} />
         <button className="btn">Ver período</button>
       </form>
 

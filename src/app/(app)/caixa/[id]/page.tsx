@@ -20,7 +20,8 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
   const { id } = await params;
   if (!isUuid(id)) notFound();
   const s = await getShift(user.tenantId, id);
-  if (!s) notFound();
+  // turno de outra filial não abre para a equipe; o dono vê todos
+  if (!s || (user.role !== "dono" && s.branchId !== user.branchId)) notFound();
   const isOpen = s.status === "aberto";
   // turno fechado mostra a conta como estava no acerto; estorno feito depois aparece à parte
   const cashSales = isOpen ? s.summary.dinheiro : s.expected - s.openingCashCents + s.handedOver + s.spent;

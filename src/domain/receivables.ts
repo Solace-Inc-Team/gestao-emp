@@ -45,7 +45,7 @@ export async function receivePayment(ctx: Ctx, input: z.infer<typeof paymentSche
       throw new DomainError(`O valor passa do saldo devedor (R$ ${(owed / 100).toFixed(2).replace(".", ",")}).`);
     const [p] = await tx
       .insert(customerPayments)
-      .values({ ...input, tenantId: ctx.tenantId, receivedBy: ctx.userId })
+      .values({ ...input, tenantId: ctx.tenantId, branchId: ctx.branchId, receivedBy: ctx.userId })
       .returning();
     await audit(tx, ctx, "fiado.pagamento", "customer", c.id, { amountCents: input.amountCents, method: input.method, before: owed });
     return p;
@@ -125,11 +125,12 @@ export const customerStatement = scoped(async function customerStatement(tenantI
 });
 
 /** Fiado recebido por dia no período (para relatórios). */
-export const paymentsByDay = scoped(async function paymentsByDay(tenantId: string, from: Date, to: Date) {
+export const paymentsByDay = scoped(async function paymentsByDay(tenantId: string, from: Date, to: Date, branchId: string | null) {
+  const daFilial = branchId ? sql`and branch_id = ${branchId}` : sql``;
   return db.execute<{ day: string; total: number }>(sql`
     select to_char(created_at at time zone 'America/Sao_Paulo', 'YYYY-MM-DD') as day, sum(amount_cents)::int as total
     from customer_payments
-    where tenant_id = ${tenantId} and voided_at is null and created_at >= ${from.toISOString()} and created_at < ${to.toISOString()}
+    where tenant_id = ${tenantId} and voided_at is null and created_at >= ${from.toISOString()} and created_at < ${to.toISOString()} ${daFilial}
     group by 1 order by 1
   `);
 });

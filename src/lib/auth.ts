@@ -3,13 +3,15 @@ import { cache } from "react";
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { createHash, randomBytes } from "node:crypto";
-import { and, eq, gt } from "drizzle-orm";
+import { and, asc, desc, eq, gt } from "drizzle-orm";
 import { db } from "@/db";
-import { sessions, users, tenants } from "@/db/schema";
+import { branches, sessions, users, tenants } from "@/db/schema";
 import type { Ctx, Role } from "./ctx";
 import { TERMS_VERSION } from "./legal";
 
 const COOKIE = "sessao";
+/** filial que o dono escolheu ver; a equipe ignora, fica sempre na sua */
+export const FILIAL_COOKIE = "filial";
 const TTL_MS = 1000 * 60 * 60 * 12;
 
 const sha = (s: string) => createHash("sha256").update(s).digest("hex");
@@ -42,6 +44,9 @@ export type SessionUser = Ctx & {
   platformAdmin: boolean;
   totpEnabled: boolean;
   termsVersion: string | null;
+  branchName: string;
+  /** filiais ativas da empresa, a principal primeiro; com uma só, nada de filial aparece na tela */
+  branches: { id: string; name: string }[];
 };
 
 export const getUser = cache(async (): Promise<SessionUser | null> => {
@@ -58,6 +63,7 @@ export const getUser = cache(async (): Promise<SessionUser | null> => {
       platformAdmin: users.platformAdmin,
       totpEnabled: users.totpEnabled,
       termsVersion: users.termsVersion,
+      ownBranch: users.branchId,
     })
     .from(sessions)
     .innerJoin(users, eq(users.id, sessions.userId))
@@ -71,7 +77,16 @@ export const getUser = cache(async (): Promise<SessionUser | null> => {
         eq(tenants.active, true),
       ),
     );
-  return row ?? null;
+  if (!row) return null;
+  const { ownBranch, ...user } = row;
+  const list = await db
+    .select({ id: branches.id, name: branches.name })
+    .from(branches)
+    .where(and(eq(branches.tenantId, row.tenantId), eq(branches.active, true)))
+    .orderBy(desc(branches.main), asc(branches.name));
+  const escolhida = row.role === "dono" ? (await cookies()).get(FILIAL_COOKIE)?.value : ownBranch;
+  const atual = list.find((b) => b.id === escolhida) ?? list[0];
+  return { ...user, branchId: atual.id, branchName: atual.name, branches: list };
 });
 
 /** Sessão que já passou pela senha e espera o código de 2FA. */

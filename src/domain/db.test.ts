@@ -31,19 +31,20 @@ let A: World, B: World;
 
 async function makeTenant(name: string) {
   const { db } = m.db;
-  const { tenants, users, products, customers, stockMovements } = m.schema;
+  const { tenants, users, products, customers, stockMovements, branches } = m.schema;
   const [t] = await db.insert(tenants).values({ name, slug: `teste-${name.toLowerCase()}-${Date.now()}` }).returning();
+  const [branch] = await db.insert(branches).values({ tenantId: t.id, name: "Principal", slug: "principal", main: true }).returning();
   const [owner, driver] = await db
     .insert(users)
     .values([
       { tenantId: t.id, name: `Dono ${name}`, email: `dono@${t.id}.test`, role: "dono", passwordHash: "x" },
-      { tenantId: t.id, name: `Entregador ${name}`, email: `ent@${t.id}.test`, role: "entregador", passwordHash: "x" },
+      { tenantId: t.id, name: `Entregador ${name}`, email: `ent@${t.id}.test`, role: "entregador", passwordHash: "x", branchId: branch.id },
     ])
     .returning();
   const [product] = await db.insert(products).values({ tenantId: t.id, name: `Gás ${name}`, priceCents: 11000 }).returning();
   const [customer] = await db.insert(customers).values({ tenantId: t.id, name: `Cliente ${name}` }).returning();
-  await db.insert(stockMovements).values({ tenantId: t.id, productId: product.id, state: "cheio", quantity: 10, reason: "inicial", userId: owner.id });
-  const ctx = { tenantId: t.id, userId: owner.id, role: "dono" as const };
+  await db.insert(stockMovements).values({ tenantId: t.id, branchId: branch.id, productId: product.id, state: "cheio", quantity: 10, reason: "inicial", userId: owner.id });
+  const ctx = { tenantId: t.id, userId: owner.id, role: "dono" as const, branchId: branch.id };
   const shift = await m.shifts.openShift(ctx, driver.id, 0);
   const order = await m.orders.createOrder(ctx, {
     mode: "entrega",
@@ -55,7 +56,7 @@ async function makeTenant(name: string) {
     notes: "",
     driverId: null,
   });
-  return { t, owner, driver, product, customer, ctx, shift, order };
+  return { t, branch, owner, driver, product, customer, ctx, shift, order };
 }
 
 before(async () => {
@@ -94,7 +95,7 @@ test("consultas de B não enxergam nada de A", async () => {
   assert.equal(await m.q.getShift(B.t.id, A.shift.id), null);
   const orders = await m.q.listOrders(B.t.id);
   assert.ok(orders.every((o) => o.id !== A.order.id));
-  const stock = await m.q.stockOverview(B.t.id);
+  const stock = await m.q.stockOverview(B.t.id, B.branch.id);
   assert.deepEqual(stock.map((p) => p.id), [B.product.id]);
   const team = await m.q.listUsers(B.t.id);
   assert.ok(team.every((u) => u.id !== A.owner.id && u.id !== A.driver.id));
@@ -136,7 +137,7 @@ test("A continua intacto depois das tentativas de B", async () => {
   assert.equal(o?.status, "aberto");
   const [owner] = await m.q.listUsers(A.t.id);
   assert.ok(owner.active);
-  const [p] = await m.q.stockOverview(A.t.id);
+  const [p] = await m.q.stockOverview(A.t.id, A.branch.id);
   assert.equal(p.fullStore, 10);
 });
 
@@ -191,27 +192,27 @@ test("estorno: turno aberto bloqueia, estoque volta e a devolução vira despesa
   await assert.rejects(m.orders.refundOrder(A.ctx, refund), /turno deste pedido ainda está aberto/);
 
   await m.shifts.closeShift(A.ctx, A.shift.id, 11000, "");
-  const before = (await m.q.stockOverview(A.t.id))[0];
+  const before = (await m.q.stockOverview(A.t.id, A.branch.id))[0];
   await assert.rejects(m.orders.refundOrder(B.ctx, refund), /não encontrado/);
   await m.orders.refundOrder(A.ctx, refund);
-  const after = (await m.q.stockOverview(A.t.id))[0];
+  const after = (await m.q.stockOverview(A.t.id, A.branch.id))[0];
   assert.equal(after.fullStore, before.fullStore + 1);
   assert.equal(after.emptyStore, before.emptyStore - 1);
   assert.equal((await m.q.getOrder(A.t.id, sale.id))?.status, "estornado");
   await assert.rejects(m.orders.refundOrder(A.ctx, refund), /Só pedidos entregues/);
 
   const today = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
-  const list = await m.exp.listExpenses(A.t.id, today, today);
+  const list = await m.exp.listExpenses(A.t.id, today, today, null);
   const auto = list.find((e) => e.orderId === sale.id);
   assert.equal(auto?.category, "estorno");
   assert.equal(auto?.amountCents, 11000);
   await assert.rejects(m.exp.voidExpense(A.ctx, auto!.id, "engano"), /não pode ser cancelada/);
   // no resultado, a devolução não desconta de novo o que já saiu das vendas
   assert.equal(
-    (await m.exp.expensesTotal(A.t.id, today, today)) - (await m.exp.expensesTotal(A.t.id, today, today, true)),
+    (await m.exp.expensesTotal(A.t.id, today, today, null)) - (await m.exp.expensesTotal(A.t.id, today, today, null, true)),
     11000,
   );
-  assert.equal((await m.exp.listExpenses(B.t.id, today, today)).length, 0);
+  assert.equal((await m.exp.listExpenses(B.t.id, today, today, null)).length, 0);
 });
 
 test("estorno de fiado exige estornar os pagamentos antes", async () => {
@@ -232,12 +233,12 @@ test("estorno de fiado exige estornar os pagamentos antes", async () => {
 
 test("despesas: lançar, cancelar e totalizar só o que vale", async () => {
   const today = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
-  const base = await m.exp.expensesTotal(A.t.id, today, today);
+  const base = await m.exp.expensesTotal(A.t.id, today, today, null);
   const e = await m.exp.createExpense(A.ctx, { category: "combustivel", description: "Diesel", amountCents: 20000, method: "pix", paidOn: today });
-  assert.equal(await m.exp.expensesTotal(A.t.id, today, today), base + 20000);
+  assert.equal(await m.exp.expensesTotal(A.t.id, today, today, null), base + 20000);
   await assert.rejects(m.exp.voidExpense(B.ctx, e.id, "teste"), /não encontrada/);
   await m.exp.voidExpense(A.ctx, e.id, "lançado em dobro");
-  assert.equal(await m.exp.expensesTotal(A.t.id, today, today), base);
+  assert.equal(await m.exp.expensesTotal(A.t.id, today, today, null), base);
   await assert.rejects(m.exp.voidExpense({ ...A.ctx, role: "atendente" }, e.id, "x"), /Sem permissão/);
 });
 
@@ -256,7 +257,7 @@ test("redefinir senha: só dentro da empresa, derruba sessões e desliga 2FA do 
   assert.equal(d.totpEnabled, false);
 
   await db.update(users).set({ totpEnabled: true, totpSecret: "ABC" }).where(eq(users.id, A.owner.id));
-  const admin = { ...B.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false, termsVersion: null };
+  const admin = { ...B.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false, termsVersion: null, branchName: "", branches: [] };
   await assert.rejects(m.platform.resetOwnerAccess({ ...admin, platformAdmin: false }, A.t.id, "senha-nova-2"), /Sem permissão/);
   assert.equal(await m.platform.resetOwnerAccess(admin, A.t.id, "senha-nova-2"), A.owner.email);
   const [o] = await db.select().from(users).where(eq(users.id, A.owner.id));
@@ -304,7 +305,7 @@ test("monitoramento: agrupa o mesmo erro, avisa uma vez por hora e de novo após
   await m.monitoring.recordError(boom(), req, send, new Date(t0.getTime() + 61 * 60_000));
   assert.equal(sent.length, 2);
 
-  const admin = { ...A.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false, termsVersion: null };
+  const admin = { ...A.ctx, platformAdmin: true, name: "", email: "", tenantName: "", totpEnabled: false, termsVersion: null, branchName: "", branches: [] };
   const [ev] = await m.monitoring.listErrors(admin);
   assert.equal(ev.count, 3);
   assert.equal(ev.path, "/pedidos/:id");
@@ -342,7 +343,7 @@ test("exclusão de empresa: travas, apaga tudo dela e mais nada", async () => {
   await db.insert(sessions).values({ id: "sessao-c", userId: C.owner.id, expiresAt: new Date(Date.now() + 3600e3) });
   await db.insert(loginAttempts).values({ key: `login:${C.owner.email}:10.0.0.1` });
 
-  const admin = { ...A.ctx, platformAdmin: true, name: "", email: "admin@teste", tenantName: "", totpEnabled: false, termsVersion: null };
+  const admin = { ...A.ctx, platformAdmin: true, name: "", email: "admin@teste", tenantName: "", totpEnabled: false, termsVersion: null, branchName: "", branches: [] };
   const countOf = async (table: string, t: string) =>
     Number((await m.db.pgClient.unsafe(`select count(*)::int n from ${table} where tenant_id = $1`, [t]))[0].n);
   const tables = ["audit_log", "customer_payments", "cash_entries", "customer_addresses", "expenses", "stock_movements", "order_items", "orders", "shifts", "customers", "products", "suppliers", "users"];
@@ -435,9 +436,9 @@ test("caixa: repasse e gasto diminuem o esperado; diferença fica pendente até 
     mode: "entrega", customerId: A.customer.id, items: [{ productId: A.product.id, quantity: 2, returnsEmpty: true }],
     paymentMethod: "dinheiro", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: driver.id,
   });
-  await m.orders.deliverOrder({ tenantId: A.t.id, userId: driver.id, role: "entregador" }, order.id);
+  await m.orders.deliverOrder({ tenantId: A.t.id, userId: driver.id, role: "entregador", branchId: A.branch.id }, order.id);
   // o celular sem rede reenvia a confirmação: nada é contado duas vezes
-  await m.orders.deliverOrder({ tenantId: A.t.id, userId: driver.id, role: "entregador" }, order.id);
+  await m.orders.deliverOrder({ tenantId: A.t.id, userId: driver.id, role: "entregador", branchId: A.branch.id }, order.id);
   // em mãos: 50 de troco + 220 da entrega
   const entry = (kind: "repasse" | "saida", amountCents: number) => ({ shiftId: shift.id, kind, amountCents, note: "gasolina", category: "combustivel" });
   await assert.rejects(m.shifts.addCashEntry(atendente, entry("repasse", 1000)), /Sem permissão/);
@@ -454,7 +455,7 @@ test("caixa: repasse e gasto diminuem o esperado; diferença fica pendente até 
   const view = await m.q.getShift(A.t.id, shift.id);
   assert.equal(view!.expected, 5000 + 22000 - 10000 - 3000);
   const today = new Date().toISOString().slice(0, 10);
-  const spent = (await m.exp.listExpenses(A.t.id, "2000-01-01", "2999-01-01")).filter((e) => e.description === "gasolina" && !e.voidedAt);
+  const spent = (await m.exp.listExpenses(A.t.id, "2000-01-01", "2999-01-01", null)).filter((e) => e.description === "gasolina" && !e.voidedAt);
   assert.equal(spent.length, 1);
   assert.ok(today);
 
@@ -502,7 +503,7 @@ test("pedido: desconto com limite, pagamento misto, entrega parcial, ocorrência
   assert.equal(await held(d2.id), 3);
 
   // não conseguiu entregar: volta para a fila e a carga volta para a loja
-  const driver2 = { tenantId: A.t.id, userId: d2.id, role: "entregador" as const };
+  const driver2 = { tenantId: A.t.id, userId: d2.id, role: "entregador" as const, branchId: A.branch.id };
   await assert.rejects(m.orders.reportOccurrence({ ...driver2, userId: d1.id }, o.id, "ausente", ""), /outro entregador/);
   await m.orders.reportOccurrence(driver2, o.id, "ausente", "ninguém atendeu");
   assert.equal(await held(d2.id), 0);
@@ -512,7 +513,7 @@ test("pedido: desconto com limite, pagamento misto, entrega parcial, ocorrência
 
   // sai de novo e chega só 1 de 3: total refeito, 2 cheios continuam com o entregador
   await m.orders.dispatchOrder(atendente, o.id, d1.id);
-  const driver1 = { tenantId: A.t.id, userId: d1.id, role: "entregador" as const };
+  const driver1 = { tenantId: A.t.id, userId: d1.id, role: "entregador" as const, branchId: A.branch.id };
   const [item] = (await m.q.getOrder(A.t.id, o.id))!.items;
   await assert.rejects(m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 0 }, note: "nada" }), /Não consegui entregar/);
   await assert.rejects(m.orders.deliverOrder(driver1, o.id, { delivered: { [item.id]: 4 }, note: "a mais" }), /inválida/);
@@ -559,13 +560,13 @@ test("estoque: avaria, inventário, compra com fornecedor, reserva e preço do v
   const sB = await m.stock.saveSupplier(B.ctx, { name: "Fornecedor de B", phone: "", notes: "", active: true });
   await assert.rejects(m.stock.receivePurchase(A.ctx, { productId: p.id, full: 10, emptiesReturned: 0, note: "", supplierId: sB.id }), /Fornecedor não encontrado/);
   await m.stock.receivePurchase(A.ctx, { productId: p.id, full: 10, emptiesReturned: 0, note: "NF 12", supplierId: s.id, costCents: 9000, costMethod: "pix" });
-  const bought = (await m.exp.listExpenses(A.t.id, "2000-01-01", "2999-01-01")).find((e) => e.description.includes("Galão Estoque"));
+  const bought = (await m.exp.listExpenses(A.t.id, "2000-01-01", "2999-01-01", null)).find((e) => e.description.includes("Galão Estoque"));
   assert.equal(bought?.amountCents, 9000);
   assert.match(bought!.description, /Fonte Serra/);
 
   await m.stock.markDamaged({ ...A.ctx, role: "atendente" }, { productId: p.id, from: "cheio", quantity: 2, note: "trincado" });
   await assert.rejects(m.stock.markDamaged(A.ctx, { productId: p.id, from: "vazio", quantity: 1, note: "amassado" }), /Estoque insuficiente/);
-  const row = async () => (await m.q.stockOverview(A.t.id)).find((x) => x.id === p.id)!;
+  const row = async () => (await m.q.stockOverview(A.t.id, A.branch.id)).find((x) => x.id === p.id)!;
   assert.deepEqual([(await row()).fullStore, (await row()).damaged], [8, 2]);
 
   // pedido aguardando segura o estoque; sem vazio para trocar, o vasilhame entra no preço
@@ -604,17 +605,17 @@ test("portal: só com portal ligado, reconhece o cliente pelo telefone e não us
     name: "Cliente do Site", phone: "(11) 97777-1234", address: "Rua do Site, 10", reference: "", notes: "",
     items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }], paymentMethod: "dinheiro" as const, changeForCents: null,
   };
-  const first = await m.portal.placePortalOrder(A.t.id, input);
-  const second = await m.portal.placePortalOrder(A.t.id, { ...input, phone: "11977771234", address: "Outro lugar, 5" });
+  const first = await m.portal.placePortalOrder(A.t.id, A.branch.id, input);
+  const second = await m.portal.placePortalOrder(A.t.id, A.branch.id, { ...input, phone: "11977771234", address: "Outro lugar, 5" });
   assert.equal(first.origin, "portal");
   assert.equal(first.status, "aberto");
   assert.equal(second.customerId, first.customerId);
   assert.equal((await m.q.getOrder(A.t.id, second.id))!.customerAddress, "Outro lugar, 5");
   assert.match(second.notes, /Confirmar com o cliente/);
   assert.equal((await db.select().from(customers).where(eq(customers.phone, "(11) 97777-1234"))).length, 1);
-  await assert.rejects(m.portal.placePortalOrder(A.t.id, { ...input, items: [{ productId: B.product.id, quantity: 1, returnsEmpty: true }] }), /indisponível/);
+  await assert.rejects(m.portal.placePortalOrder(A.t.id, A.branch.id, { ...input, items: [{ productId: B.product.id, quantity: 1, returnsEmpty: true }] }), /indisponível/);
   // pedido recusado não deixa cliente novo para trás
-  await assert.rejects(m.portal.placePortalOrder(A.t.id, { ...input, phone: "21 99999-0000", items: [{ productId: B.product.id, quantity: 1, returnsEmpty: true }] }), /indisponível/);
+  await assert.rejects(m.portal.placePortalOrder(A.t.id, A.branch.id, { ...input, phone: "21 99999-0000", items: [{ productId: B.product.id, quantity: 1, returnsEmpty: true }] }), /indisponível/);
   assert.equal((await db.select().from(customers).where(eq(customers.phone, "21 99999-0000"))).length, 0);
   await m.registry.saveSettings(A.ctx, { portalEnabled: false });
   assert.equal((await m.q.getSettings(A.t.id)).staffDiscountPct, 10);
@@ -723,13 +724,13 @@ test("auditoria: filtra por área e por pessoa, traz os nomes e não mostra nada
 test("painel: filtro de entregador mostra só o turno e as vendas dele", async () => {
   // testes anteriores fecham o turno do entregador de A: abre outro se precisar
   if (!(await m.q.openShiftFor(A.t.id, A.driver.id))) await m.shifts.openShift(A.ctx, A.driver.id, 0);
-  const d = await m.q.dashboard(A.t.id, { driverId: A.driver.id });
+  const d = await m.q.dashboard(A.t.id, { branchId: A.branch.id, driverId: A.driver.id });
   assert.ok(d.openShifts.length > 0);
   assert.ok(d.openShifts.every((s) => s.driverId === A.driver.id));
-  const outro = await m.q.dashboard(A.t.id, { driverId: B.driver.id });
+  const outro = await m.q.dashboard(A.t.id, { branchId: A.branch.id, driverId: B.driver.id });
   assert.equal(outro.openShifts.length, 0, "entregador de outra empresa não traz turno de A");
   // dia sem movimento: nada vendido
-  const vazio = await m.q.dashboard(A.t.id, { day: "2020-01-01" });
+  const vazio = await m.q.dashboard(A.t.id, { branchId: A.branch.id, day: "2020-01-01" });
   assert.equal(vazio.revenue, 0);
   assert.equal(vazio.recent.length, 0);
 });
@@ -754,7 +755,7 @@ test("backup restaurado sem as regras de isolamento: a subida recria", async () 
 });
 
 test("painel: semana de 7 dias seguidos, terminando no vendido do dia", async () => {
-  const d = await m.q.dashboard(A.t.id);
+  const d = await m.q.dashboard(A.t.id, { branchId: A.branch.id });
   assert.equal(d.week.length, 7);
   for (let i = 1; i < 7; i++) {
     const passo = new Date(`${d.week[i].day}T12:00:00Z`).getTime() - new Date(`${d.week[i - 1].day}T12:00:00Z`).getTime();
@@ -764,7 +765,7 @@ test("painel: semana de 7 dias seguidos, terminando no vendido do dia", async ()
   assert.equal(d.emAndamento, true);
   assert.ok(d.previous >= 0);
   // dia fechado no passado: semana termina nele e compara com o dia anterior inteiro
-  const antigo = await m.q.dashboard(A.t.id, { day: "2020-01-08" });
+  const antigo = await m.q.dashboard(A.t.id, { branchId: A.branch.id, day: "2020-01-08" });
   assert.equal(antigo.week[6].day, "2020-01-08");
   assert.equal(antigo.week[0].day, "2020-01-02");
   assert.equal(antigo.emAndamento, false);
@@ -819,14 +820,14 @@ test("comodato: conta só depois de entregue, devolução volta como vazio e res
   const base = { mode: "entrega" as const, deliveryFeeCents: 0, changeForCents: null, notes: "", paymentMethod: "dinheiro" as const };
   const emprestado = (quantity: number) => [{ productId: p.id, quantity, returnsEmpty: false, loan: true }];
   const saldo = async () => (await como.comodatoDoCliente(A.t.id, A.customer.id)).itens.find((i) => i.productId === p.id)?.quantidade ?? 0;
-  const vazios = async () => (await m.q.stockOverview(A.t.id)).find((x) => x.id === p.id)!.emptyStore;
+  const vazios = async () => (await m.q.stockOverview(A.t.id, A.branch.id)).find((x) => x.id === p.id)!.emptyStore;
 
   await assert.rejects(m.orders.createOrder(A.ctx, { ...base, mode: "balcao", customerId: null, items: emprestado(1), driverId: null }), /Comodato precisa/);
   // emprestado não cobra o casco
   const o = await m.orders.createOrder(A.ctx, { ...base, customerId: A.customer.id, items: emprestado(2), driverId: d.id });
   assert.equal(o.totalCents, 3000);
   assert.equal(await saldo(), 0);
-  await m.orders.deliverOrder({ tenantId: A.t.id, userId: d.id, role: "entregador" }, o.id);
+  await m.orders.deliverOrder({ tenantId: A.t.id, userId: d.id, role: "entregador", branchId: A.branch.id }, o.id);
   assert.equal(await saldo(), 2);
   assert.equal((await como.comodatoPorProduto(A.t.id)).get(p.id), 2);
   // pedido cancelado não conta
@@ -854,4 +855,68 @@ test("comodato: conta só depois de entregue, devolução volta como vazio e res
   // outra empresa não vê nem mexe
   assert.deepEqual((await como.comodatoDoCliente(B.t.id, A.customer.id)).itens, []);
   await assert.rejects(como.devolverVasilhame(B.ctx, { ...dev, quantity: 1, refundCents: 0 }), /não encontrado/);
+});
+
+test("filiais: estoque, equipe e turno separados; o dono mexe em todas e a equipe só na sua", async () => {
+  const { db } = m.db;
+  const { users } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  const fil = await import("@/domain/filiais");
+  await assert.rejects(fil.criarFilial({ ...A.ctx, role: "atendente" }, { name: "Centro" }));
+  const centro = await fil.criarFilial(A.ctx, { name: "Centro" });
+  assert.equal(centro.slug, "centro");
+  await assert.rejects(fil.criarFilial(A.ctx, { name: "centro" }), /Já existe/);
+
+  // compra no Centro não aparece na principal
+  const noCentro = { ...A.ctx, branchId: centro.id };
+  const principal = async () => (await m.q.stockOverview(A.t.id, A.branch.id)).find((p) => p.id === A.product.id)!.fullStore;
+  const doCentro = async () => (await m.q.stockOverview(A.t.id, centro.id)).find((p) => p.id === A.product.id)!.fullStore;
+  const antes = await principal();
+  await m.stock.receivePurchase(noCentro, { productId: A.product.id, full: 5, emptiesReturned: 0, note: "carga do Centro" });
+  assert.equal(await doCentro(), 5);
+  assert.equal(await principal(), antes);
+
+  // venda no balcão do Centro sai do estoque do Centro
+  const balcao = { mode: "balcao" as const, customerId: null, deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: null, paymentMethod: "dinheiro" as const };
+  const venda = await m.orders.createOrder(noCentro, { ...balcao, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: false }] });
+  assert.equal(await doCentro(), 4);
+  assert.equal(await principal(), antes);
+
+  // atendente do Centro: não vê nem estorna pedido da principal, e não abre turno de entregador de lá
+  const u = await m.registry.createUser(A.ctx, { name: "Atendente Centro", email: `ac@${A.t.id}.test`, password: "senha-boa-1", role: "atendente", branchId: centro.id });
+  const [criado] = await db.select().from(users).where(eq(users.id, u.id));
+  assert.equal(criado.branchId, centro.id);
+  const atendenteCentro = { tenantId: A.t.id, userId: u.id, role: "atendente" as const, branchId: centro.id };
+  const daPrincipal = await m.orders.createOrder(A.ctx, { ...balcao, mode: "entrega", customerId: A.customer.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }] });
+  await assert.rejects(m.orders.cancelOrder(atendenteCentro, daPrincipal.id, "teste"), /não encontrado/);
+  assert.ok(!(await m.q.listOrders(A.t.id, { branchId: centro.id })).some((o) => o.id === daPrincipal.id));
+  const [ent] = await db.insert(users).values({ tenantId: A.t.id, name: "Entregador Principal 2", email: `ep2@${A.t.id}.test`, role: "entregador", passwordHash: "x", branchId: A.branch.id }).returning();
+  await assert.rejects(m.shifts.openShift(atendenteCentro, ent.id, 0), /outra filial/);
+  // o turno é da filial do entregador: aberto pelo dono vendo o Centro, ainda é da principal
+  const turno = await m.shifts.openShift(noCentro, ent.id, 0);
+  assert.equal(turno.branchId, A.branch.id);
+  // pedido do Centro não sai com entregador da principal
+  const doC = await m.orders.createOrder(noCentro, { ...balcao, mode: "entrega", customerId: A.customer.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }] });
+  await assert.rejects(m.orders.dispatchOrder(noCentro, doC.id, ent.id), /nesta filial/);
+  // o dono, vendo o Centro, cancela o pedido da principal; nada mexe no estoque do Centro
+  await m.orders.cancelOrder(noCentro, daPrincipal.id, "teste");
+  await m.orders.cancelOrder(noCentro, doC.id, "teste");
+  assert.equal(await doCentro(), 4);
+  await m.orders.refundOrder(noCentro, { orderId: venda.id, reason: "devolveu", restock: true });
+  assert.equal(await doCentro(), 5);
+
+  // link de pedido da filial; filial que não existe cai na principal
+  await m.registry.saveSettings(A.ctx, { portalEnabled: true });
+  assert.equal((await m.portal.portalTenant(A.t.slug, "centro"))?.branchId, centro.id);
+  assert.equal((await m.portal.portalTenant(A.t.slug, "nao-existe"))?.branchId, A.branch.id);
+
+  // desativar só sem ninguém da equipe; a principal nunca
+  await assert.rejects(fil.ativarFilial(A.ctx, centro.id, false), /ainda tem gente/);
+  await fil.mudarDeFilial(A.ctx, u.id, A.branch.id);
+  await fil.ativarFilial(A.ctx, centro.id, false);
+  await assert.rejects(fil.ativarFilial(A.ctx, A.branch.id, false), /principal/);
+  assert.equal((await m.portal.portalTenant(A.t.slug, "centro"))?.branchId, A.branch.id);
+  // outra empresa não acha a filial
+  await assert.rejects(fil.ativarFilial(B.ctx, centro.id, true), /não encontrada/);
+  await assert.rejects(fil.mudarDeFilial(B.ctx, u.id, B.branch.id), /não encontrada/);
 });

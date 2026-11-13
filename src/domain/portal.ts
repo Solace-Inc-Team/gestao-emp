@@ -1,19 +1,29 @@
 import { z } from "zod";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { db, withTenant } from "@/db";
-import { customers, orderItems, orders, products, tenants, users } from "@/db/schema";
+import { branches, customers, orderItems, orders, products, tenants, users } from "@/db/schema";
 import { type Ctx, DomainError, isUuid } from "@/lib/ctx";
 import { pixPayload } from "@/lib/pix";
 import { createOrder } from "./orders";
 import { audit } from "./stock";
 
-/** Empresa do portal público. Só aparece se estiver ativa e com o portal ligado pelo dono. */
-export async function portalTenant(slug: string) {
+/**
+ * Empresa do portal público. Só aparece se estiver ativa e com o portal ligado pelo dono.
+ * Cada filial tem seu link (?filial=<slug>); sem filial, ou com uma que não existe mais, o pedido vai para a principal.
+ */
+export async function portalTenant(slug: string, filial?: string) {
   const [t] = await db
     .select({ id: tenants.id, name: tenants.name, pixKey: tenants.pixKey, pixName: tenants.pixName, pixCity: tenants.pixCity })
     .from(tenants)
     .where(and(eq(tenants.slug, slug), eq(tenants.active, true), eq(tenants.portalEnabled, true)));
-  return t ?? null;
+  if (!t) return null;
+  const lojas = await db
+    .select({ id: branches.id, name: branches.name, slug: branches.slug, main: branches.main })
+    .from(branches)
+    .where(and(eq(branches.tenantId, t.id), eq(branches.active, true)));
+  const loja = lojas.find((b) => filial && b.slug === filial) ?? lojas.find((b) => b.main) ?? lojas[0];
+  // com uma filial só, o nome dela não aparece para o cliente
+  return { ...t, branchId: loja.id, branchName: lojas.length > 1 ? loja.name : null };
 }
 
 export const portalProducts = (tenantId: string) =>
@@ -46,7 +56,7 @@ export const portalOrderSchema = z.object({
  * Pedido feito pelo próprio cliente no link da empresa. Entra na fila como qualquer outro, com origem "portal".
  * Cliente é reconhecido pelo telefone; se não existir, é cadastrado.
  */
-export async function placePortalOrder(tenantId: string, input: z.infer<typeof portalOrderSchema>) {
+export async function placePortalOrder(tenantId: string, branchId: string, input: z.infer<typeof portalOrderSchema>) {
   // o pedido precisa de um responsável na equipe: fica em nome do dono, e a origem "portal" mostra que veio do cliente
   const [owner] = await db
     .select({ id: users.id })
@@ -55,7 +65,7 @@ export async function placePortalOrder(tenantId: string, input: z.infer<typeof p
     .orderBy(asc(users.createdAt))
     .limit(1);
   if (!owner) throw new DomainError("Esta loja não está recebendo pedidos agora.");
-  const ctx: Ctx = { tenantId, userId: owner.id, role: "dono" };
+  const ctx: Ctx = { tenantId, userId: owner.id, role: "dono", branchId };
   const digits = input.phone.replace(/\D/g, "");
 
   return withTenant(tenantId, () =>

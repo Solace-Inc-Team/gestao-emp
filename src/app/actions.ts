@@ -25,6 +25,9 @@ import { createTenant, deleteTenant, newTenantSchema, resetOwnerAccess, setTenan
 import { resolveError, sendTestAlert } from "@/domain/monitoring";
 import { addAddress, addressSchema, removeAddress, saveSettings, settingsSchema, anonymizeCustomer, saveCustomer, customerSchema, saveProduct, productSchema, createUser, userSchema, setUserActive, resetUserPassword, acceptTerms } from "@/domain/registry";
 import { TERMS_VERSION } from "@/lib/legal";
+import { ativarFilial, criarFilial, mudarDeFilial } from "@/domain/filiais";
+import { cookies } from "next/headers";
+import { FILIAL_COOKIE } from "@/lib/auth";
 import { todayISO } from "@/lib/period";
 
 const str = (fd: FormData, k: string) => String(fd.get(k) ?? "").trim();
@@ -222,8 +225,8 @@ export async function confirmPixAction(fd: FormData) {
 export type PortalResult = { error?: string; number?: number; totalCents?: number; pix?: string | null; acompanhar?: string };
 
 /** Pedido do portal público: sem login, então com limite por IP contra abuso. */
-export async function portalOrderAction(slug: string, fd: FormData): Promise<PortalResult> {
-  const t = await portalTenant(slug);
+export async function portalOrderAction(slug: string, filial: string, fd: FormData): Promise<PortalResult> {
+  const t = await portalTenant(slug, filial);
   if (!t) return { error: "Esta loja não está recebendo pedidos pelo site agora." };
   // campo escondido que só robô preenche
   if (str(fd, "site")) return { error: "Não foi possível enviar o pedido." };
@@ -233,6 +236,7 @@ export async function portalOrderAction(slug: string, fd: FormData): Promise<Por
   try {
     const order = await placePortalOrder(
       t.id,
+      t.branchId,
       portalOrderSchema.parse({
         name: str(fd, "name"),
         phone: str(fd, "phone"),
@@ -473,7 +477,7 @@ export async function createUserAction(fd: FormData) {
     async () =>
       createUser(
         user,
-        userSchema.parse({ name: str(fd, "name"), email: str(fd, "email"), password: str(fd, "password"), role: str(fd, "role") }),
+        userSchema.parse({ name: str(fd, "name"), email: str(fd, "email"), password: str(fd, "password"), role: str(fd, "role"), branchId: optId(fd, "branchId") }),
       ),
     ["/"],
     "Usuário criado.",
@@ -686,4 +690,29 @@ export async function devolverVasilhameAction(fd: FormData) {
     ["/"],
     "Devolução registrada. Os vazios voltaram para a loja.",
   );
+}
+
+export async function criarFilialAction(fd: FormData) {
+  const user = await requireUser("dono");
+  return run(() => criarFilial(user, { name: str(fd, "name") }), ["/"], "Filial criada.");
+}
+
+export async function ativarFilialAction(fd: FormData) {
+  const user = await requireUser("dono");
+  const active = str(fd, "active") === "true";
+  return run(() => ativarFilial(user, str(fd, "branchId"), active), ["/"], active ? "Filial reativada." : "Filial desativada.");
+}
+
+export async function mudarDeFilialAction(fd: FormData) {
+  const user = await requireUser("dono");
+  return run(() => mudarDeFilial(user, str(fd, "userId"), str(fd, "branchId")), ["/"], "Filial alterada.");
+}
+
+/** O dono troca a filial que está vendo; a escolha fica no aparelho (cookie), cada um com a sua. */
+export async function escolherFilialAction(fd: FormData) {
+  const user = await requireUser("dono");
+  const id = str(fd, "branchId");
+  if (!user.branches.some((b) => b.id === id)) return;
+  (await cookies()).set(FILIAL_COOKIE, id, { httpOnly: true, sameSite: "lax", secure: process.env.NODE_ENV === "production", path: "/", maxAge: 60 * 60 * 24 * 365 });
+  revalidatePath("/", "layout");
 }
