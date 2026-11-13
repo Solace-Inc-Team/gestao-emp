@@ -2491,7 +2491,10 @@ html:has(.pagina-escura) body {
   background: #0a0a0a;
 }
 
-/* na página que já é escura, a faixa sobe um tom em vez de descer: continua marcando a virada */
+/* na página que já é escura, a faixa sobe um tom em vez de descer, e nasce e some em degradê:
+   a mudança de tom acontece como luz, sem linha nem corte seco nas bordas */
 .pagina-escura .faixa-escura {
-  background: color-mix(in srgb, var(--bg) 93%, #fff);
+  --tom: color-mix(in srgb, var(--bg) 93%, #fff);
+  background: linear-gradient(to bottom, var(--bg), var(--tom) 22%, var(--tom) 78%, var(--bg));
+  border-color: transparent;
 }
