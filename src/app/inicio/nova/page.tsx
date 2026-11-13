@@ -1,6 +1,7 @@
 import { Fragment } from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, BadgeCheck, MonitorSmartphone, Users, WifiOff } from "lucide-react";
+import { InView } from "@/components/in-view";
 import { TemaBotao } from "@/components/tema-botao";
 import { Logo } from "@/components/logo";
 import { PainelVivo } from "../painel-vivo";
@@ -11,7 +12,12 @@ export const metadata = { title: "Depósito (topo novo)", robots: { index: false
 
 const titulo = ["Onde está cada casco.", "Quanto cada entregador te deve."].map((l) => l.split(" "));
 const atraso = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
-const fatos = ["Funciona sem internet", "Nada para instalar", "4 perfis de acesso", "Acerto no centavo"];
+const fatos = [
+  { icone: WifiOff, t: "Funciona sem internet", d: "A entrega confirmada no celular sobe sozinha quando o sinal volta." },
+  { icone: MonitorSmartphone, t: "Nada para instalar", d: "Abre no navegador do computador e do celular." },
+  { icone: Users, t: "4 perfis de acesso", d: "Dono, caixa, atendente e entregador, cada um no seu." },
+  { icone: BadgeCheck, t: "Acerto no centavo", d: "O sistema já sabe quanto cada entregador tem que apresentar." },
+];
 
 export default function InicioNova() {
   return (
@@ -30,8 +36,8 @@ export default function InicioNova() {
 
       <main>
         <section className="topo-novo relative isolate pt-20 sm:pt-28">
-          {/* o traço de planta fica só de fundo, apagado nas bordas */}
-          <div aria-hidden="true" className="topo-grade absolute inset-0 -z-10" />
+          {/* atrás do título, só luz: um clarão da cor da marca vindo de cima, como de uma tela acesa */}
+          <div aria-hidden="true" className="topo-luz absolute inset-0 -z-10" />
           <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
             <p style={atraso(0)} className="hero-in inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[12px] text-muted">
               <span className="size-1.5 rounded-full bg-ok" />
@@ -74,14 +80,18 @@ export default function InicioNova() {
         </section>
 
         {/* fatos curtos e verdadeiros no lugar de logos que ainda não temos */}
-        <section className="border-y border-line">
-          <ul className="mx-auto grid max-w-6xl grid-cols-2 px-4 sm:px-6 lg:grid-cols-4">
-            {fatos.map((f, i) => (
-              <li key={f} className={`py-6 text-center text-[14px] font-medium sm:py-8 ${i % 2 ? "" : "border-r border-line"} ${i === 1 ? "lg:border-r" : ""}`}>
-                {f}
-              </li>
-            ))}
-          </ul>
+        <section className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
+          <InView>
+            <ul className="fatos grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+              {fatos.map(({ icone: Icone, t, d }, i) => (
+                <li key={t} style={atraso(i * 90)} className="fato">
+                  <Icone size={18} strokeWidth={1.75} className="text-accent" aria-hidden="true" />
+                  <p className="mt-3 text-[15px] font-semibold tracking-[-0.01em]">{t}</p>
+                  <p className="mt-1 text-[14px] leading-relaxed text-muted">{d}</p>
+                </li>
+              ))}
+            </ul>
+          </InView>
         </section>
 
         <p className="py-16 text-center text-[13px] text-muted">

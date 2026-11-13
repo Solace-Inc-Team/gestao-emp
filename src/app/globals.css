@@ -2246,16 +2246,9 @@ details[open] > summary.desvio .desvio-seta {
 }
 
 /* topo novo (proposta em /inicio/nova): o produto é o protagonista ----------------------------- */
-/* planta ao fundo: linhas finas em quadrícula, visíveis só em volta do título */
-.topo-grade {
-  background-image:
-    linear-gradient(to right, var(--line) 1px, transparent 1px),
-    linear-gradient(to bottom, var(--line) 1px, transparent 1px);
-  background-size: 72px 72px;
-  background-position: center top;
-  -webkit-mask-image: radial-gradient(ellipse 70% 55% at 50% 0%, #000 20%, transparent 75%);
-  mask-image: radial-gradient(ellipse 70% 55% at 50% 0%, #000 20%, transparent 75%);
-  opacity: 0.7;
+/* luz de cima atrás do título: sem desenho, só um clarão suave da cor da marca */
+.topo-luz {
+  background: radial-gradient(ellipse 75% 75% at 50% -25%, color-mix(in srgb, var(--marca) 13%, transparent), transparent 72%);
 }
 /* luz da marca atrás da tela, como se ela estivesse acesa */
 .topo-palco::before {
@@ -2265,6 +2258,49 @@ details[open] > summary.desvio .desvio-seta {
   z-index: -1;
   background: radial-gradient(50% 50% at 50% 40%, color-mix(in srgb, var(--marca) 32%, transparent), transparent 70%);
   filter: blur(40px);
+  /* a tela acesa respira devagar: a luz cresce e recua, sem chamar atenção */
+  animation: topo-respira 7s ease-in-out infinite alternate;
+}
+/* linha de luz na borda de cima da tela, como reflexo no vidro; vai junto quando a tela inclina */
+.topo-tela {
+  position: relative;
+}
+.topo-tela::after {
+  z-index: 1;
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 12%;
+  right: 12%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, color-mix(in srgb, var(--marca) 70%, white), transparent);
+  opacity: 0.8;
+}
+@keyframes topo-respira {
+  from {
+    opacity: 0.75;
+    scale: 0.96;
+  }
+  to {
+    opacity: 1;
+    scale: 1.04;
+  }
+}
+/* fatos: entram um depois do outro quando a faixa aparece */
+@media (scripting: enabled) {
+  [data-inview="false"] .fato {
+    opacity: 0;
+  }
+}
+[data-inview="true"] .fato {
+  animation: 600ms var(--ease-chegada) var(--d, 0ms) both hero-up;
+}
+@media (prefers-reduced-motion: reduce) {
+  .topo-palco::before,
+  [data-inview] .fato {
+    animation: none !important;
+    opacity: 1;
+  }
 }
 /* sombra em camadas e o pé da tela se dissolvendo no fundo da página */
 .topo-tela {
