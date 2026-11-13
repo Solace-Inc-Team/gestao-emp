@@ -117,7 +117,8 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
       </section>
 
       {alertas.length > 0 && (
-        // um bloco só, do mais grave para o menos: a cor fica no ponto, o texto fica legível
+        // um bloco só, do mais grave para o menos: a gravidade fica no ponto (o urgente com um halo),
+        // o texto na cor normal; frase inteira em vermelho gritava, principalmente no escuro
         <section aria-labelledby="atencao" className="panel mb-6">
           <h2 id="atencao" className="h2 border-b border-line px-4 py-3">Precisa de atenção</h2>
           <ul>
@@ -125,11 +126,11 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
               <li key={a.texto} className="border-b border-line last:border-0">
                 <Link href={a.href} className="group flex items-center gap-3 px-4 py-3 hover:bg-subtle">
                   <span aria-hidden="true" className={`size-2 shrink-0 rounded-full ${tomPonto[a.tom]}`} />
-                  <span className={`flex-1 ${a.tom === "grave" ? "font-semibold text-danger" : ""}`}>
+                  <span className={`flex-1 ${a.tom === "grave" ? "font-medium" : ""}`}>
                     {a.texto}
                     <span className="sr-only">{tomLeitura[a.tom]}</span>
                   </span>
-                  <span className="flex shrink-0 items-center gap-1 text-sm text-accent">
+                  <span className="flex shrink-0 items-center gap-1 text-sm text-muted transition-colors group-hover:text-fg">
                     {a.acao}
                     <ChevronRight size={14} strokeWidth={2} aria-hidden="true" className="transition-transform group-hover:translate-x-0.5" />
                   </span>
@@ -232,6 +233,6 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
 }
 
 type Alerta = { tom: "grave" | "aviso" | "dica"; texto: string; href: string; acao: string };
-const tomPonto = { grave: "bg-danger", aviso: "bg-warn", dica: "bg-accent" };
+const tomPonto = { grave: "bg-danger ring-4 ring-danger/20", aviso: "bg-warn", dica: "bg-accent" };
 // a cor do ponto não chega a quem usa leitor de tela
 const tomLeitura = { grave: " (urgente)", aviso: " (conferir)", dica: "" };
