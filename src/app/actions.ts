@@ -218,7 +218,7 @@ export async function confirmPixAction(fd: FormData) {
   return run(() => confirmPix(user, str(fd, "orderId")), ["/"], "Pix conferido.");
 }
 
-export type PortalResult = { error?: string; number?: number; totalCents?: number; pix?: string | null };
+export type PortalResult = { error?: string; number?: number; totalCents?: number; pix?: string | null; acompanhar?: string };
 
 /** Pedido do portal público: sem login, então com limite por IP contra abuso. */
 export async function portalOrderAction(slug: string, fd: FormData): Promise<PortalResult> {
@@ -244,7 +244,12 @@ export async function portalOrderAction(slug: string, fd: FormData): Promise<Por
       }),
     );
     revalidatePath("/", "layout");
-    return { number: order.number, totalCents: order.totalCents, pix: order.paymentMethod === "pix" ? orderPix(t, order) : null };
+    return {
+      number: order.number,
+      totalCents: order.totalCents,
+      pix: order.paymentMethod === "pix" ? orderPix(t, order) : null,
+      acompanhar: `/pedir/${slug}/acompanhar/${order.trackingId}`,
+    };
   } catch (e) {
     if (e instanceof DomainError) return { error: e.message };
     if (e instanceof z.ZodError) return { error: zodMessage(e) };

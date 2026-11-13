@@ -81,6 +81,10 @@ test("portal: cliente pede pelo link e o pedido chega à fila com o selo do site
   await page.getByRole("button", { name: "Dinheiro na entrega" }).click();
   await page.getByRole("button", { name: "Fazer pedido" }).click();
   await expect(page.getByText(/Pedido #\d+ recebido/)).toBeVisible();
+  // o cliente acompanha pelo link: a página abre sem login com o pedido recebido
+  await page.getByRole("link", { name: "Acompanhar pedido" }).click();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText(/Pedido #\d+/);
+  await expect(page.getByText("Recebido, a loja está separando")).toBeVisible();
 
   await entrar(page, "atendente@demo.com");
   await page.goto("/entregas");

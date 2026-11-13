@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { and, asc, eq, isNull, sql } from "drizzle-orm";
 import { db, withTenant } from "@/db";
-import { customers, products, tenants, users } from "@/db/schema";
-import { type Ctx, DomainError } from "@/lib/ctx";
+import { customers, orderItems, orders, products, tenants, users } from "@/db/schema";
+import { type Ctx, DomainError, isUuid } from "@/lib/ctx";
 import { pixPayload } from "@/lib/pix";
 import { createOrder } from "./orders";
 import { audit } from "./stock";
@@ -103,4 +103,49 @@ export async function placePortalOrder(tenantId: string, input: z.infer<typeof p
 export function orderPix(t: { pixKey: string; pixName: string; pixCity: string }, order: { number: number; totalCents: number }) {
   if (!t.pixKey) return null;
   return pixPayload({ key: t.pixKey, name: t.pixName, city: t.pixCity, amountCents: order.totalCents, txid: `PED${order.number}` });
+}
+
+/**
+ * O pedido como o cliente vê pelo link de acompanhamento: sem login, achado pelo código secreto do pedido
+ * dentro da loja do endereço. Mostra só o que o cliente precisa (itens, situação, total, primeiro nome do
+ * entregador); endereço e telefone ficam de fora, porque o link pode ser repassado.
+ * Vale também para pedido feito por telefone ou balcão, então não depende do portal estar ligado.
+ */
+export async function pedidoAcompanhado(slug: string, codigo: string) {
+  if (!isUuid(codigo)) return null;
+  const [t] = await db
+    .select({ id: tenants.id, name: tenants.name, pixKey: tenants.pixKey, pixName: tenants.pixName, pixCity: tenants.pixCity })
+    .from(tenants)
+    .where(and(eq(tenants.slug, slug), eq(tenants.active, true)));
+  if (!t) return null;
+  return withTenant(t.id, async () => {
+    const [o] = await db
+      .select({
+        id: orders.id,
+        number: orders.number,
+        status: orders.status,
+        paymentMethod: orders.paymentMethod,
+        totalCents: orders.totalCents,
+        cashPartCents: orders.cashPartCents,
+        pixConfirmedAt: orders.pixConfirmedAt,
+        occurrence: orders.occurrence,
+        occurrenceAt: orders.occurrenceAt,
+        createdAt: orders.createdAt,
+        dispatchedAt: orders.dispatchedAt,
+        deliveredAt: orders.deliveredAt,
+        driverName: users.name,
+      })
+      .from(orders)
+      .leftJoin(users, eq(users.id, orders.driverId))
+      .where(and(eq(orders.tenantId, t.id), eq(orders.trackingId, codigo)));
+    if (!o) return null;
+    const { driverName, id, ...pedido } = o;
+    const itens = await db
+      .select({ nome: products.name, quantidade: orderItems.quantity })
+      .from(orderItems)
+      .innerJoin(products, eq(products.id, orderItems.productId))
+      .where(and(eq(orderItems.tenantId, t.id), eq(orderItems.orderId, id)))
+      .orderBy(asc(products.name));
+    return { loja: t, pedido: { ...pedido, entregador: driverName?.split(" ")[0] ?? null }, itens };
+  });
 }

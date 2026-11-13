@@ -792,3 +792,18 @@ test("primeiros passos: empresa nova começa do zero e cada passo se completa co
   const a = await m.q.primeirosPassos(A.t.id);
   assert.equal(a.produtos && a.estoque && a.equipe && a.turno && a.pedido, true);
 });
+
+test("acompanhamento: o link acha o pedido só na loja certa e mostra a situação sem dados de contato", async () => {
+  const codigo = A.order.trackingId;
+  const achado = await m.portal.pedidoAcompanhado(A.t.slug, codigo);
+  assert.equal(achado?.pedido.number, A.order.number);
+  assert.deepEqual(achado?.itens, [{ nome: A.product.name, quantidade: 1 }]);
+  // nada de endereço, telefone ou nome do cliente: o link pode ser repassado
+  assert.ok(!("address" in achado!.pedido) && !("customerName" in achado!.pedido));
+  // o código de uma loja não abre nada pelo endereço de outra
+  assert.equal(await m.portal.pedidoAcompanhado(B.t.slug, codigo), null);
+  assert.equal(await m.portal.pedidoAcompanhado(A.t.slug, crypto.randomUUID()), null);
+  assert.equal(await m.portal.pedidoAcompanhado(A.t.slug, "nao-e-um-codigo"), null);
+  // cada pedido tem o seu código
+  assert.notEqual(A.order.trackingId, B.order.trackingId);
+});

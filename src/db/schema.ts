@@ -236,8 +236,11 @@ export const orders = pgTable(
     createdAt: createdAt(),
     dispatchedAt: timestamp("dispatched_at", { withTimezone: true }),
     deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    // código secreto do link que o cliente usa para acompanhar o pedido (sem login); não dá para adivinhar
+    trackingId: uuid("tracking_id").notNull().defaultRandom(),
   },
   (t) => [
+    uniqueIndex("orders_tracking_uq").on(t.trackingId),
     index("orders_tenant_status_idx").on(t.tenantId, t.status),
     index("orders_tenant_created_idx").on(t.tenantId, t.createdAt),
     uniqueIndex("orders_tenant_number_uq").on(t.tenantId, t.number),

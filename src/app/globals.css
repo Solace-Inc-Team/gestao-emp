@@ -2020,3 +2020,71 @@ html:has(.pagina-escura) body {
   height: 1px;
   background: linear-gradient(to right, transparent, var(--line) 20%, var(--line) 80%, transparent);
 }
+
+/* acompanhamento do pedido (cliente): as etapas num trilho. Feita = ponto cheio e trecho azul até a
+   próxima; a da vez pulsa; as que faltam ficam vazadas. Quando a situação muda, a lista entra de novo
+   e cada ponto chega um depois do outro, com o trecho se desenhando de cima para baixo. */
+.etapas > li {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-left: 1.75rem;
+  padding-bottom: 1.1rem;
+}
+.etapas > li:last-child {
+  padding-bottom: 0;
+}
+.etapas > li::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 17px;
+  bottom: 1px;
+  width: 1.5px;
+  border-radius: 1px;
+  background: var(--line);
+}
+.etapas > li:last-child::before {
+  display: none;
+}
+.etapas > li[data-feita]:has(+ li[data-feita])::before {
+  background: var(--marca);
+  transform-origin: top;
+  animation: trilho-trecho 520ms var(--ease-chegada) calc(var(--i) * 140ms + 120ms) both;
+}
+.etapas > li::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid color-mix(in srgb, var(--muted) 60%, transparent);
+  background: var(--surface);
+  animation: trilho-chega 380ms var(--ease-chegada) calc(var(--i) * 140ms) both;
+}
+.etapas > li[data-feita]::after {
+  border-color: var(--marca);
+  background: var(--marca);
+}
+.etapas > li[data-vez]::after {
+  border-color: var(--marca);
+  box-shadow: 0 0 0 0 color-mix(in srgb, var(--marca) 45%, transparent);
+  animation:
+    trilho-chega 380ms var(--ease-chegada) calc(var(--i) * 140ms) both,
+    etapa-vez 2.2s ease-out calc(var(--i) * 140ms + 400ms) infinite;
+}
+@keyframes etapa-vez {
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .etapas > li::before,
+  .etapas > li::after {
+    animation: none !important;
+  }
+}

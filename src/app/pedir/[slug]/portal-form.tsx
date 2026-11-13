@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import QRCode from "qrcode";
-import { CircleAlert } from "lucide-react";
+import { ArrowRight, CircleAlert } from "lucide-react";
 import { CopyButton } from "@/components/copy-button";
 import { formatBRL } from "@/lib/money";
 import { LiveNumber } from "@/components/live-number";
@@ -52,6 +53,7 @@ export function PortalForm({
         number={result.number}
         totalCents={result.totalCents!}
         pix={result.pix ?? null}
+        acompanhar={result.acompanhar}
         lines={products.filter((p) => qty[p.id] > 0).map((p) => `${qty[p.id]} x ${p.name}`)}
       />
     );
@@ -197,7 +199,7 @@ export function PortalForm({
   );
 }
 
-function Done({ number, totalCents, pix, lines }: { number: number; totalCents: number; pix: string | null; lines: string[] }) {
+function Done({ number, totalCents, pix, lines, acompanhar }: { number: number; totalCents: number; pix: string | null; lines: string[]; acompanhar?: string }) {
   const [qr, setQr] = useState<string>();
   useEffect(() => {
     if (pix) QRCode.toString(pix, { type: "svg", margin: 1, width: 200 }).then(setQr);
@@ -216,6 +218,12 @@ function Done({ number, totalCents, pix, lines }: { number: number; totalCents: 
       <p>
         Total de <b className="num">{formatBRL(totalCents)}</b>. A loja já está vendo seu pedido e vai separar para entrega.
       </p>
+      {/* o caminho do pedido, num link que dá para guardar ou mandar para alguém da casa */}
+      {acompanhar && (
+        <Link href={acompanhar} className="btn btn-primary h-11 w-full">
+          Acompanhar pedido <ArrowRight className="size-4" aria-hidden="true" />
+        </Link>
+      )}
       {pix && (
         <div style={{ animationDelay: "350ms" }} className="enter space-y-3 border-t border-line pt-4">
           <p className="font-semibold">Pague com Pix</p>

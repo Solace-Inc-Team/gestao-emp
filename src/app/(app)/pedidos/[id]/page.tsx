@@ -11,6 +11,9 @@ import { cancelAction, confirmPixAction, deliverAction, dispatchAction, reassign
 import { DeliveryExceptions } from "@/components/delivery-forms";
 import { originLabel } from "@/domain/orders";
 import { Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
+import { CopyButton } from "@/components/copy-button";
+import { headers } from "next/headers";
+import { MessageCircle } from "lucide-react";
 
 export const metadata = { title: "Pedido" };
 
@@ -37,6 +40,17 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
   const pixCode = pixOpen ? orderPix(settings, { number: o.number, totalCents: o.totalCents - o.cashPartCents }) : null;
   const onShift = drivers.filter((d) => open.some((s) => s.driverId === d.id));
   const driverName = (id?: string) => drivers.find((d) => d.id === id)?.name ?? "outro entregador";
+  // link de acompanhamento só para entrega que ainda vai acontecer (balcão e cancelado não têm o que acompanhar)
+  const h = await headers();
+  const acompanhar =
+    o.customerName && ["aberto", "em_rota"].includes(o.status)
+      ? `${h.get("x-forwarded-proto") ?? "http"}://${h.get("host")}/pedir/${settings.slug}/acompanhar/${o.trackingId}`
+      : null;
+  const fone = o.customerPhone?.replace(/D/g, "") ?? "";
+  const zap =
+    acompanhar && fone.length >= 10
+      ? `https://wa.me/${fone.length <= 11 ? "55" + fone : fone}?text=${encodeURIComponent(`Seu pedido #${o.number} na ${user.tenantName}: acompanhe aqui ${acompanhar}`)}`
+      : null;
   // estorno de venda em dinheiro precisa do acerto do turno feito antes
   const refundBlocked = (o.paymentMethod === "dinheiro" || o.cashPartCents > 0) && open.some((s) => s.id === o.shiftId);
 
@@ -157,6 +171,20 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
             )}
             <p className="mt-3 text-sm text-muted">Chegou por {originLabel[o.origin as keyof typeof originLabel] ?? o.origin}</p>
             {o.driverName && <p className="mt-1">Entregador: <b>{o.driverName}</b></p>}
+            {/* pedido feito por telefone ou WhatsApp também ganha o link: a loja manda e o cliente acompanha */}
+            {acompanhar && (
+              <div className="mt-4 border-t border-line pt-4">
+                <p className="text-sm text-muted">Link para o cliente acompanhar a entrega</p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <CopyButton text={acompanhar} label="Copiar link" />
+                  {zap && (
+                    <a href={zap} target="_blank" rel="noopener noreferrer" className="btn">
+                      <MessageCircle size={15} strokeWidth={1.75} aria-hidden="true" /> Mandar no WhatsApp
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
           </section>
 
           {pixOpen && (

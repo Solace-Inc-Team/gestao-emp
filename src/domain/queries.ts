@@ -75,6 +75,7 @@ const driver = alias(users, "driver");
 
 const orderCols = {
   id: orders.id,
+  trackingId: orders.trackingId,
   number: orders.number,
   status: orders.status,
   paymentMethod: orders.paymentMethod,
