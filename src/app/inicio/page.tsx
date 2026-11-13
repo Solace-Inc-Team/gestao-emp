@@ -2,7 +2,7 @@ import { Fragment, type ReactNode } from "react";
 import Link from "next/link";
 import { TemaBotao } from "@/components/tema-botao";
 import { StatusSistema } from "@/components/status-sistema";
-import { ArrowRight, MessageCircle } from "lucide-react";
+import { ArrowRight, BadgeCheck, MessageCircle, MonitorSmartphone, Users, WifiOff } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { InView } from "@/components/in-view";
 import { LiveNumber } from "@/components/live-number";
@@ -14,19 +14,25 @@ import { DemoPortal } from "./demo-portal";
 import { Prateleira } from "./prateleira";
 import { DadosSeus, EmpresaIsolada, SenhaDeNovo } from "./diagramas";
 import { RelogioDoDia, paradas } from "./relogio-do-dia";
-import { MapaVivo } from "./mapa-vivo";
+import { PainelVivo } from "./painel-vivo";
 import { PRECO, WHATSAPP, linkWhatsApp } from "./contato";
 
 export const metadata = {
   title: { absolute: "Depósito: gestão para revendas de água e gás" },
   description:
-    "Pedido, entrega, estoque e acerto anotados no mesmo lugar, do primeiro pedido da manhã ao fechamento da noite. Sem caderno e sem conta de cabeça.",
+    "Pedido, entrega, cascos e acerto de caixa num lugar só, para revendas de água e gás.",
 };
 
 // as duas perguntas que o dono faz todo dia, uma por linha
 const titulo = ["Onde está cada casco.", "Quanto cada entregador te deve."].map((l) => l.split(" "));
 const atraso = (ms: number) => ({ "--d": `${ms}ms` }) as React.CSSProperties;
 const temZap = WHATSAPP !== "";
+const fatos = [
+  { icone: WifiOff, t: "Funciona sem internet", d: "A entrega confirmada no celular sobe sozinha quando o sinal volta." },
+  { icone: MonitorSmartphone, t: "Nada para instalar", d: "Abre no navegador do computador e do celular." },
+  { icone: Users, t: "4 perfis de acesso", d: "Dono, caixa, atendente e entregador, cada um no seu." },
+  { icone: BadgeCheck, t: "Acerto no centavo", d: "O sistema já sabe quanto cada entregador tem que apresentar." },
+];
 const zap = linkWhatsApp("Olá! Quero conhecer o Depósito para a minha revenda.");
 
 // o dia da revenda, hora a hora: o texto fala da rotina do dono, e o desenho ao lado mostra a tela
@@ -186,8 +192,9 @@ export default function Inicio() {
       </header>
 
       <main>
-        {/* o topo ocupa a primeira tela inteira: o bairro preenche o que sobra embaixo dos botões */}
-        <section className="prancha flex flex-col sm:min-h-[calc(100svh-3.5rem)] overflow-hidden border-b border-line pt-20 sm:pt-24">
+        {/* topo: o produto é o protagonista. Atrás do título só luz; o Painel chega deitado e endireita ao rolar */}
+        <section className="topo-novo relative isolate pt-20 sm:pt-28">
+          <div aria-hidden="true" className="topo-luz absolute inset-0 -z-10" />
           <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
             <p style={atraso(0)} className="hero-in inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[12px] text-muted">
               <span className="size-1.5 rounded-full bg-ok" />
@@ -207,12 +214,12 @@ export default function Inicio() {
                 </span>
               ))}
             </h1>
-            <p style={atraso(320)} className="hero-in mx-auto mt-5 max-w-[40rem] text-[16px] leading-relaxed text-balance text-muted sm:text-[17px]">
-              Pedido, entrega, estoque e acerto anotados no mesmo lugar, do primeiro pedido da manhã ao fechamento da noite. Sem caderno e sem conta de cabeça.
+            <p style={atraso(320)} className="hero-in mx-auto mt-5 text-[16px] text-muted sm:text-[18px]">
+              Pedido, entrega, cascos e acerto de caixa num lugar só.
             </p>
-            <div style={atraso(380)} className="hero-in mt-8 flex flex-wrap justify-center gap-3">
+            <div style={atraso(400)} className="hero-in mt-8 flex flex-wrap justify-center gap-3">
               <BotaoContato />
-              <a href="#dia" className="btn h-11 px-5 text-[15px]">Ver um dia na revenda</a>
+              <a href="#dia" className="btn h-11 px-5 text-[15px]">Ver como funciona</a>
             </div>
             {temZap && (
               <p style={atraso(440)} className="hero-in mt-4 text-[13px] text-muted">
@@ -220,8 +227,30 @@ export default function Inicio() {
               </p>
             )}
           </div>
-          {/* o bairro com as entregas acontecendo, de ponta a ponta da tela */}
-          <MapaVivo className="hero-in mt-12 flex-1 sm:mt-14" />
+          <div style={atraso(520)} className="hero-in topo-palco relative mx-auto mt-16 max-w-[72rem] px-4 sm:mt-20 sm:px-6">
+            <div className="topo-inclina">
+              <div className="topo-tela overflow-hidden rounded-2xl border border-line bg-bg">
+                <div className="min-w-[56rem]">
+                  <PainelVivo />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* fatos curtos e verdadeiros no lugar de logos que ainda não temos */}
+        <section className="mx-auto max-w-6xl px-4 pt-6 sm:px-6">
+          <InView>
+            <ul className="fatos grid gap-x-10 gap-y-8 sm:grid-cols-2 lg:grid-cols-4">
+              {fatos.map(({ icone: Icone, t, d }, i) => (
+                <li key={t} style={atraso(i * 90)} className="fato">
+                  <Icone size={18} strokeWidth={1.75} className="text-accent" aria-hidden="true" />
+                  <p className="mt-3 text-[15px] font-semibold tracking-[-0.01em]">{t}</p>
+                  <p className="mt-1 text-[14px] leading-relaxed text-muted">{d}</p>
+                </li>
+              ))}
+            </ul>
+          </InView>
         </section>
 
         <section id="dia" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-24 sm:px-6 sm:py-32">
