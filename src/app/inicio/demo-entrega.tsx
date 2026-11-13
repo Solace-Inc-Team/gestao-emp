@@ -114,8 +114,9 @@ export function Cartao({ p, fase, resta, topo }: { p: Pedido; fase: Fase; resta:
   );
 }
 
-export function DemoEntrega() {
-  const dark = useEscuro();
+/** `escuro` força o tema escuro, para quando a demo fica numa faixa escura mesmo com a página clara. */
+export function DemoEntrega({ escuro = false }: { escuro?: boolean }) {
+  const dark = useEscuro() || escuro;
   return (
     <Stage<S>
       width={1040}

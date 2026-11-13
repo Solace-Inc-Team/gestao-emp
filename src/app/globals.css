@@ -28,7 +28,9 @@
 
 /* o tema vem do atributo que o script do layout põe antes de desenhar a página:
    a escolha da pessoa (claro ou escuro) ou, no automático, o tema do aparelho */
-:root[data-tema="escuro"] {
+/* .faixa-escura: uma seção da página inicial que é sempre escura, mesmo com o tema claro (o momento de virada) */
+:root[data-tema="escuro"],
+.faixa-escura {
   --marca: #6d9dff;
   --papel: #0b0f17;
   --gota: #0b0f17;
@@ -2344,4 +2346,35 @@ details[open] > summary.desvio .desvio-seta {
   [data-inview="false"] .estoque-mosaico .nivel {
     animation-play-state: paused;
   }
+}
+
+/* faixa escura da página inicial: um tom abaixo do fundo, para se destacar também no tema escuro */
+.faixa-escura {
+  color-scheme: dark;
+  color: var(--fg);
+  background: color-mix(in srgb, var(--bg) 55%, #000);
+}
+/* luz que segue o cursor dentro da peça do mosaico; aparece só com o mouse em cima */
+.bento {
+  position: relative;
+  isolation: isolate;
+}
+.bento::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(260px circle at var(--luz-x, 50%) var(--luz-y, 50%), color-mix(in srgb, var(--marca) 12%, transparent), transparent 70%);
+  opacity: 0;
+  transition: opacity var(--dur-slow) var(--ease-chegada);
+}
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .bento:hover::before {
+    opacity: 1;
+  }
+}
+/* âmbar só onde é alerta: o vasilhame abaixo do mínimo no mosaico */
+.estoque-mosaico .nivel-vasilhame.text-danger {
+  color: var(--chama);
 }

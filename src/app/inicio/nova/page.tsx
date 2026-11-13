@@ -12,6 +12,7 @@ import { DemoEntrega } from "../demo-entrega";
 import { DemoPortal } from "../demo-portal";
 import { DadosSeus, EmpresaIsolada, SenhaDeNovo } from "../diagramas";
 import { PRECO, WHATSAPP, linkWhatsApp } from "../contato";
+import { LuzCursor } from "../luz-cursor";
 
 // Proposta da página inteira no padrão novo, para comparar com /inicio antes de trocar.
 // Ritmo de escala variada: topo com o produto, dois capítulos grandes, um mosaico de detalhes,
@@ -52,10 +53,10 @@ function BotaoContato({ className = "" }: { className?: string }) {
 }
 
 /** Cabeçalho de capítulo: rótulo pequeno, frase grande e uma linha de apoio. */
-function Capitulo({ rotulo, titulo, apoio, centro = false }: { rotulo: string; titulo: string; apoio: string; centro?: boolean }) {
+function Capitulo({ rotulo, titulo, apoio, centro = false, tom = "text-accent" }: { rotulo: string; titulo: string; apoio: string; centro?: boolean; tom?: string }) {
   return (
     <div className={centro ? "mx-auto max-w-2xl text-center" : "max-w-2xl"}>
-      <p className="text-[13px] font-medium text-accent">{rotulo}</p>
+      <p className={`text-[13px] font-medium ${tom}`}>{rotulo}</p>
       <h2 className="reveal mt-3 text-[2rem] leading-[1.08] font-semibold tracking-[-0.04em] text-balance sm:text-[2.75rem]">{titulo}</h2>
       <p className="mt-4 text-[16px] leading-relaxed text-muted sm:text-[17px]">{apoio}</p>
     </div>
@@ -131,9 +132,12 @@ export default function InicioNova() {
           </InView>
         </section>
 
-        {/* capítulo 1, o maior: a entrega acontecendo nas duas pontas, celular e loja */}
-        <section id="rua" className="mx-auto max-w-6xl scroll-mt-20 px-4 pt-32 sm:px-6 sm:pt-44">
+        {/* capítulo 1, o maior: a entrega acontecendo nas duas pontas, celular e loja. É a virada da página:
+            uma faixa sempre escura, de ponta a ponta, com a demonstração acesa no meio; o rótulo vem no âmbar do gás */}
+        <section id="rua" className="faixa-escura mt-32 scroll-mt-14 border-y border-line py-28 sm:mt-44 sm:py-36">
+          <div className="mx-auto max-w-6xl px-4 sm:px-6">
           <Capitulo
+            tom="text-chama"
             rotulo="Na rua"
             titulo="O entregador confirma. A loja vê na hora."
             apoio="Cada entrega com dono, do balcão até a porta. O vendido do dia sobe sozinho, até com o celular sem sinal."
@@ -143,7 +147,8 @@ export default function InicioNova() {
             aria-label="O entregador toca em Entreguei e recebi no celular, e no painel da loja o pedido vira Entregue e o vendido do dia sobe"
             className="topo-palco relative mt-14"
           >
-            <DemoEntrega />
+            <DemoEntrega escuro />
+          </div>
           </div>
         </section>
 
@@ -165,9 +170,16 @@ export default function InicioNova() {
           </div>
         </section>
 
+        {/* o número que o dono quer ver no fim do dia, em tamanho de cartaz */}
+        <section className="mx-auto max-w-6xl px-4 pt-32 text-center sm:px-6 sm:pt-44">
+          <p className="reveal num text-[clamp(4.5rem,15vw,10.5rem)] leading-none font-semibold tracking-[-0.06em]">R$ 0,00</p>
+          <p className="reveal mt-5 text-[clamp(1.375rem,3vw,2.25rem)] font-semibold tracking-[-0.03em] text-muted">de diferença quando a conta fecha.</p>
+        </section>
+
         {/* mosaico: os detalhes em peças menores, cada uma com a sua prova */}
         <section className="mx-auto max-w-6xl px-4 pt-32 sm:px-6 sm:pt-44">
           <Capitulo centro rotulo="Os detalhes" titulo="Feito em cima do que dá errado numa revenda." apoio="O que não aparece no dia bom e salva o dia ruim." />
+          <LuzCursor>
           <InView className="mt-14 grid gap-4 lg:grid-cols-3">
             <article className="bento lg:row-span-2">
               <h3 className="text-[17px] font-semibold tracking-tight">Pedido pelo link, com Pix</h3>
@@ -194,7 +206,7 @@ export default function InicioNova() {
                     <NivelVasilhame nome={p.nome} cheios={p.cheios} vazios={p.vazios} baixo={p.baixo} ordem={i} />
                     <div className="leading-tight">
                       <p className="num text-[22px] font-semibold tracking-[-0.03em]">{p.cheios}</p>
-                      <p className={`text-[12px] ${p.baixo ? "text-danger" : "text-muted"}`}>{p.baixo ? `${p.nome}, abaixo do mínimo` : `${p.nome}, cheios`}</p>
+                      <p className={`text-[12px] ${p.baixo ? "text-warn-fg" : "text-muted"}`}>{p.baixo ? `${p.nome}, abaixo do mínimo` : `${p.nome}, cheios`}</p>
                     </div>
                   </div>
                 ))}
@@ -220,6 +232,7 @@ export default function InicioNova() {
               </div>
             </article>
           </InView>
+          </LuzCursor>
         </section>
 
         <section className="mx-auto grid max-w-6xl gap-16 px-4 pt-32 sm:px-6 sm:pt-44 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
