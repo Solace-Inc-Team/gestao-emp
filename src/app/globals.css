@@ -2378,3 +2378,102 @@ details[open] > summary.desvio .desvio-seta {
 .estoque-mosaico .nivel-vasilhame.text-danger {
   color: var(--chama);
 }
+
+/* pedaços de tela do mosaico (detalhes.tsx): o mesmo acabamento da tela grande do topo, em miniatura.
+   Cada um conta a história numa volta de 6,5s e para fora da tela; sem movimento, fica no fim da história */
+.mini {
+  margin-top: 1.5rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  font-size: 12.5px;
+  box-shadow: 0 8px 24px -16px color-mix(in srgb, #000 25%, transparent);
+}
+.mini-campo {
+  display: flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  letter-spacing: 0.15em;
+  animation: mini-foco 6.5s var(--ease-chegada) infinite;
+}
+.mini-senha {
+  animation: mini-digita 6.5s steps(8, end) infinite;
+}
+.mini-registro {
+  animation: mini-surge 6.5s var(--ease-chegada) infinite;
+}
+.mini-tarja {
+  background: linear-gradient(90deg, var(--subtle) 30%, color-mix(in srgb, var(--fg) 10%, var(--subtle)) 50%, var(--subtle) 70%);
+  background-size: 300% 100%;
+  animation: mini-tarja 2.8s linear infinite;
+}
+.mini-botao {
+  animation: mini-toque 6.5s var(--ease-chegada) infinite;
+}
+.mini-barra {
+  animation: mini-barra-some 6.5s ease infinite;
+}
+.mini-barra > span {
+  animation: mini-enche 6.5s var(--ease-trajeto) infinite;
+}
+.mini-arquivo {
+  animation: mini-surge 6.5s var(--ease-chegada) infinite;
+}
+@keyframes mini-foco {
+  0%, 6% { border-color: var(--line); }
+  10%, 44% { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+  52%, 100% { border-color: var(--line); }
+}
+@keyframes mini-digita {
+  0%, 10% { clip-path: inset(0 100% 0 0); }
+  38%, 94% { clip-path: inset(0 0 0 0); }
+  100% { clip-path: inset(0 100% 0 0); }
+}
+@keyframes mini-surge {
+  0%, 48% { opacity: 0; translate: 0 -4px; }
+  56%, 92% { opacity: 1; translate: 0 0; }
+  100% { opacity: 0; translate: 0 0; }
+}
+@keyframes mini-tarja {
+  from { background-position: 100% 0; }
+  to { background-position: 0% 0; }
+}
+@keyframes mini-toque {
+  0%, 9% { scale: 1; background: transparent; }
+  12% { scale: 0.96; background: var(--subtle); }
+  16%, 46% { scale: 1; background: var(--subtle); }
+  52%, 100% { scale: 1; background: transparent; }
+}
+@keyframes mini-enche {
+  0%, 15% { width: 0; }
+  45%, 100% { width: 100%; }
+}
+@keyframes mini-barra-some {
+  0%, 12% { opacity: 0; }
+  15%, 46% { opacity: 1; }
+  52%, 100% { opacity: 0; }
+}
+@media (scripting: enabled) {
+  [data-inview="false"] .mini * {
+    animation-play-state: paused;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mini * {
+    animation: none !important;
+  }
+  .mini-barra {
+    display: none;
+  }
+}
+
+/* demonstração que passa da altura: o pé some no fundo, em vez de um corte seco */
+.desvanece {
+  -webkit-mask-image: linear-gradient(to bottom, #000 var(--ate, 72%), transparent);
+  mask-image: linear-gradient(to bottom, #000 var(--ate, 72%), transparent);
+}

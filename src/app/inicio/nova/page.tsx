@@ -1,6 +1,6 @@
 import { Fragment } from "react";
 import Link from "next/link";
-import { ArrowRight, BadgeCheck, MessageCircle, MonitorSmartphone, Users, WifiOff } from "lucide-react";
+import { ArrowRight, BadgeCheck, Check, MessageCircle, MonitorSmartphone, Users, WifiOff } from "lucide-react";
 import { TemaBotao } from "@/components/tema-botao";
 import { StatusSistema } from "@/components/status-sistema";
 import { Logo } from "@/components/logo";
@@ -10,7 +10,7 @@ import { PainelVivo } from "../painel-vivo";
 import { DemoAcerto } from "../demo-acerto";
 import { DemoEntrega } from "../demo-entrega";
 import { DemoPortal } from "../demo-portal";
-import { DadosSeus, EmpresaIsolada, SenhaDeNovo } from "../diagramas";
+import { MiniEstorno, MiniExportar, MiniSoSua } from "../detalhes";
 import { PRECO, WHATSAPP, linkWhatsApp } from "../contato";
 import { LuzCursor } from "../luz-cursor";
 
@@ -140,12 +140,12 @@ export default function InicioNova() {
             tom="text-chama"
             rotulo="Na rua"
             titulo="O entregador confirma. A loja vê na hora."
-            apoio="Cada entrega com dono, do balcão até a porta. O vendido do dia sobe sozinho, até com o celular sem sinal."
+            apoio="Cada entrega com dono, do balcão até a porta. Quando o entregador confirma, o vendido do dia sobe sozinho no painel da loja."
           />
           <div
             role="img"
             aria-label="O entregador toca em Entreguei e recebi no celular, e no painel da loja o pedido vira Entregue e o vendido do dia sobe"
-            className="topo-palco relative mt-14"
+            className="topo-palco desvanece relative mt-14"
           >
             <DemoEntrega escuro />
           </div>
@@ -157,7 +157,9 @@ export default function InicioNova() {
           <div
             role="img"
             aria-label="Acerto do João: deve apresentar R$ 165,00, o caixa digita 165,00, o sistema mostra bateu, sem diferença, e o acerto é fechado"
-            className="overflow-hidden rounded-2xl border border-line bg-subtle"
+            // a tela do acerto é baixa: o sumiço começa só depois do botão
+            className="desvanece"
+            style={{ "--ate": "88%" } as React.CSSProperties}
           >
             <DemoAcerto />
           </div>
@@ -168,12 +170,6 @@ export default function InicioNova() {
               apoio="Troco, vendas em dinheiro, repasses e gastos entram sozinhos. O caixa conta, e fecha no centavo ou a diferença fica registrada até o dono decidir."
             />
           </div>
-        </section>
-
-        {/* o número que o dono quer ver no fim do dia, em tamanho de cartaz */}
-        <section className="mx-auto max-w-6xl px-4 pt-32 text-center sm:px-6 sm:pt-44">
-          <p className="reveal num text-[clamp(4.5rem,15vw,10.5rem)] leading-none font-semibold tracking-[-0.06em]">R$ 0,00</p>
-          <p className="reveal mt-5 text-[clamp(1.375rem,3vw,2.25rem)] font-semibold tracking-[-0.03em] text-muted">de diferença quando a conta fecha.</p>
         </section>
 
         {/* mosaico: os detalhes em peças menores, cada uma com a sua prova */}
@@ -213,23 +209,25 @@ export default function InicioNova() {
               </div>
             </article>
 
-            {[
-              { figura: SenhaDeNovo, t: "Ninguém apaga nada", d: "Erro se corrige com estorno, com a senha de quem está logado." },
-              { figura: EmpresaIsolada, t: "O que é seu, só você vê", d: "Cada revenda separada das outras, até no banco de dados." },
-            ].map(({ figura: Figura, t, d }) => (
-              <article key={t} className="bento extra">
-                <Figura className="h-20 w-full max-w-[15rem]" />
-                <h3 className="mt-6 text-[17px] font-semibold tracking-tight">{t}</h3>
-                <p className="mt-1.5 text-muted">{d}</p>
-              </article>
-            ))}
+            {/* mesma ordem em todas as peças: título, uma linha, e o pedaço da tela embaixo */}
+            <article className="bento">
+              <h3 className="text-[17px] font-semibold tracking-tight">Ninguém apaga nada</h3>
+              <p className="mt-1.5 text-muted">Erro se corrige com estorno, com a senha de quem está logado, e fica no histórico.</p>
+              <MiniEstorno />
+            </article>
 
-            <article className="bento extra grid items-center gap-6 sm:grid-cols-[auto_1fr] lg:col-span-3">
-              <DadosSeus className="h-20 w-full max-w-[15rem]" />
+            <article className="bento">
+              <h3 className="text-[17px] font-semibold tracking-tight">O que é seu, só você vê</h3>
+              <p className="mt-1.5 text-muted">Cada revenda separada das outras, até no banco de dados.</p>
+              <MiniSoSua />
+            </article>
+
+            <article className="bento grid items-center gap-6 lg:col-span-3 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
               <div>
                 <h3 className="text-[17px] font-semibold tracking-tight">Seus dados, quando quiser</h3>
                 <p className="mt-1.5 text-muted">Relatórios por dia, entregador e produto, e tudo em planilha para baixar. Se um dia quiser sair, os dados vão com você.</p>
               </div>
+              <MiniExportar />
             </article>
           </InView>
           </LuzCursor>
@@ -238,7 +236,7 @@ export default function InicioNova() {
         <section className="mx-auto grid max-w-6xl gap-16 px-4 pt-32 sm:px-6 sm:pt-44 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] lg:gap-20">
           <div id="preco" className="scroll-mt-24">
             <p className="text-[13px] font-medium text-accent">Preço</p>
-            <h2 className="reveal mt-2 text-[2rem] leading-tight font-semibold tracking-[-0.035em]">
+            <h2 className="reveal mt-3 text-[2rem] leading-[1.08] font-semibold tracking-[-0.04em] sm:text-[2.25rem]">
               {PRECO ? (
                 <>
                   {PRECO}
@@ -261,8 +259,8 @@ export default function InicioNova() {
                 "Acerto de caixa por entregador",
                 "Relatórios e exportação em planilha",
               ].map((x) => (
-                <li key={x} className="flex gap-3">
-                  <span aria-hidden="true" className="mt-[0.6em] h-px w-3 shrink-0 bg-accent" />
+                <li key={x} className="flex items-center gap-3">
+                  <Check size={15} strokeWidth={2.25} className="shrink-0 text-accent" aria-hidden="true" />
                   {x}
                 </li>
               ))}
@@ -272,7 +270,7 @@ export default function InicioNova() {
 
           <div id="perguntas" className="scroll-mt-24">
             <p className="text-[13px] font-medium text-accent">Perguntas</p>
-            <h2 className="reveal mt-2 text-[2rem] leading-tight font-semibold tracking-[-0.035em]">O que todo dono pergunta.</h2>
+            <h2 className="reveal mt-3 text-[2rem] leading-[1.08] font-semibold tracking-[-0.04em] sm:text-[2.25rem]">O que todo dono pergunta.</h2>
             <div className="mt-6 border-t border-line">
               {perguntas.map(([q, a]) => (
                 <details key={q} name="perguntas" className="pergunta border-b border-line">
