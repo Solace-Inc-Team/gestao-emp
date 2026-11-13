@@ -83,13 +83,14 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
             </form>
           </div>
         </div>
-        <p className="hidden truncate px-5 pb-5 text-[13px] text-muted lg:block">
+        {/* com o seletor logo abaixo, o nome da empresa encosta nele; sem ele, respira até o menu */}
+        <p className={`hidden truncate px-5 text-[13px] text-muted lg:block ${user.branches.length > 1 && user.role === "dono" ? "pb-2" : "pb-5"}`}>
           {user.tenantName}
           {/* a equipe vê a filial em que trabalha; o dono escolhe qual ver logo abaixo */}
           {user.branches.length > 1 && user.role !== "dono" && <span className="block truncate text-fg">{user.branchName}</span>}
         </p>
         {user.branches.length > 1 && user.role === "dono" && (
-          <div className="px-5 pb-4 lg:-mt-3 lg:pb-5">
+          <div className="px-5 pb-4 lg:pb-5">
             <SeletorFilial atual={user.branchId} filiais={user.branches} />
           </div>
         )}
