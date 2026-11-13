@@ -109,7 +109,7 @@ export function MapaVivo({ className = "" }: { className?: string }) {
       <p className="num px-4 text-center font-mono text-[11px] tracking-[0.14em] text-muted uppercase">
         Hoje · <LiveNumber value={dia.entregas} className="text-fg" /> entregas · <LiveNumber value={dia.cents} cents className="text-fg" /> recebidos
       </p>
-      <svg viewBox="0 0 1440 300" preserveAspectRatio="xMidYMid slice" className="mapa-vivo ink mt-6 block min-h-[220px] w-full flex-1" aria-hidden="true">
+      <svg viewBox="0 0 1440 300" preserveAspectRatio="xMidYMid slice" className="mapa-vivo ink mt-6 block h-[220px] w-full flex-none sm:h-auto sm:min-h-[220px] sm:flex-1" aria-hidden="true">
         <g className="mapa-ruas">
           {RUAS_H.map((y) => (
             <path key={`h${y}`} d={`M-20 ${y}H1460`} />

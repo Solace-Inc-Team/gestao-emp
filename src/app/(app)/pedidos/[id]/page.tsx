@@ -43,7 +43,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
   return (
     <>
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <Link href="/pedidos" className="text-accent hover:underline">Pedidos</Link>
+        <Link href="/pedidos" className="alvo text-accent hover:underline">Pedidos</Link>
         <span className="text-muted">/</span>
         <h1 className="h1">Pedido #{o.number}</h1>
         <StatusBadge status={o.status} />

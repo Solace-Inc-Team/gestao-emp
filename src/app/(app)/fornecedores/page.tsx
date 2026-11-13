@@ -38,7 +38,7 @@ export default async function Fornecedores({ searchParams }: PageProps<"/fornece
   return (
     <>
       <div className="mb-2 flex flex-wrap items-center gap-3">
-        <Link href="/estoque" className="text-accent hover:underline">Estoque</Link>
+        <Link href="/estoque" className="alvo text-accent hover:underline">Estoque</Link>
         <span className="text-muted">/</span>
         <h1 className="h1">Fornecedores</h1>
       </div>

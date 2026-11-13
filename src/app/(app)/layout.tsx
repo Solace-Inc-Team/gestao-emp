@@ -64,6 +64,18 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           <MarcaDaSessao />
           {/* o tema fica no alto nas duas larguras; Sair aqui só no celular (no computador está no rodapé) */}
           <div className="flex items-center gap-1">
+            {/* no celular e no tablet não há rodapé lateral: quem está logado aparece aqui, e o toque leva a trocar a senha */}
+            <Link
+              href="/senha"
+              aria-label={`${user.name}, ${roleLabel[user.role]}. Trocar senha`}
+              className="mr-1 flex min-h-11 items-center gap-2 rounded-md px-1.5 hover:bg-subtle lg:hidden"
+            >
+              <span className="grid size-7 shrink-0 place-items-center rounded-full bg-subtle text-[11px] font-semibold">{initials(user.name)}</span>
+              <span className="hidden leading-tight min-[360px]:block">
+                <span className="block max-w-[7rem] truncate text-[13px] font-medium">{user.name.split(" ")[0]}</span>
+                <span className="block text-[11.5px] text-muted">{roleLabel[user.role]}</span>
+              </span>
+            </Link>
             <TemaBotao className="size-11 lg:size-8" />
             <form action={logout} className="lg:hidden">
               <button className="tap px-2 text-[13px] text-muted hover:text-fg">Sair</button>

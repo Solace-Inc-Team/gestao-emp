@@ -56,9 +56,9 @@ export default async function LoginPage() {
       </div>
       <footer className="mt-16 flex items-center gap-4 text-xs text-muted">
         <span>Solace</span>
-        <Link href="/termos" className="hover:text-fg">Termos de uso</Link>
-        <Link href="/privacidade" className="hover:text-fg">Privacidade</Link>
-        <TemaBotao className="size-8" />
+        <Link href="/termos" className="alvo hover:text-fg">Termos de uso</Link>
+        <Link href="/privacidade" className="alvo hover:text-fg">Privacidade</Link>
+        <TemaBotao className="size-10 sm:size-8" />
       </footer>
     </main>
   );

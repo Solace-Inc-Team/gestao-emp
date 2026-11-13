@@ -193,7 +193,8 @@ export default async function Estoque() {
 
       <section className="panel mt-6 overflow-x-auto">
         <h2 className="h2 border-b border-line px-4 py-3">Últimas movimentações</h2>
-        <table className="table min-w-[44rem]">
+        {/* no celular cada movimentação vira um bloco empilhado, em vez de seis colunas espremidas */}
+        <table className="table tabela-pilha movimentos sm:min-w-[44rem]">
           <thead>
             <tr><th>Quando</th><th>Produto</th><th>Onde</th><th className="text-right">Qtd.</th><th>Motivo</th><th>Por</th></tr>
           </thead>

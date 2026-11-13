@@ -29,6 +29,7 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
   const spent = paid.reduce((s, e) => s + e.amountCents, 0);
   const fiadoIn = fiado.reduce((s, f) => s + f.total, 0);
   const diffs = closed.reduce((s, c) => s + (c.shift.differenceCents ?? 0), 0);
+  const semMovimento = d.count === 0 && !b.byProduct.length && !b.byDriver.length && !closed.length && !paid.length;
   const longDay = new Intl.DateTimeFormat("pt-BR", { dateStyle: "full", timeZone: "America/Sao_Paulo" }).format(new Date(`${day}T12:00:00-03:00`));
 
   return (
@@ -36,7 +37,7 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
       {/* o campo já mostra a data: o rótulo fica para leitor de tela e o cabeçalho alinha pelo centro */}
       <div className="no-print mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <Link href="/relatorios" className="text-accent hover:underline">Relatórios</Link>
+          <Link href="/relatorios" className="alvo text-accent hover:underline">Relatórios</Link>
           <span className="text-muted">/</span>
           <h1 className="h1">Fechamento do dia</h1>
         </div>
@@ -58,6 +59,13 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
         <p className="text-[13px] text-muted">Emitido em {fmtDateTime(new Date())} por {user.name}</p>
       </header>
 
+      {/* dia sem nenhum movimento: uma linha só, em vez de "Nada no dia" repetido em cada bloco */}
+      {semMovimento ? (
+        <Block title="Movimento do dia">
+          <p className="py-1.5 text-muted">Nenhuma venda entregue, acerto de caixa ou despesa neste dia.</p>
+        </Block>
+      ) : (
+      <>
       <Block title="Vendas entregues">
         <Row label={`${d.count} ${d.count === 1 ? "pedido" : "pedidos"}`} cents={d.total} strong />
         <Row label="Dinheiro" cents={d.cash} />
@@ -117,6 +125,8 @@ export default async function Fechamento({ searchParams }: PageProps<"/relatorio
           <None />
         )}
       </Block>
+      </>
+      )}
 
       <Block title="Resumo">
         <Row label="Vendas entregues" cents={d.total} />

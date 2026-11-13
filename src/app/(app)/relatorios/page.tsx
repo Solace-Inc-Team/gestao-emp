@@ -84,12 +84,13 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
         )}
       </section>
 
-      <section className="panel mb-6 grid sm:grid-cols-3 sm:divide-x sm:divide-line">
-        <div className="p-5">
+      {/* divisória só entre os três números: a barra e a nota embaixo ocupam a largura toda e não levam borda lateral */}
+      <section className="panel mb-6 grid sm:grid-cols-3">
+        <div className="p-5 sm:border-r sm:border-line">
           <p className="text-[13px] text-muted">Vendas entregues</p>
           <Money cents={sum("total")} className="mt-1 block text-2xl font-semibold tracking-[-0.03em]" />
         </div>
-        <div className="border-t border-line p-5 sm:border-t-0">
+        <div className="border-t border-line p-5 sm:border-t-0 sm:border-r">
           <p className="text-[13px] text-muted">
             <Link href={`/despesas?de=${fromStr}&ate=${toStr}`} className="hover:text-fg hover:underline">Despesas</Link>
           </p>

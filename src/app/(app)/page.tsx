@@ -6,6 +6,7 @@ import { todayISO } from "@/lib/period";
 import { LiveNumber } from "@/components/live-number";
 import { SemanaBarras } from "@/components/semana-barras";
 import { comparar } from "@/lib/comparativo";
+import { DivisaoPagamento } from "@/components/divisao-pagamento";
 import { FiltroPainel } from "./filtro-painel";
 import { PrimeirosPassos } from "./primeiros-passos";
 import { Money, StatusBadge, Empty, fmtTime, paymentLabel } from "@/components/ui";
@@ -143,7 +144,7 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
         <section className="panel">
           <div className="flex items-center justify-between border-b border-line px-4 py-3">
             <h2 className="h2">Pedidos {ehHoje ? "de hoje" : noDia}</h2>
-            <Link href="/pedidos" className="text-sm text-accent hover:underline">Ver todos</Link>
+            <Link href="/pedidos" className="alvo text-sm text-accent hover:underline">Ver todos</Link>
           </div>
           {d.recent.length ? (
             <table className="table">
@@ -202,14 +203,14 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
 
           <section className="panel p-4">
             <h2 className="h2 mb-3">Recebido {noDia}, por forma de pagamento</h2>
-            <dl className="space-y-1.5">
-              {(Object.keys(paymentLabel) as (keyof typeof paymentLabel)[]).map((k) => (
-                <div key={k} className="flex justify-between">
-                  <dt className="text-muted">{paymentLabel[k]}</dt>
-                  <dd><Money cents={d.byMethod[k]} /></dd>
-                </div>
-              ))}
-            </dl>
+            {/* a mesma barra do acerto e dos relatórios; sem nada recebido, uma linha só em vez de quatro zeros */}
+            {Object.values(d.byMethod).some((v) => v > 0) ? (
+              <DivisaoPagamento
+                partes={(Object.keys(paymentLabel) as (keyof typeof paymentLabel)[]).map((k) => ({ rotulo: paymentLabel[k], cents: d.byMethod[k] }))}
+              />
+            ) : (
+              <p className="text-muted">Nada recebido {noDia}{ehHoje ? " ainda" : ""}.</p>
+            )}
             {d.sold.length > 0 && (
               <>
                 <h3 className="mt-5 mb-2 font-semibold">Saiu {noDia}</h3>

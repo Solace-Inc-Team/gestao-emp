@@ -122,9 +122,9 @@ function TurnosAbertos() {
         <tbody>
           {turnos.map(([nome, troco, hora], i) => (
             <tr key={nome} style={atraso(200 + i * 160)} className="print border-t border-line first:border-t-0">
-              <td className="px-5 py-3 font-medium">{nome}</td>
-              <td className="px-5 py-3 text-muted">troco {troco}</td>
-              <td className="px-5 py-3 text-right text-muted">{hora}</td>
+              <td className="py-3 pr-2 pl-4 font-medium sm:px-5">{nome}</td>
+              <td className="px-2 py-3 whitespace-nowrap text-muted sm:px-5">troco {troco}</td>
+              <td className="py-3 pr-4 pl-2 text-right whitespace-nowrap text-muted sm:px-5">{hora}</td>
             </tr>
           ))}
         </tbody>
@@ -175,7 +175,7 @@ export default function Inicio() {
     <div className="overflow-x-clip">
       <header className="site-header sticky top-0 z-20 border-b">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link href="/" aria-label="Depósito, início">
+          <Link href="/" aria-label="Depósito, início" className="alvo">
             <Logo />
           </Link>
           <nav className="flex items-center gap-6 text-[13px] text-muted">
@@ -187,7 +187,7 @@ export default function Inicio() {
 
       <main>
         {/* o topo ocupa a primeira tela inteira: o bairro preenche o que sobra embaixo dos botões */}
-        <section className="prancha flex min-h-[calc(100svh-3.5rem)] flex-col overflow-hidden border-b border-line pt-20 sm:pt-24">
+        <section className="prancha flex flex-col sm:min-h-[calc(100svh-3.5rem)] overflow-hidden border-b border-line pt-20 sm:pt-24">
           <div className="mx-auto max-w-6xl px-4 text-center sm:px-6">
             <p style={atraso(0)} className="hero-in inline-flex items-center gap-2 rounded-full border border-line bg-surface px-3 py-1 text-[12px] text-muted">
               <span className="size-1.5 rounded-full bg-ok" />
@@ -250,7 +250,8 @@ export default function Inicio() {
                         <h3 className="mt-3 text-[1.5rem] leading-tight font-semibold tracking-[-0.03em] sm:text-[1.75rem]">{t}</h3>
                         <p className="mt-3 text-[16px] leading-relaxed text-muted">{d}</p>
                       </div>
-                      <div className="dia-figura min-w-0">{figura}</div>
+                      {/* a tela larga (11h) passa da borda de propósito: no celular ela sangra até o canto da tela, para o corte parecer intencional */}
+                      <div className={`dia-figura min-w-0 ${largo ? "-mr-4 sm:mr-0" : ""}`}>{figura}</div>
                     </div>
                   </InView>
                 </li>

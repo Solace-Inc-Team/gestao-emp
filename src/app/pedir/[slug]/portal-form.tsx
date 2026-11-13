@@ -42,6 +42,7 @@ export function PortalForm({
   const items = products
     .filter((p) => qty[p.id] > 0)
     .map((p) => ({ productId: p.id, quantity: qty[p.id], returnsEmpty: p.returnable && !noBottle[p.id] }));
+  const unidades = items.reduce((s, i) => s + i.quantity, 0);
   const total = products.reduce((s, p) => s + (qty[p.id] ?? 0) * price(p), 0);
   const step = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, Math.min(20, (q[id] ?? 0) + d)) }));
 
@@ -59,7 +60,8 @@ export function PortalForm({
     <form
       method="post"
       noValidate
-      className="space-y-6"
+      // com a barra do total embaixo no celular, o fim da página ganha espaço para ela não cobrir o botão
+      className={`space-y-6 ${items.length ? "pb-24 sm:pb-0" : ""}`}
       onSubmit={(e) => {
         e.preventDefault();
         // campo faltando: mensagem em português e o campo treme, no lugar do balão do navegador
@@ -109,7 +111,7 @@ export function PortalForm({
           </ul>
         </section>
 
-        <section className="panel space-y-3 p-4">
+        <section id="entrega" className="panel scroll-mt-4 space-y-3 p-4">
           <h2 className="h2">Entrega</h2>
           <div>
             <label className="label" htmlFor="name">Seu nome</label>
@@ -178,6 +180,19 @@ export function PortalForm({
           {!items.length && <p className="mt-2 text-center text-[13px] text-muted">Escolha ao menos um produto acima.</p>}
         </div>
       </fieldset>
+
+      {/* no celular, depois do primeiro produto, o total sobe numa barra fixa embaixo e o botão leva aos dados de entrega */}
+      {items.length > 0 && (
+        <div className="barra-pedido barra-sobe fixed inset-x-0 bottom-0 z-20 flex items-center gap-3 border-t border-line bg-bg/95 px-4 pt-3 backdrop-blur sm:hidden">
+          <div className="min-w-0 flex-1">
+            <p className="text-[13px] text-muted">
+              {unidades} {unidades === 1 ? "item" : "itens"}
+            </p>
+            <LiveNumber value={total} cents className="text-xl font-semibold" />
+          </div>
+          <a href="#entrega" className="btn btn-primary h-12 shrink-0 px-5">Continuar</a>
+        </div>
+      )}
     </form>
   );
 }

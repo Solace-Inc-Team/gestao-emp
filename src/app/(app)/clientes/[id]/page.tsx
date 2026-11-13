@@ -30,7 +30,7 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
     <>
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap items-center gap-3">
-          <Link href="/clientes" className="text-accent hover:underline">Clientes</Link>
+          <Link href="/clientes" className="alvo text-accent hover:underline">Clientes</Link>
           <span className="text-muted">/</span>
           <h1 className="h1">{c.name}</h1>
         </div>

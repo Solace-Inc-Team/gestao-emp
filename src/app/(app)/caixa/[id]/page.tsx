@@ -32,7 +32,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
   return (
     <>
       <div className="mb-6 flex flex-wrap items-center gap-3">
-        <Link href="/caixa" className="text-accent hover:underline">Caixa</Link>
+        <Link href="/caixa" className="alvo text-accent hover:underline">Caixa</Link>
         <span className="text-muted">/</span>
         <h1 className="h1">Acerto de {s.driverName}</h1>
       </div>
@@ -141,6 +141,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
         <div className="min-w-0 space-y-6">
         <section className="panel overflow-x-auto">
           <h2 className="h2 border-b border-line px-4 py-3">Pedidos do turno</h2>
+          {s.orders.length === 0 && <p className="px-4 py-5 text-muted">Nenhum pedido neste turno.</p>}
           <table className="table">
             <tbody>
               {s.orders.map((o) => (
@@ -238,7 +239,8 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
         )}
         </div>
 
-        <div className="space-y-6">
+        {/* no celular o fechamento vem logo depois da conta: é o que se faz no fim do dia */}
+        <div className="order-first space-y-6 lg:order-none">
           {isOpen ? (
             <section className="panel p-4">
               <h2 className="h2 mb-1">Fechar acerto</h2>

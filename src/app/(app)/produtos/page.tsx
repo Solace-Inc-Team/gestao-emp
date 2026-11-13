@@ -31,7 +31,8 @@ function Fields({ p = {}, rotulos = true }: { p?: P; rotulos?: boolean }) {
         <label className={rotulo} htmlFor={`m-${k}`}>Estoque mínimo</label>
         <input id={`m-${k}`} name="minStock" type="number" min={0} defaultValue={p.minStock ?? 0} className="input" />
       </div>
-      <label className="flex min-h-11 items-center gap-2">
+      {/* no computador a caixa tem a altura do campo, para o texto alinhar com os valores; no celular, altura de toque */}
+      <label className="flex min-h-11 items-center gap-2 lg:min-h-9">
         <input type="checkbox" name="returnable" defaultChecked={p.returnable ?? true} /> Retornável
       </label>
     </>
@@ -53,7 +54,7 @@ export default async function Produtos() {
           <ActionForm key={p.id} action={saveProductAction} className={`flex flex-wrap items-end gap-3 border-b border-line p-4 last:border-0 ${p.active ? "" : "opacity-60"}`}>
             <input type="hidden" name="id" value={p.id} />
             <Fields p={p} rotulos={i === 0} />
-            <label className="flex min-h-10 items-center gap-2">
+            <label className="flex min-h-11 items-center gap-2 lg:min-h-9">
               <input type="checkbox" name="active" defaultChecked={p.active} /> À venda
             </label>
             <button className="btn">Salvar</button>

@@ -16,3 +16,8 @@ test("sem venda no dia anterior não vira porcentagem infinita", () => {
   assert.deepEqual(comparar(5000, 0, "andamento"), { texto: "ontem não tinha venda a esta hora", tom: "sobe" });
   assert.equal(comparar(0, 0, "fechado"), null);
 });
+
+test("dia em andamento ainda sem venda não aparece como queda", () => {
+  assert.deepEqual(comparar(0, 8000, "andamento"), { texto: "nenhuma venda ainda hoje", tom: "igual" });
+  assert.deepEqual(comparar(0, 8000, "fechado"), { texto: "−100% que o dia anterior", tom: "desce" });
+});

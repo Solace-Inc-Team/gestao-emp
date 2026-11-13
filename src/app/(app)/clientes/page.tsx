@@ -29,8 +29,14 @@ export default async function Clientes({ searchParams }: PageProps<"/clientes">)
               {customers.map((c) => (
                 <li key={c.id} className="flex items-center justify-between gap-3 border-b border-line px-4 py-3 last:border-0">
                   <div className="min-w-0">
-                    <Link href={`/clientes/${c.id}`} className="font-medium hover:text-accent">{c.name}</Link>
-                    <p className="truncate text-sm text-muted">{[c.address, c.phone].filter(Boolean).join(", ")}</p>
+                    <Link href={`/clientes/${c.id}`} className="inline-block py-0.5 font-medium hover:text-accent">{c.name}</Link>
+                    {c.address && <p className="truncate text-sm text-muted">{c.address}</p>}
+                    {/* telefone em linha própria e inteiro: é o que mais se usa da lista, e no celular liga com um toque */}
+                    {c.phone && (
+                      <a href={`tel:${c.phone.replace(/\D/g, "")}`} className="num inline-block py-0.5 text-sm text-muted hover:text-accent">
+                        {c.phone}
+                      </a>
+                    )}
                   </div>
                   <Link href={`/pedidos/novo?cliente=${c.id}`} className="btn shrink-0">Novo pedido</Link>
                 </li>

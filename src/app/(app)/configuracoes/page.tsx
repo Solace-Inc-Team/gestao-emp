@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/ui";
 import { headers } from "next/headers";
 import QRCode from "qrcode";
 import { CopyButton } from "@/components/copy-button";
+import { CaixaQueSalva } from "@/components/caixa-que-salva";
 
 export const metadata = { title: "Configurações" };
 
@@ -66,13 +67,13 @@ export default async function Configuracoes() {
           <input type="hidden" name="section" value="portal" />
           <fieldset className="space-y-3">
             <legend className="font-semibold">Pedidos pelo site</legend>
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="portalEnabled" defaultChecked={s.portalEnabled} />
+            {/* uma caixinha só: salva ao marcar, sem botão à parte (o aviso de salvo aparece embaixo) */}
+            <label className="flex min-h-11 items-center gap-2">
+              <CaixaQueSalva name="portalEnabled" defaultChecked={s.portalEnabled} />
               Clientes podem fazer pedidos pelo link da empresa
             </label>
             <p className="text-[13px] text-muted">Os pedidos entram na fila de Entregas com origem “Portal”. O preço é sempre o da tabela de produtos.</p>
           </fieldset>
-          <button className="btn btn-primary">Salvar portal</button>
         </ActionForm>
       </section>
       {s.portalEnabled && qr && (
