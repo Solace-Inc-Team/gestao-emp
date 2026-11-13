@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useId, useOptimistic, useRef, useState, useTransition } from "react";
 import { Check, ChevronsUpDown, Settings2 } from "lucide-react";
 import { escolherFilialAction } from "@/app/actions";
+import { useSaida } from "./saida";
 
 type Filial = { id: string; name: string };
 
@@ -21,6 +22,7 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
   const itens = useRef<(HTMLElement | null)[]>([]);
   const menuId = useId();
   const nome = filiais.find((f) => f.id === mostrada)?.name ?? "";
+  const menu = useSaida(aberto);
 
   // clique fora fecha, como qualquer menu
   useEffect(() => {
@@ -97,10 +99,11 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
         <ChevronsUpDown aria-hidden="true" size={14} strokeWidth={1.75} className="shrink-0 text-muted transition-colors group-hover:text-fg" />
       </button>
 
-      {aberto && (
+      {menu.montado && (
         <div
           id={menuId}
           role="menu"
+          data-saindo={menu.saindo || undefined}
           aria-label="Filiais"
           onKeyDown={navegar}
           className="popover popover-left absolute top-full right-0 left-0 z-30 mt-1.5 rounded-lg border border-line bg-surface p-1 shadow-[0_12px_32px_rgb(0_0_0/0.18)]"

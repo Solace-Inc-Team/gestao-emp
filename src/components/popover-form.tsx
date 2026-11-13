@@ -23,6 +23,7 @@ export function PopoverForm({
 }) {
   return (
     <details
+      data-popover
       className="relative inline-block text-left"
       onKeyDown={(e) => {
         if (e.key === "Escape") e.currentTarget.open = false;

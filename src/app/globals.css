@@ -342,6 +342,88 @@ details[open] > :not(summary) {
 .popover-left {
   transform-origin: top left;
 }
+/* <details> fecha como abre: o conteúdo some e recolhe (a lista de filiais, os formulários de "Revelar", as
+   perguntas). Os que flutuam (data-popover) só somem, sem recolher, para a altura não cortar o formulário. */
+@supports selector(::details-content) {
+  :root {
+    interpolate-size: allow-keywords;
+  }
+  details::details-content {
+    opacity: 0;
+    transition:
+      opacity var(--dur-fast) ease-in,
+      content-visibility var(--dur) allow-discrete;
+  }
+  details[open]::details-content {
+    opacity: 1;
+    transition:
+      opacity var(--dur) var(--ease-out),
+      content-visibility var(--dur) allow-discrete;
+  }
+  details:not([data-popover])::details-content {
+    height: 0;
+    overflow: clip;
+    transition:
+      height var(--dur) var(--ease-out),
+      opacity var(--dur-fast) ease-in,
+      content-visibility var(--dur) allow-discrete;
+  }
+  details:not([data-popover])[open]::details-content {
+    height: auto;
+  }
+}
+
+/* bloco que abre e fecha no lugar (escolha do vasilhame, linhas do resumo do pedido): a altura acompanha */
+.recolhe {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows var(--dur) var(--ease-out),
+    opacity var(--dur-fast) ease-in;
+}
+.recolhe[data-aberto] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+  transition:
+    grid-template-rows var(--dur) var(--ease-out),
+    opacity var(--dur) var(--ease-out);
+}
+.recolhe > * {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* saída dos que ficam um instante na tela depois de fechados (useSaida): mais rápida que a entrada */
+.popover[data-saindo],
+.seletor-filial + .popover[data-saindo],
+.filtro-painel[data-saindo] {
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    opacity var(--dur-fast) ease-in,
+    scale var(--dur-fast) ease-in,
+    translate var(--dur-fast) ease-in;
+}
+.popover[data-saindo] {
+  scale: 0.97;
+  translate: 0 -4px;
+}
+@media (max-width: 639px) {
+  .filtro-painel {
+    transition:
+      opacity var(--dur) var(--ease-out),
+      translate var(--dur) var(--ease-out);
+    @starting-style {
+      opacity: 0;
+      translate: 0 -4px;
+    }
+  }
+  .filtro-painel[data-saindo] {
+    translate: 0 -4px;
+  }
+}
+
 /* menu de filiais: abre descendo do botão (o popover já cresce; aqui ele também desce um pouco) */
 .seletor-filial + .popover {
   transition:
@@ -380,6 +462,11 @@ details[open] > :not(summary) {
   .filial-trocando {
     animation: none;
     opacity: 0.6;
+  }
+  .recolhe,
+  .recolhe[data-aberto],
+  details::details-content {
+    transition: none !important;
   }
 }
 

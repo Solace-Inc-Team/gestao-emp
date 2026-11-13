@@ -242,8 +242,10 @@ export function NewOrderForm({
                     </label>
                   )}
                   {/* sem vazio: vender o casco ou emprestar; a escolha muda o preço na hora */}
-                  {n > 0 && p.returnable && keepsBottle[p.id] && (
-                    <div className="entra mt-2 flex flex-wrap gap-2" role="group" aria-label={`Vasilhame de ${p.name}`}>
+                  {p.returnable && (
+                    // sempre na página, recolhida: abre e fecha deslizando; fechada, fica fora do teclado e do leitor de tela
+                    <div className="recolhe" data-aberto={(n > 0 && keepsBottle[p.id]) || undefined} inert={!(n > 0 && keepsBottle[p.id])}>
+                    <div><div className="flex flex-wrap gap-2 pt-2" role="group" aria-label={`Vasilhame de ${p.name}`}>
                       <button
                         type="button"
                         aria-pressed={!comodato(p)}
@@ -263,6 +265,7 @@ export function NewOrderForm({
                         Emprestar (comodato)
                       </button>
                       {!customer && <p className="w-full text-[12px] text-muted">Comodato precisa do cliente escolhido.</p>}
+                    </div></div>
                     </div>
                   )}
                 </li>
@@ -355,25 +358,27 @@ export function NewOrderForm({
             </div>
           </details>
           <div className="mt-5 border-t border-line pt-4">
-            {items.length > 0 && (
-              <ul className="mb-3 space-y-1 text-sm">
-                {items.map((i) => {
-                  const p = products.find((x) => x.id === i.productId)!;
+            {/* a lista fica sempre; sem item, só a margem some (junto com a última linha) */}
+            <ul className={`text-sm transition-[margin] duration-[var(--dur)] ${items.length ? "mb-3" : ""}`}>
+                {/* todos os produtos, recolhidos os que estão em zero: a linha entra e sai deslizando */}
+                {products.map((p) => {
+                  const q = qty[p.id] ?? 0;
                   return (
-                    <li key={i.productId} className="enter flex justify-between gap-2">
-                      <span>{i.quantity}× {p.name}</span>
-                      <span className="num">{formatBRL(i.quantity * priceOf(p))}</span>
+                    <li key={p.id} className="recolhe" data-aberto={q > 0 || undefined} aria-hidden={q === 0 || undefined}>
+                      <span><span className="flex justify-between gap-2 pb-1">
+                        <span>{q}× {p.name}</span>
+                        <span className="num">{formatBRL(q * priceOf(p))}</span>
+                      </span></span>
                     </li>
                   );
                 })}
-                {feeCents > 0 && (
-                  <li className="flex justify-between"><span>Entrega</span><span className="num">{formatBRL(feeCents)}</span></li>
-                )}
-                {discountCents > 0 && (
-                  <li className="flex justify-between"><span>Desconto</span><span className="num">−{formatBRL(discountCents)}</span></li>
-                )}
+                <li className="recolhe" data-aberto={(items.length > 0 && feeCents > 0) || undefined} aria-hidden={!(items.length > 0 && feeCents > 0) || undefined}>
+                  <span><span className="flex justify-between pb-1"><span>Entrega</span><span className="num">{formatBRL(feeCents)}</span></span></span>
+                </li>
+                <li className="recolhe" data-aberto={(items.length > 0 && discountCents > 0) || undefined} aria-hidden={!(items.length > 0 && discountCents > 0) || undefined}>
+                  <span><span className="flex justify-between pb-1"><span>Desconto</span><span className="num">−{formatBRL(discountCents)}</span></span></span>
+                </li>
               </ul>
-            )}
             <p className="flex items-baseline justify-between">
               <span className="font-semibold">Total</span>
               <LiveNumber value={shownTotal} cents className="text-4xl font-semibold" />

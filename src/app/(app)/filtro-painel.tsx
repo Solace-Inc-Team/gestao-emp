@@ -3,12 +3,14 @@
 import { useState, useTransition, type FormEvent, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { SlidersHorizontal } from "lucide-react";
+import { useSaida } from "@/components/saida";
 
 // No celular o filtro fica recolhido para os números do dia aparecerem primeiro;
 // no computador ele está sempre à vista. Começa aberto quando já há filtro aplicado.
 // Escolher o dia ou o entregador já aplica: sem botão "Ver" e sem recarregar a página.
 export function FiltroPainel({ ativo, children, acao }: { ativo: boolean; children: ReactNode; acao: ReactNode }) {
   const [aberto, setAberto] = useState(ativo);
+  const filtro = useSaida(aberto);
   const router = useRouter();
   const [, iniciar] = useTransition();
   const aplicar = (e: FormEvent<HTMLFormElement>) => {
@@ -37,7 +39,8 @@ export function FiltroPainel({ ativo, children, acao }: { ativo: boolean; childr
         onSubmit={aplicar}
         onChange={(e) => e.currentTarget.requestSubmit()}
         aria-label="Filtrar o painel"
-        className={`${aberto ? "flex" : "hidden"} order-last w-full flex-wrap items-end gap-2 sm:order-first sm:flex sm:w-auto`}
+        data-saindo={filtro.saindo || undefined}
+        className={`filtro-painel ${filtro.montado ? "flex" : "hidden"} order-last w-full flex-wrap items-end gap-2 sm:order-first sm:flex sm:w-auto`}
       >
         {children}
       </form>
