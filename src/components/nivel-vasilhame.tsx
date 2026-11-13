@@ -1,4 +1,22 @@
-import { ContornoBotijao, ContornoGalao } from "@/app/inicio/prateleira";
+// contornos do galão e do botijão em linha; o nível é desenhado por baixo deles
+function ContornoGalao() {
+  return (
+    <>
+      <path d="M8 2.5h6M8.5 2.5v3.5h5V2.5" />
+      <rect x="2.5" y="6" width="17" height="25" rx="4.5" />
+    </>
+  );
+}
+
+function ContornoBotijao() {
+  return (
+    <>
+      <path d="M6.5 7.5V4.5a1.5 1.5 0 0 1 1.5-1.5h6a1.5 1.5 0 0 1 1.5 1.5v3" />
+      <rect x="2.5" y="7.5" width="17" height="21" rx="7" />
+      <path d="M5 28.5v2.5h12v-2.5" />
+    </>
+  );
+}
 
 // o produto não diz se é gás ou água; pelo nome dá para saber na quase totalidade dos casos
 const ehGas = (nome: string) => /g[aá]s|botij|\bp\s?(2|5|8|13|20|45)\b/i.test(nome);

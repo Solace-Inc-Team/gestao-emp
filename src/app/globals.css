@@ -732,16 +732,6 @@ body[data-confirmando] .deliver-btn {
   animation: 800ms var(--ease-out) var(--d, 0ms) both word-in;
 }
 
-/* linhas que entram uma a uma, como impressas (turnos do caixa na página inicial) */
-@media (scripting: enabled) {
-  [data-inview="false"] .print {
-    opacity: 0;
-  }
-}
-[data-inview="true"] .print {
-  animation: 420ms var(--ease-out) var(--d, 0ms) both print-in;
-}
-
 /* com rolagem: painel inclinado que se endireita, blocos que sobem ao entrar e cabeçalho que ganha fundo */
 /* o fundo do cabeçalho é uma camada pronta que só muda de opacidade: animar o desfoque em si pesa em celular fraco */
 .site-header {
@@ -783,20 +773,12 @@ body[data-confirmando] .deliver-btn {
     filter: blur(8px);
   }
 }
-@keyframes print-in {
-  from {
-    opacity: 0;
-    translate: 0 -4px;
-    clip-path: inset(0 0 100% 0);
-  }
-}
 
 /* menos movimento: tudo já no lugar final */
 @media (prefers-reduced-motion: reduce) {
   .hero-in,
   .hero-word,
-  .reveal,
-  [data-inview] .print {
+  .reveal {
     animation: none !important;
     opacity: 1 !important;
   }
@@ -805,12 +787,8 @@ body[data-confirmando] .deliver-btn {
 /* prancha técnica da página inicial e do login ------------------------------------------------- */
 
 /* papel de prancha: um tom acima do fundo, e tinta azul de desenho técnico */
-.prancha,
 .ink {
   --tinta: var(--marca);
-}
-.prancha {
-  background: var(--papel);
 }
 
 .ink {
@@ -827,7 +805,6 @@ body[data-confirmando] .deliver-btn {
   stroke-dashoffset: 1;
   animation: ink-draw 1.6s var(--ease-out) var(--d, 0s) forwards;
 }
-.ink .cota,
 .ink .tracejado {
   stroke-width: 0.9;
   opacity: 0.75;
@@ -837,159 +814,18 @@ body[data-confirmando] .deliver-btn {
   stroke-dashoffset: 0;
   animation: fade-in 600ms ease var(--d, 0s) both;
 }
-.ink .nota {
-  fill: var(--tinta);
-  stroke: none;
-  font-family: var(--font-mono);
-  font-size: 9.5px;
-  letter-spacing: 0.08em;
-  animation: fade-in 500ms ease calc(var(--d, 0s) + 0.6s) both;
-}
-.ink .forte {
-  font-weight: 600;
-}
-.ink .ponto {
-  fill: var(--tinta);
-  stroke: none;
-}
-.ink .papel {
-  fill: var(--papel);
-}
-
-/* água do galão: enche até o gargalo, ondula, esvazia, e o rótulo acompanha */
-.ink .agua {
-  fill: color-mix(in srgb, var(--tinta) 16%, transparent);
-  stroke: var(--tinta);
-  stroke-width: 1;
-  animation: agua 14s ease-in-out 1.4s infinite both;
-}
-/* desloca exatamente uma onda inteira (crista + vale = 120): o fim da volta encaixa no começo, sem pulo */
-.ink .agua-onda {
-  animation: onda 5.6s linear infinite;
-}
-.ink .rotulo-cheio {
-  animation: rotulo 14s ease 1.4s infinite both;
-}
-.ink .rotulo-vazio {
-  animation: rotulo 14s ease 8.4s infinite both;
-}
-
-/* faixa final: azul elétrico chapado, o bairro em traço branco e a rota se desenhando quando aparece */
-.cta-band {
-  background: var(--marca-forte);
-  color: #fff;
-}
-.cta-band .ink {
-  stroke: rgb(255 255 255 / 0.22);
-  stroke-width: 1;
-}
-.cta-band .ink .corrego {
-  stroke: rgb(255 255 255 / 0.4);
-  stroke-width: 6;
-  stroke-opacity: 0.35;
-}
-.cta-band .ink .rota {
-  stroke: #fff;
-  stroke-width: 3;
-  animation-duration: 2.4s;
-  animation-delay: 0.6s;
-}
-.cta-band .ink .deposito {
-  fill: #fff;
-  stroke: none;
-}
-.cta-band .ink .chegada {
-  fill: #ffc53d;
-  stroke: #fff;
-  stroke-width: 2;
-  transform-box: fill-box;
-  transform-origin: center;
-  scale: 0;
-}
-.cta-band[data-inview="true"] .chegada {
-  animation: chegada-pop 520ms var(--ease-spring) 3s both;
-  scale: 1;
-}
-/* o ponto de chegada aparece quando a rota termina de se desenhar */
-@keyframes chegada-pop {
-  from {
-    scale: 0;
-  }
-}
 
 @keyframes ink-draw {
   to {
     stroke-dashoffset: 0;
   }
 }
-@keyframes agua {
-  0%,
-  6% {
-    transform: translateY(270px);
-  }
-  32%,
-  58% {
-    transform: translateY(0);
-  }
-  84%,
-  100% {
-    transform: translateY(270px);
-  }
-}
-@keyframes onda {
-  to {
-    transform: translateX(-120px);
-  }
-}
-@keyframes rotulo {
-  0%,
-  8% {
-    opacity: 0;
-  }
-  14%,
-  44% {
-    opacity: 1;
-  }
-  50%,
-  100% {
-    opacity: 0;
-  }
-}
 
 @media (prefers-reduced-motion: reduce) {
-  .ink [pathLength],
-  .ink .nota,
-  .ink .agua-onda {
+  .ink [pathLength] {
     animation: none !important;
     stroke-dashoffset: 0;
   }
-  /* galão parado cheio, só com o rótulo CHEIO */
-  .ink .agua {
-    animation: none !important;
-    transform: none;
-  }
-  .ink .rotulo-cheio {
-    animation: none !important;
-    opacity: 1;
-  }
-  .ink .rotulo-vazio {
-    display: none;
-  }
-  .cta-band .chegada {
-    animation: none !important;
-    scale: 1;
-  }
-}
-
-/* faixa âmbar da página inicial: chapada, texto e traço quase pretos */
-.faixa-chama {
-  --tinta: var(--chama-fg);
-  --papel: var(--chama);
-  background: var(--chama);
-  color: var(--chama-fg);
-}
-.faixa-chama .ink {
-  --tinta: var(--chama-fg);
 }
 
 /* desenhos que só se desenham quando aparecem na tela. Tudo dentro do desenho espera, sem filtrar
@@ -1580,130 +1416,6 @@ details[open] > summary.desvio .desvio-seta {
   }
 }
 
-/* prateleira de vasilhames: o motivo da página inicial, tirado do próprio estoque */
-.prateleira .vasilhame {
-  fill: none;
-  stroke: currentColor;
-  stroke-width: 1.25;
-  stroke-linejoin: round;
-  stroke-linecap: round;
-}
-/* o líquido tem a mesma forma de dentro do vasilhame (cantos redondos do botijão, retos do galão);
-   o nível é um corte por cima, então a superfície fica reta e o fundo acompanha o vasilhame */
-.prateleira .nivel {
-  fill: currentColor;
-  stroke: none;
-  opacity: 0.32;
-  /* a onda percorre a fileira: cada vasilhame esvazia um pouco depois do vizinho e volta a encher */
-  animation: prateleira-nivel 7s var(--ease-trajeto) calc(var(--i) * 0.28s) infinite both;
-}
-@keyframes prateleira-nivel {
-  0%,
-  30% {
-    clip-path: inset(0 0 0 0);
-  }
-  45%,
-  70% {
-    clip-path: inset(100% 0 0 0);
-  }
-  85%,
-  100% {
-    clip-path: inset(0 0 0 0);
-  }
-}
-/* só anda enquanto está na tela */
-[data-inview="false"] .prateleira .nivel {
-  animation-play-state: paused;
-}
-@media (prefers-reduced-motion: reduce) {
-  .prateleira .nivel {
-    animation: none;
-  }
-  .prateleira .nivel[data-parado="vazio"] {
-    clip-path: inset(100% 0 0 0);
-  }
-}
-/* ponto de chegada de cada esquema, no azul do próprio traço: aparece depois que o traço termina */
-.ink .marco {
-  animation: fade-in 400ms ease 1.4s both;
-}
-
-/* esquemas das garantias: um traço curto corre pela ligação; o cadeado abre; a parede acende quando a
-   tentativa bate nela; a planilha se preenche */
-.ink .fluxo[pathLength] {
-  stroke-width: 2.25;
-  stroke-dasharray: 0.14 1;
-  stroke-dashoffset: 0.14;
-  opacity: 0;
-  animation: none;
-}
-@keyframes fluxo {
-  from {
-    stroke-dashoffset: 0.14;
-  }
-  to {
-    stroke-dashoffset: -1;
-  }
-}
-.ink .argola {
-  transform-box: fill-box;
-  transition: translate var(--dur-slow) var(--ease-chegada);
-}
-.ink .parede {
-  transition: stroke-width var(--dur) ease;
-}
-.ink .celula {
-  fill: var(--tinta);
-  stroke: none;
-  opacity: 0;
-  transition: opacity 200ms ease;
-}
-/* a história de cada esquema roda sozinha, em volta, desde que o bloco aparece: começa quando o traço
-   termina de se desenhar e segue enquanto está na tela (fora dela, para) */
-[data-inview="true"] .extra .ink .fluxo[pathLength] {
-  opacity: 1;
-  animation: fluxo 2.8s var(--ease-trajeto) 1.8s infinite backwards;
-}
-[data-inview="true"] .extra .ink .argola {
-  animation: argola 2.8s var(--ease-chegada) 1.8s infinite;
-}
-[data-inview="true"] .extra .ink .parede {
-  animation: parede 2.8s ease 1.8s infinite;
-}
-[data-inview="true"] .extra .ink .celula {
-  animation: celula 2.8s ease calc(1.8s + var(--c) * 0.12s) infinite;
-}
-@keyframes parede {
-  45%,
-  75% {
-    stroke-width: 2;
-  }
-}
-@keyframes argola {
-  20%,
-  70% {
-    translate: 0 -3px;
-  }
-}
-@keyframes celula {
-  30%,
-  80% {
-    opacity: 0.28;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .ink .fluxo[pathLength] {
-    animation: none !important;
-    opacity: 0 !important;
-  }
-  .ink .argola,
-  .ink .celula,
-  .ink .parede {
-    animation: none !important;
-    transition: none;
-  }
-}
-
 /* ponto do status do sistema: um halo leve que pulsa devagar enquanto está tudo no ar */
 .status-vivo {
   box-shadow: 0 0 0 0 color-mix(in srgb, var(--ok) 45%, transparent);
@@ -1825,219 +1537,6 @@ details[open] > summary.desvio .desvio-seta {
 @media (prefers-reduced-motion: reduce) {
   .divisao > span {
     animation: none;
-  }
-}
-
-
-/* relógio do dia (topo da página inicial): a linha se desenha, depois um ponto percorre o dia e
-   cada parada acende quando ele chega. Ciclo de 14s; as chegadas (0, 15, 30, 45, 60 e 80%) batem
-   com o --chega de cada parada. Parado fora da tela; sem movimento pedido, o ponto fica nas 18h. */
-.relogio .relogio-hora {
-  font-size: var(--fs-hora);
-}
-.relogio .relogio-nome {
-  fill: var(--muted);
-  stroke: none;
-  font-family: var(--font-sans);
-  font-size: var(--fs-nome);
-  font-weight: 500;
-  transition: fill var(--dur) var(--ease-chegada);
-  animation: fade-in 500ms ease 0.9s both;
-}
-.relogio .relogio-alvo {
-  fill: transparent;
-  stroke: none;
-}
-.relogio .relogio-marca {
-  animation: fade-in 400ms ease var(--d, 0s) both;
-}
-.relogio .relogio-anel {
-  fill: var(--papel);
-  stroke: var(--tinta);
-  stroke-width: 1.5;
-  transform-box: fill-box;
-  transform-origin: center;
-  animation:
-    relogio-anel-entra 420ms var(--ease-chegada) 0.6s both,
-    relogio-acende 14s var(--ease-chegada) calc(1.8s + var(--chega)) infinite;
-}
-.relogio .relogio-ponto {
-  fill: var(--tinta);
-  stroke: none;
-  opacity: 0;
-  animation: relogio-ponto 14s var(--ease-trajeto) 1.8s infinite both;
-}
-.relogio-parada {
-  cursor: pointer;
-  outline: none;
-}
-.relogio-parada:hover .relogio-nome,
-.relogio-parada:focus-visible .relogio-nome {
-  fill: var(--fg);
-}
-.relogio-parada:focus-visible .relogio-anel {
-  stroke-width: 3;
-}
-@keyframes relogio-anel-entra {
-  from {
-    scale: 0;
-  }
-}
-/* a parada acende quando o ponto chega e apaga devagar enquanto ele segue viagem */
-@keyframes relogio-acende {
-  0%,
-  4% {
-    fill: color-mix(in srgb, var(--tinta) 22%, var(--papel));
-    scale: 1.25;
-  }
-  14%,
-  100% {
-    fill: var(--papel);
-    scale: 1;
-  }
-}
-@keyframes relogio-ponto {
-  0% {
-    translate: var(--x0) 0;
-    opacity: 0;
-  }
-  2%,
-  5% {
-    translate: var(--x0) 0;
-    opacity: 1;
-  }
-  15%,
-  20% {
-    translate: var(--x1) 0;
-  }
-  30%,
-  35% {
-    translate: var(--x2) 0;
-  }
-  45%,
-  50% {
-    translate: var(--x3) 0;
-  }
-  60%,
-  65% {
-    translate: var(--x4) 0;
-  }
-  80%,
-  94% {
-    translate: var(--x5) 0;
-    opacity: 1;
-  }
-  98%,
-  100% {
-    translate: var(--x5) 0;
-    opacity: 0;
-  }
-}
-@media (scripting: enabled) {
-  [data-inview="false"] .relogio :is(.relogio-anel, .relogio-ponto, .relogio-nome, .relogio-marca) {
-    animation-play-state: paused;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .relogio :is(.relogio-anel, .relogio-nome, .relogio-marca) {
-    animation: none;
-  }
-  .relogio .relogio-ponto {
-    animation: none;
-    opacity: 1;
-    translate: var(--x5) 0;
-  }
-}
-
-/* um dia na revenda: a linha à esquerda é o trajeto do dia. Quando a parada aparece, o marco da hora
-   surge, o trecho até a próxima parada se desenha de cima para baixo e o texto e a tela entram. */
-.dia-parada {
-  position: relative;
-  padding-left: 2.25rem;
-  padding-bottom: 6rem;
-}
-.dia-parada.dia-ultima {
-  padding-bottom: 0;
-}
-@media (min-width: 640px) {
-  .dia-parada {
-    padding-left: 4.5rem;
-    padding-bottom: 8rem;
-  }
-}
-.dia-parada::before {
-  content: "";
-  position: absolute;
-  left: 5px;
-  top: 1.25rem;
-  bottom: -0.25rem;
-  width: 1px;
-  background: color-mix(in srgb, var(--marca) 45%, transparent);
-  transform-origin: top;
-  scale: 1 0;
-}
-.dia-parada.dia-ultima::before {
-  display: none;
-}
-.dia-parada::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  top: 0.2rem;
-  width: 11px;
-  height: 11px;
-  border-radius: 50%;
-  border: 1.5px solid var(--marca);
-  background: var(--bg);
-  scale: 0;
-}
-.dia-parada.dia-ultima::after {
-  background: var(--marca);
-  box-shadow: 0 0 0 4px var(--accent-soft);
-}
-[data-inview="true"].dia-parada::after {
-  animation: dia-marco 420ms var(--ease-chegada) both;
-}
-[data-inview="true"].dia-parada::before {
-  animation: dia-trecho 1.4s var(--ease-trajeto) 250ms both;
-}
-@media (scripting: enabled) {
-  [data-inview="false"] :is(.dia-texto, .dia-figura) {
-    opacity: 0;
-  }
-}
-[data-inview="true"] .dia-texto {
-  animation: 600ms var(--ease-chegada) 80ms both hero-up;
-}
-[data-inview="true"] .dia-figura {
-  animation: 700ms var(--ease-chegada) 200ms both hero-up;
-}
-.dia-tela {
-  max-width: 34rem;
-  margin-inline: auto;
-}
-@keyframes dia-marco {
-  from {
-    scale: 0;
-  }
-  to {
-    scale: 1;
-  }
-}
-@keyframes dia-trecho {
-  to {
-    scale: 1 1;
-  }
-}
-@media (prefers-reduced-motion: reduce) {
-  .dia-parada::before,
-  .dia-parada::after {
-    animation: none !important;
-    scale: 1;
-  }
-  [data-inview] :is(.dia-texto, .dia-figura) {
-    animation: none !important;
-    opacity: 1 !important;
   }
 }
 
