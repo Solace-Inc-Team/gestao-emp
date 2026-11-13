@@ -14,7 +14,7 @@ export const newOrderSchema = z
     mode: z.enum(["entrega", "balcao"]),
     customerId: z.uuid().nullable(),
     items: z
-      .array(z.object({ productId: z.uuid(), quantity: z.int().min(1, "Quantidade mínima é 1.").max(99, "No máximo 99 unidades por item."), returnsEmpty: z.boolean() }))
+      .array(z.object({ productId: z.uuid(), quantity: z.int().min(1, "Quantidade mínima é 1.").max(99, "No máximo 99 unidades por item."), returnsEmpty: z.boolean(), loan: z.boolean().default(false) }))
       .min(1, "Adicione ao menos um item."),
     paymentMethod: z.enum(["dinheiro", "pix", "cartao", "fiado"]),
     cashPartCents: z.int().min(0).max(100_000_00, "Valor em dinheiro muito alto.").default(0),
@@ -73,9 +73,11 @@ export async function createOrder(ctx: Ctx, raw: NewOrder) {
       const p = prods.find((x) => x.id === i.productId && x.active);
       if (!p) throw new DomainError("Produto indisponível.");
       const returnsEmpty = p.returnable && i.returnsEmpty;
-      // sem vazio para trocar, o cliente compra o vasilhame junto
-      const container = p.returnable && !returnsEmpty ? p.containerPriceCents : 0;
-      return { ...i, unitPriceCents: p.priceCents + container, returnsEmpty, name: p.name };
+      // sem vazio para trocar, o cliente compra o vasilhame junto, ou a loja empresta (comodato) e não cobra
+      const loan = p.returnable && !returnsEmpty && i.loan;
+      if (loan && !input.customerId) throw new DomainError("Comodato precisa de cliente identificado.");
+      const container = p.returnable && !returnsEmpty && !loan ? p.containerPriceCents : 0;
+      return { ...i, unitPriceCents: p.priceCents + container, returnsEmpty, loan, name: p.name };
     });
 
     if (input.customerId) {
@@ -151,6 +153,7 @@ export async function createOrder(ctx: Ctx, raw: NewOrder) {
         quantity: i.quantity,
         unitPriceCents: i.unitPriceCents,
         returnsEmpty: i.returnsEmpty,
+        loan: i.loan,
       })),
     );
 

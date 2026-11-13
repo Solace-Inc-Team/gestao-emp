@@ -61,11 +61,21 @@ function tables(t: string): Record<string, { header: string[]; query: SQL }> {
         where o.tenant_id = ${t} order by o.number`,
     },
     "itens_dos_pedidos.csv": {
-      header: ["Pedido", "Produto", "Quantidade pedida", "Quantidade entregue", "Preço unitário (R$)", "Cliente devolveu vazio"],
+      header: ["Pedido", "Produto", "Quantidade pedida", "Quantidade entregue", "Preço unitário (R$)", "Cliente devolveu vazio", "Comodato"],
       query: sql`
-        select o.number, p.name, i.quantity, coalesce(i.delivered_quantity, i.quantity), ${money("i.unit_price_cents")}, ${yes("i.returns_empty")}
+        select o.number, p.name, i.quantity, coalesce(i.delivered_quantity, i.quantity), ${money("i.unit_price_cents")}, ${yes("i.returns_empty")}, ${yes("i.loan")}
         from order_items i join orders o on o.id = i.order_id join products p on p.id = i.product_id
         where i.tenant_id = ${t} order by o.number`,
+    },
+    "comodato.csv": {
+      header: ["Data", "Cliente", "Produto", "Quantidade", "Caução (R$)", "Caução paga em", "Observação", "Por"],
+      query: sql`
+        select ${when("l.created_at")}, c.name, p.name, l.quantity, ${money("l.deposit_cents")}, l.deposit_method, l.note, u.name
+        from container_loans l
+        join customers c on c.id = l.customer_id
+        join products p on p.id = l.product_id
+        join users u on u.id = l.user_id
+        where l.tenant_id = ${t} order by l.created_at`,
     },
     "turnos_e_acertos.csv": {
       header: [

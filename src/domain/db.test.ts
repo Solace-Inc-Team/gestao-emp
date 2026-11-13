@@ -807,3 +807,51 @@ test("acompanhamento: o link acha o pedido só na loja certa e mostra a situaç�
   // cada pedido tem o seu código
   assert.notEqual(A.order.trackingId, B.order.trackingId);
 });
+
+test("comodato: conta só depois de entregue, devolução volta como vazio e respeita saldo e caução", async () => {
+  const { db } = m.db;
+  const { users, products } = m.schema;
+  const como = await import("@/domain/comodato");
+  const [d] = await db.insert(users).values({ tenantId: A.t.id, name: "rota comodato", email: `rc@${A.t.id}.test`, role: "entregador", passwordHash: "x" }).returning();
+  await m.shifts.openShift(A.ctx, d.id, 0);
+  const [p] = await db.insert(products).values({ tenantId: A.t.id, name: "Galão comodato", priceCents: 1500, containerPriceCents: 2000 }).returning();
+  await m.stock.receivePurchase(A.ctx, { productId: p.id, full: 10, emptiesReturned: 0, note: "carga do teste" });
+  const base = { mode: "entrega" as const, deliveryFeeCents: 0, changeForCents: null, notes: "", paymentMethod: "dinheiro" as const };
+  const emprestado = (quantity: number) => [{ productId: p.id, quantity, returnsEmpty: false, loan: true }];
+  const saldo = async () => (await como.comodatoDoCliente(A.t.id, A.customer.id)).itens.find((i) => i.productId === p.id)?.quantidade ?? 0;
+  const vazios = async () => (await m.q.stockOverview(A.t.id)).find((x) => x.id === p.id)!.emptyStore;
+
+  await assert.rejects(m.orders.createOrder(A.ctx, { ...base, mode: "balcao", customerId: null, items: emprestado(1), driverId: null }), /Comodato precisa/);
+  // emprestado não cobra o casco
+  const o = await m.orders.createOrder(A.ctx, { ...base, customerId: A.customer.id, items: emprestado(2), driverId: d.id });
+  assert.equal(o.totalCents, 3000);
+  assert.equal(await saldo(), 0);
+  await m.orders.deliverOrder({ tenantId: A.t.id, userId: d.id, role: "entregador" }, o.id);
+  assert.equal(await saldo(), 2);
+  assert.equal((await como.comodatoPorProduto(A.t.id)).get(p.id), 2);
+  // pedido cancelado não conta
+  const c = await m.orders.createOrder(A.ctx, { ...base, customerId: A.customer.id, items: emprestado(1), driverId: null });
+  await m.orders.cancelOrder(A.ctx, c.id, "desistiu");
+  assert.equal(await saldo(), 2);
+
+  // comodato antigo: só o dono, caução precisa da forma
+  const reg = { customerId: A.customer.id, productId: p.id, quantity: 1, depositCents: 5000, depositMethod: null, note: "contrato de 2024" };
+  await assert.rejects(como.registrarComodato({ ...A.ctx, role: "atendente" }, reg));
+  await assert.rejects(como.registrarComodato(A.ctx, reg), /como a caução/);
+  await como.registrarComodato(A.ctx, { ...reg, depositMethod: "pix" });
+  assert.equal(await saldo(), 3);
+  assert.equal((await como.comodatoDoCliente(A.t.id, A.customer.id)).caucaoCents, 5000);
+
+  const dev = { customerId: A.customer.id, productId: p.id, quantity: 2, refundCents: 5000, note: "" };
+  await assert.rejects(como.devolverVasilhame(A.ctx, { ...dev, quantity: 4 }), /tem 3/);
+  await assert.rejects(como.devolverVasilhame(A.ctx, { ...dev, refundCents: 6000 }), /caução em mãos/);
+  const antes = await vazios();
+  await como.devolverVasilhame({ ...A.ctx, role: "atendente" }, dev);
+  assert.equal(await saldo(), 1);
+  assert.equal((await como.comodatoDoCliente(A.t.id, A.customer.id)).caucaoCents, 0);
+  assert.equal(await vazios(), antes + 2);
+
+  // outra empresa não vê nem mexe
+  assert.deepEqual((await como.comodatoDoCliente(B.t.id, A.customer.id)).itens, []);
+  await assert.rejects(como.devolverVasilhame(B.ctx, { ...dev, quantity: 1, refundCents: 0 }), /não encontrado/);
+});

@@ -262,7 +262,37 @@ export const orderItems = pgTable("order_items", {
   unitPriceCents: integer("unit_price_cents").notNull(),
   // false = cliente levou o vasilhame junto
   returnsEmpty: boolean("returns_empty").notNull().default(true),
+  // sem vazio para trocar, a loja empresta o vasilhame (comodato) em vez de vender: o cliente fica com o casco sem pagar
+  loan: boolean("loan").notNull().default(false),
 });
+
+/**
+ * Comodato lançado à mão: o que já estava emprestado antes do sistema (sem mexer no estoque) e as
+ * devoluções (o vazio volta para a loja). Quantidade e caução com sinal: + emprestou ou recebeu, - devolveu.
+ * O que sai emprestado nos pedidos entregues é somado direto dos itens, sem linha aqui.
+ */
+export const containerLoans = pgTable(
+  "container_loans",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    customerId: uuid("customer_id")
+      .notNull()
+      .references(() => customers.id),
+    productId: uuid("product_id")
+      .notNull()
+      .references(() => products.id),
+    quantity: integer("quantity").notNull(),
+    depositCents: integer("deposit_cents").notNull().default(0),
+    depositMethod: paymentMethodEnum("deposit_method"),
+    note: text("note").notNull().default(""),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    createdAt: createdAt(),
+  },
+  (t) => [index("container_loans_tenant_customer_idx").on(t.tenantId, t.customerId)],
+);
 
 // baixa de fiado: o saldo do cliente é fiado entregue menos estes pagamentos
 export const customerPayments = pgTable(

@@ -105,7 +105,7 @@ export default async function Entregador() {
                           {items.filter((i) => i.orderId === o.id).map((i, k) => (
                             <li key={k}>
                               <b className="num">{i.quantity}×</b> {i.name}
-                              {i.returnsEmpty ? <span className="text-muted">, recolher vazio</span> : <span className="text-warn">, sem troca</span>}
+                              {i.returnsEmpty ? <span className="text-muted">, recolher vazio</span> : <span className="text-warn">{i.loan ? ", em comodato" : ", sem troca"}</span>}
                             </li>
                           ))}
                         </ul>

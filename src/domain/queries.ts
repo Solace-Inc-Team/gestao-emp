@@ -171,6 +171,7 @@ export const getOrder = scoped(async function getOrder(tenantId: string, id: str
       deliveredQuantity: orderItems.deliveredQuantity,
       unitPriceCents: orderItems.unitPriceCents,
       returnsEmpty: orderItems.returnsEmpty,
+      loan: orderItems.loan,
     })
     .from(orderItems)
     .innerJoin(products, eq(products.id, orderItems.productId))
@@ -212,7 +213,7 @@ export const getSettings = scoped(async function getSettings(tenantId: string) {
 export const itemsForOrders = scoped(async function itemsForOrders(tenantId: string, orderIds: string[]) {
   if (!orderIds.length) return [];
   return db
-    .select({ id: orderItems.id, orderId: orderItems.orderId, name: products.name, quantity: orderItems.quantity, unitPriceCents: orderItems.unitPriceCents, returnsEmpty: orderItems.returnsEmpty })
+    .select({ id: orderItems.id, orderId: orderItems.orderId, name: products.name, quantity: orderItems.quantity, unitPriceCents: orderItems.unitPriceCents, returnsEmpty: orderItems.returnsEmpty, loan: orderItems.loan })
     .from(orderItems)
     .innerJoin(products, eq(products.id, orderItems.productId))
     .where(and(eq(orderItems.tenantId, tenantId), inArray(orderItems.orderId, orderIds)));

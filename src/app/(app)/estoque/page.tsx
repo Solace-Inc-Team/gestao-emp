@@ -5,16 +5,18 @@ import { ActionForm } from "@/components/action-form";
 import { adjustAction, damagedAction, purchaseAction } from "@/app/actions";
 import { PageHeader, fmtDateTime } from "@/components/ui";
 import { NivelVasilhame } from "@/components/nivel-vasilhame";
+import { comodatoPorProduto } from "@/domain/comodato";
 
 export const metadata = { title: "Estoque" };
 
 export default async function Estoque() {
   const user = await requireUser("dono", "atendente", "caixa");
-  const [stock, moves, products, suppliers] = await Promise.all([
+  const [stock, moves, products, suppliers, comodato] = await Promise.all([
     stockOverview(user.tenantId),
     recentMovements(user.tenantId, 20),
     listProducts(user.tenantId, true),
     listSuppliers(user.tenantId, true),
+    comodatoPorProduto(user.tenantId),
   ]);
   const stateLabel = { cheio: "cheio", vazio: "vazio", avariado: "avariado" } as const;
 
@@ -25,7 +27,7 @@ export default async function Estoque() {
         {user.role === "dono" && <Link href="/estoque/inventario" className="btn">Fazer inventário</Link>}
       </PageHeader>
       <section className="panel mb-6 overflow-x-auto">
-        <table className="table min-w-[40rem]">
+        <table className="table min-w-[46rem]">
           <thead>
             <tr>
               <th>Produto</th>
@@ -34,6 +36,7 @@ export default async function Estoque() {
               <th className="text-right">Cheios em rota</th>
               <th className="text-right">Vazios em rota</th>
               <th className="text-right">Avariados</th>
+              <th className="text-right">Em comodato</th>
               <th className="text-right">Total de vasilhames</th>
             </tr>
           </thead>
@@ -64,8 +67,9 @@ export default async function Estoque() {
                 <td className="num text-right text-xl">{p.returnable ? p.emptyTransit : "-"}</td>
                 {/* traço só quando não se aplica (produto que não volta); zero é zero */}
                 <td className={`num text-right text-xl ${p.damaged ? "text-warn-fg" : "text-muted"}`}>{p.damaged}</td>
+                <td className="num text-right text-xl text-muted">{p.returnable ? (comodato.get(p.id) ?? 0) : "-"}</td>
                 <td className="num text-right text-xl text-muted">
-                  {p.returnable ? p.fullStore + p.emptyStore + p.fullTransit + p.emptyTransit + p.damaged : "-"}
+                  {p.returnable ? p.fullStore + p.emptyStore + p.fullTransit + p.emptyTransit + p.damaged + (comodato.get(p.id) ?? 0) : "-"}
                 </td>
               </tr>
             ))}
@@ -73,7 +77,7 @@ export default async function Estoque() {
         </table>
         <p className="border-t border-line px-4 py-2 text-[13px] text-muted sm:hidden">Arraste a tabela para o lado para ver todas as colunas.</p>
         <p className="border-t border-line px-4 py-3 text-sm text-muted">
-          O total de vasilhames deve ficar estável: cada venda com troca tira um cheio e devolve um vazio. Se ele cair, há botijão ou galão sem retorno.
+          O total de vasilhames deve ficar estável: cada venda com troca tira um cheio e devolve um vazio. Vasilhame emprestado a cliente conta em “Em comodato”. Se o total cair, há botijão ou galão sem retorno.
         </p>
       </section>
 

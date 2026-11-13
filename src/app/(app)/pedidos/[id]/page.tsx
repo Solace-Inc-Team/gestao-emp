@@ -81,7 +81,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
                   <tr key={i.id}>
                     <td>
                       {i.name}
-                      {!i.returnsEmpty && <p className="text-sm text-muted">sem troca de vasilhame</p>}
+                      {!i.returnsEmpty && <p className="text-sm text-muted">{i.loan ? "vasilhame emprestado (comodato)" : "sem troca de vasilhame"}</p>}
                     </td>
                     <td className="num text-right">
                       {i.deliveredQuantity !== null && i.deliveredQuantity !== i.quantity ? (

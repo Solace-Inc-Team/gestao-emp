@@ -3,11 +3,12 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { isUuid } from "@/lib/ctx";
 import { requireUser } from "@/lib/auth";
-import { getCustomer, listAddresses, listOrders } from "@/domain/queries";
+import { getCustomer, listAddresses, listOrders, listProducts } from "@/domain/queries";
+import { comodatoDoCliente } from "@/domain/comodato";
 import { ActionForm } from "@/components/action-form";
 import { CustomerFields } from "@/components/customer-fields";
 import { PopoverForm } from "@/components/popover-form";
-import { addAddressAction, removeAddressAction, anonymizeCustomerAction, receivePaymentAction, saveCustomerAction, voidPaymentAction } from "@/app/actions";
+import { addAddressAction, removeAddressAction, anonymizeCustomerAction, receivePaymentAction, saveCustomerAction, voidPaymentAction, devolverVasilhameAction, registrarComodatoAction } from "@/app/actions";
 import { customerStatement } from "@/domain/receivables";
 import { centsToInput } from "@/lib/money";
 import { Empty, Money, StatusBadge, fmtDateTime, paymentLabel } from "@/components/ui";
@@ -20,11 +21,15 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
   if (!isUuid(id)) notFound();
   const c = await getCustomer(user.tenantId, id);
   if (!c) notFound();
-  const [orders, st, addresses] = await Promise.all([
+  const [orders, st, addresses, comodato, produtos] = await Promise.all([
     listOrders(user.tenantId, { customerId: id }),
     customerStatement(user.tenantId, id),
     listAddresses(user.tenantId, [id]),
+    comodatoDoCliente(user.tenantId, id),
+    listProducts(user.tenantId, true),
   ]);
+  const retornaveis = produtos.filter((p) => p.returnable);
+  const podeRegistrar = user.role === "dono" && !c.anonymizedAt && retornaveis.length > 0;
 
   return (
     <>
@@ -101,6 +106,110 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
                   </li>
                 ))}
               </ul>
+            </section>
+          )}
+          {/* vasilhames da loja que estão com o cliente sem ele ter pagado o casco, e a caução que ele deixou */}
+          {(comodato.itens.length > 0 || podeRegistrar) && (
+            <section className="panel">
+              <div className="flex items-end justify-between gap-3 border-b border-line p-4">
+                <div>
+                  <h2 className="h2">Vasilhames em comodato</h2>
+                  <p className="mt-0.5 text-[13px] text-muted">{comodato.itens.length ? "Emprestados pela loja" : "Nenhum vasilhame emprestado"}</p>
+                </div>
+                {comodato.caucaoCents > 0 && (
+                  <div className="text-right">
+                    <p className="text-[12px] text-muted">Caução em mãos</p>
+                    <Money cents={comodato.caucaoCents} className="text-lg font-semibold tracking-[-0.02em]" />
+                  </div>
+                )}
+              </div>
+              {comodato.itens.length > 0 && (
+                <ul>
+                  {comodato.itens.map((i) => (
+                    <li key={i.productId} className="flex items-center justify-between gap-3 border-b border-line px-4 py-2.5">
+                      <span>{i.nome}</span>
+                      <span className="num text-lg font-semibold">{i.quantidade}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="space-y-2 p-4">
+                {comodato.itens.length > 0 && (
+                  <Revelar label="Receber vasilhames de volta">
+                    <ActionForm action={devolverVasilhameAction} className="grid gap-3 pt-3 sm:grid-cols-2" reset>
+                      <input type="hidden" name="customerId" value={c.id} />
+                      <div>
+                        <label className="label" htmlFor="dev-produto">Vasilhame</label>
+                        <select id="dev-produto" name="productId" className="input" required>
+                          {comodato.itens.map((i) => (
+                            <option key={i.productId} value={i.productId}>{i.nome} ({i.quantidade})</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label" htmlFor="dev-qtd">Quantos voltaram</label>
+                        <input id="dev-qtd" name="quantity" type="number" min={1} required defaultValue={1} className="input num" />
+                      </div>
+                      {comodato.caucaoCents > 0 && (
+                        <div>
+                          <label className="label" htmlFor="dev-caucao">Caução devolvida (opcional)</label>
+                          <input id="dev-caucao" name="refund" inputMode="decimal" className="input num" placeholder="0,00" />
+                        </div>
+                      )}
+                      <div className={comodato.caucaoCents > 0 ? "" : "sm:col-span-2"}>
+                        <label className="label" htmlFor="dev-obs">Observação (opcional)</label>
+                        <input id="dev-obs" name="note" maxLength={200} className="input" />
+                      </div>
+                      <p className="text-[13px] text-muted sm:col-span-2">Os vasilhames voltam para a loja como vazios.</p>
+                      <button className="btn btn-primary sm:col-span-2 sm:justify-self-start">Registrar devolução</button>
+                    </ActionForm>
+                  </Revelar>
+                )}
+                {podeRegistrar && (
+                  <Revelar label="Registrar comodato que já existia">
+                    <ActionForm action={registrarComodatoAction} className="grid gap-3 pt-3 sm:grid-cols-2" reset>
+                      <input type="hidden" name="customerId" value={c.id} />
+                      <p className="text-[13px] text-muted sm:col-span-2">
+                        Para vasilhames que já estavam com o cliente antes do sistema; não mexe no estoque. Empréstimo novo se faz no pedido.
+                      </p>
+                      <div>
+                        <label className="label" htmlFor="reg-produto">Vasilhame</label>
+                        <select id="reg-produto" name="productId" className="input" required>
+                          {retornaveis.map((p) => (
+                            <option key={p.id} value={p.id}>{p.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="label" htmlFor="reg-qtd">Quantidade</label>
+                        <input id="reg-qtd" name="quantity" type="number" min={1} required defaultValue={1} className="input num" />
+                      </div>
+                      <div>
+                        <label className="label" htmlFor="reg-caucao">Caução recebida (opcional)</label>
+                        <input id="reg-caucao" name="deposit" inputMode="decimal" className="input num" placeholder="0,00" />
+                      </div>
+                      <div>
+                        <label className="label" htmlFor="reg-forma">Caução paga em</label>
+                        <select id="reg-forma" name="depositMethod" className="input" defaultValue="">
+                          <option value="">Sem caução</option>
+                          <option value="dinheiro">Dinheiro</option>
+                          <option value="pix">Pix</option>
+                          <option value="cartao">Cartão</option>
+                        </select>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="label" htmlFor="reg-obs">De onde vem</label>
+                        <input id="reg-obs" name="note" required minLength={3} maxLength={200} className="input" placeholder="Ex.: contrato de comodato de 2024" />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="label" htmlFor="reg-senha">Sua senha, para confirmar</label>
+                        <input id="reg-senha" name="confirmPassword" type="password" autoComplete="current-password" required className="input sm:max-w-xs" />
+                      </div>
+                      <button className="btn btn-primary sm:col-span-2 sm:justify-self-start">Registrar comodato</button>
+                    </ActionForm>
+                  </Revelar>
+                )}
+              </div>
             </section>
           )}
           {c.anonymizedAt ? (

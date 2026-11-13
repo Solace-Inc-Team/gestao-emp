@@ -205,6 +205,17 @@ export function descrever(action: string, dados: Dados, nomes: Record<string, st
     case "cliente.remover_endereco":
       l.titulo = `Removeu um endereço de ${alvo}`;
       break;
+    case "cliente.comodato":
+      l.titulo = `Registrou comodato de ${alvo}`;
+      det(`${num(d.quantity)} ${txt(d.product)}`);
+      if (typeof d.deposit === "number") det(`Caução de ${din(d.deposit)}`);
+      det(txt(d.note));
+      break;
+    case "cliente.devolver_comodato":
+      l.titulo = `Recebeu vasilhames de comodato de ${alvo}`;
+      det(`${num(d.quantity)} ${txt(d.product)}`);
+      if (typeof d.refund === "number") det(`Caução devolvida: ${din(d.refund)}`);
+      break;
     case "cliente.anonimizar":
       l.titulo = "Apagou os dados pessoais de um cliente";
       break;
