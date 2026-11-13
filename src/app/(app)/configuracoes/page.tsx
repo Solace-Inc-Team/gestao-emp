@@ -145,7 +145,7 @@ export default async function Configuracoes() {
           </div>
         </section>
       ))}
-      <section className="panel mt-6 max-w-xl">
+      <section id="filiais" className="panel mt-6 max-w-xl scroll-mt-6">
         <div className="border-b border-line p-4">
           <h2 className="h2">Filiais</h2>
           <p className="mt-0.5 text-[13px] text-muted">Cada filial tem o próprio estoque, equipe e caixa. Clientes, produtos e preços valem para todas.</p>

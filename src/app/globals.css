@@ -342,6 +342,46 @@ details[open] > :not(summary) {
 .popover-left {
   transform-origin: top left;
 }
+/* menu de filiais: abre descendo do botão (o popover já cresce; aqui ele também desce um pouco) */
+.seletor-filial + .popover {
+  transition:
+    scale var(--dur) var(--ease-out),
+    translate var(--dur) var(--ease-out),
+    opacity var(--dur-fast);
+  @starting-style {
+    translate: 0 -4px;
+    opacity: 0;
+  }
+}
+/* inicial da filial: a nova chega com um leve crescer, e o nome pulsa enquanto o sistema troca */
+.filial-inicial {
+  transition: scale var(--dur) var(--ease-chegada);
+  @starting-style {
+    scale: 0.6;
+  }
+}
+.filial-trocando {
+  animation: filial-trocando 1s var(--ease-trajeto) infinite alternate;
+}
+@keyframes filial-trocando {
+  to {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .seletor-filial + .popover,
+  .filial-inicial {
+    @starting-style {
+      translate: 0;
+      opacity: 1;
+      scale: 1;
+    }
+  }
+  .filial-trocando {
+    animation: none;
+    opacity: 0.6;
+  }
+}
 
 /* barra de progresso do topo: sobe devagar até perto do fim e completa quando a tela chega */
 .nav-progress {
