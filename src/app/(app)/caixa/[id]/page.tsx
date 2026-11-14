@@ -209,7 +209,6 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                   <input type="hidden" name="kind" value="repasse" />
                   <input type="hidden" name="category" value="" />
                   <h3 className="font-semibold">Receber repasse</h3>
-                  <p className="text-[13px] text-muted">O entregador deixou parte do dinheiro no caixa antes do acerto.</p>
                   <div>
                     <label className="label" htmlFor="rep-amount">Valor recebido</label>
                     <input id="rep-amount" name="amount" inputMode="decimal" required maxLength={12} className="input num" placeholder="0,00" />
@@ -224,7 +223,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                   <input type="hidden" name="shiftId" value={s.id} />
                   <input type="hidden" name="kind" value="saida" />
                   <h3 className="font-semibold">Gasto autorizado</h3>
-                  <p className="text-[13px] text-muted">Pago com o dinheiro das entregas, com comprovante. Entra nas despesas.</p>
+                  <p className="text-[13px] text-muted">Entra nas despesas.</p>
                   {/* em meia coluna, valor e tipo lado a lado cortavam "Combustível": um embaixo do outro */}
                   <div className="grid gap-3">
                     <div>
@@ -258,7 +257,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
             <section className="panel p-4">
               <h2 className="h2 mb-1">Fechar acerto</h2>
               {!canSettle ? (
-                <p className="text-muted">O acerto é feito pelo caixa ou pelo dono, que conferem o dinheiro do entregador.</p>
+                <p className="text-muted">Só o caixa ou o dono fecha o acerto.</p>
               ) : inRoute > 0 ? (
                 <p className="rounded-md bg-warn-soft p-3 text-warn-fg">
                   {inRoute} {inRoute === 1 ? "pedido ainda está" : "pedidos ainda estão"} em rota. Lance o resultado em “Pedidos do turno” (Entregue, ou parcial e não entregue) antes de fechar.

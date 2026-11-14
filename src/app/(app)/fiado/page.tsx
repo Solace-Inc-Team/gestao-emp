@@ -15,7 +15,7 @@ export default async function Fiado() {
 
   return (
     <>
-      <PageHeader title="Fiado" description="Clientes com compra fiado entregue e ainda não paga, da dívida mais antiga para a mais nova." />
+      <PageHeader title="Fiado" />
 
       <section className="panel mb-6 grid sm:grid-cols-2 sm:divide-x sm:divide-line">
         <div className="p-5">

@@ -43,7 +43,7 @@ export default async function Auditoria({ searchParams }: PageProps<"/auditoria"
     <>
       <PageHeader
         title="Auditoria"
-        description="Quem fez o quê, e quando. Os registros ficam guardados como aconteceram: ninguém consegue editar nem apagar."
+        
       />
       <form className="panel mb-6 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-[auto_auto_1fr_1fr_auto] lg:items-end">
         <div>

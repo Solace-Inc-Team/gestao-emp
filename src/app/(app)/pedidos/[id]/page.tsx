@@ -238,7 +238,6 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
           {o.status === "em_rota" && (
             <section id="resultado" className="panel scroll-mt-6 p-4">
               <h2 className="h2 mb-1">Resultado da entrega</h2>
-              <p className="mb-3 text-sm text-muted">Lance aqui o que o entregador contou ao voltar ou por telefone. Quem usa o celular do sistema confirma por lá.</p>
               <ActionForm action={deliverAction}>
                 <input type="hidden" name="orderId" value={o.id} />
                 <button className="btn btn-primary w-full">Confirmar entrega</button>
@@ -252,7 +251,7 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
           {o.status === "em_rota" && onShift.some((d) => d.id !== o.driverId) && (
             <section className="panel p-4">
               <h2 className="h2 mb-1">Trocar de entregador</h2>
-              <p className="mb-3 text-sm text-muted">Os produtos do pedido passam para a conta do outro entregador.</p>
+              <p className="mb-3 text-sm text-muted">A carga passa para o outro entregador.</p>
               <ActionForm action={reassignAction} className="flex flex-wrap gap-2">
                 <input type="hidden" name="orderId" value={o.id} />
                 <label className="sr-only" htmlFor="newDriver">Novo entregador</label>

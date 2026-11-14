@@ -103,7 +103,7 @@ const secoes: Secao[] = [
           <li><B>Estornar pedido</B>, ajuste de estoque e inventário pedem sua senha de novo. O registro nunca é apagado: o estorno cria um lançamento ao contrário.</li>
           <li>Estoque: faça inventário com frequência em <B>Estoque</B>. Só as diferenças viram ajuste, com motivo.</li>
           <li><B>Produtos e preços</B> e <B>Equipe</B> (incluir pessoas, redefinir senha, desativar quem saiu) ficam no menu, em Gestão.</li>
-          <li>A engrenagem no alto do menu (<B>Configurações</B>) reúne o que se ajusta uma vez: <B>Regras da casa</B> (limite de desconto, prazo de atraso), <B>Pagamentos</B> (chave Pix, Mercado Pago), <B>Pedidos pelo site</B> e <B>Filiais</B>. Dentro, as abas no alto levam de uma para outra.</li>
+          <li>A engrenagem no alto do menu (<B>Configurações</B>) reúne o que se ajusta uma vez: <B>Regras da casa</B> (limite de desconto, prazo de atraso), <B>Pagamentos</B> (chave Pix, Mercado Pago), <B>Pedidos pelo site</B> e <B>Filiais</B>.</li>
           <li><B>Relatórios</B>: vendas por dia, entregador e produto; <B>Fechamento do dia</B> para imprimir; vendas em planilha.</li>
           <li><B>Auditoria</B>: quem fez o quê e quando, com o antes e depois de preços e ajustes.</li>
           <li>Comodato de antes do sistema: na tela do cliente, <B>Registrar comodato que já existia</B>, com sua senha. Não mexe no estoque; os vasilhames emprestados aparecem em <B>Em comodato</B> no estoque.</li>
@@ -114,7 +114,7 @@ const secoes: Secao[] = [
           <li>Na engrenagem, <B>Filiais</B> e <B>Nova filial</B>. Cada filial tem o próprio estoque, equipe, turnos e despesas; clientes, produtos e preços valem para todas.</li>
           <li>Com mais de uma filial, o menu ganha a escolha da filial: tudo que você vê e lança passa a ser dela. A equipe só vê a filial onde trabalha.</li>
           <li>Em <B>Equipe</B>, cada pessoa tem sua filial; use <B>Mudar de filial</B> para trocar (entregador só depois do acerto).</li>
-          <li>Cada filial ganha o próprio link de pedidos em <B>Pedidos pelo site</B>. Em <B>Relatórios</B> e <B>Despesas</B>, escolha <B>Todas as filiais</B> para ver a empresa somada.</li>
+          <li>Cada filial ganha o próprio link de pedidos, na engrenagem, em <B>Pedidos pelo site</B>. Em <B>Relatórios</B> e <B>Despesas</B>, escolha <B>Todas as filiais</B> para ver a empresa somada.</li>
         </ul>
       </>
     ),

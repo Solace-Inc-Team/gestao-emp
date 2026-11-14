@@ -53,7 +53,6 @@ export default async function Caixa() {
 
         <section className="panel p-4">
           <h2 className="h2 mb-1">Abrir turno</h2>
-          <p className="mb-3 text-sm text-muted">O troco inicial entra na conta do que o entregador deve devolver no acerto.</p>
           {free.length ? (
             <ActionForm action={openShiftAction} className="space-y-3" reset>
               <div>

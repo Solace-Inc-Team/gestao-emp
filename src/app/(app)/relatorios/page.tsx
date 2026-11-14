@@ -39,7 +39,6 @@ export default async function Relatorios({ searchParams }: PageProps<"/relatorio
           <a href="/exportar" className="btn" title="Todos os dados da empresa em planilhas, num ZIP">Exportar todos os dados</a>
         )}
       </PageHeader>
-      <p className="-mt-3 mb-4 text-[13px] text-muted sm:hidden">No celular, arraste as tabelas para o lado para ver todas as colunas.</p>
       <form className="panel mb-6 flex flex-wrap items-end gap-3 p-4">
         <div>
           <label className="label" htmlFor="de">De</label>

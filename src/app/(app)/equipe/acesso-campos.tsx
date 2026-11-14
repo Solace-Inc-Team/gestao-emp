@@ -25,7 +25,7 @@ export function AcessoCampos() {
             <input type="checkbox" name="semAcesso" value="true" checked={semCelular} onChange={(e) => setSemCelular(e.target.checked)} className="mt-1" />
             <span>
               Trabalha sem celular
-              <span className="block text-[13px] text-muted">Não entra no sistema. A loja imprime a folha da rota e lança as entregas dele.</span>
+              <span className="block text-[13px] text-muted">Não entra no sistema; sai com a folha da rota.</span>
             </span>
           </label>
         </div>

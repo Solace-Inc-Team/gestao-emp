@@ -332,7 +332,6 @@ export function NewOrderForm({
           <Aparece quando={payment === "pix" || payment === "cartao"} className="pt-3">
               <label className="label" htmlFor="cashPart">Parte em dinheiro (opcional)</label>
               <input id="cashPart" name="cashPart" inputMode="decimal" maxLength={12} className="input" placeholder="0,00" />
-              <p className="mt-1 text-[13px] text-muted">Se o cliente pagar um pedaço em dinheiro, esse valor entra no acerto do entregador.</p>
           </Aparece>
           <Aparece quando={payment === "fiado"} className="pt-3">
             <p className="text-sm text-muted">Fiado exige cliente identificado.</p>

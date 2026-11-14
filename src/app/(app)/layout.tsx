@@ -10,6 +10,8 @@ import { roleLabel } from "@/components/ui";
 import { PageTransition } from "@/components/page-transition";
 import { SeletorFilial } from "@/components/seletor-filial";
 import { MenuConfig } from "@/components/menu-config";
+import { secoesConfig } from "./configuracoes/secoes";
+import { Suspense } from "react";
 
 const initials = (name: string) =>
   name
@@ -79,7 +81,11 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
               </span>
             </Link>
             {/* configurações do dono (o que se ajusta uma vez): numa engrenagem, fora do menu do dia a dia */}
-            {user.role === "dono" && <MenuConfig className="size-11 lg:size-8" />}
+            {user.role === "dono" && (
+              <Suspense>
+                <MenuConfig secoes={await secoesConfig(user.tenantId)} className="size-11 lg:size-8" />
+              </Suspense>
+            )}
             <TemaBotao className="size-11 lg:size-8" />
             <form action={logout} className="lg:hidden">
               <button className="tap px-2 text-[13px] text-muted hover:text-fg">Sair</button>

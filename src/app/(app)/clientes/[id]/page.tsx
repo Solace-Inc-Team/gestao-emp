@@ -231,7 +231,6 @@ export default async function Cliente({ params }: PageProps<"/clientes/[id]">) {
               </section>
               <section className="panel p-4">
                 <h2 className="h2 mb-1">Outros endereços de entrega</h2>
-                <p className="mb-3 text-sm text-muted">Trabalho, casa da mãe, obra. No novo pedido dá para escolher onde entregar.</p>
                 {addresses.length > 0 && (
                   <ul className="mb-4 divide-y divide-line rounded-md border border-line">
                     {addresses.map((a) => (

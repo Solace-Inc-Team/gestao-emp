@@ -1,99 +1,134 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useEffect, useId, useRef, useState } from "react";
-import { Settings } from "lucide-react";
-import { CONFIGURACOES, naConfiguracao } from "./config-nav";
-import { useSaida } from "./saida";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
+import { Settings, X } from "lucide-react";
+
+export const SECOES = [
+  { id: "regras", label: "Regras da casa" },
+  { id: "pagamentos", label: "Pagamentos" },
+  { id: "site", label: "Pedidos pelo site" },
+  { id: "filiais", label: "Filiais" },
+] as const;
+type Secao = (typeof SECOES)[number]["id"];
 
 /**
- * Engrenagem do dono, no alto do menu: abre o que se configura uma vez (regras, pagamentos, site, filiais).
- * Abre e fecha com movimento; setas, Esc e clique fora funcionam como em qualquer menu.
+ * Configurações numa janela sobre a tela em que o dono está: a engrenagem abre, a seção vem no endereço
+ * (?config=pagamentos), então "Voltar" fecha e qualquer link pode abrir direto numa seção.
  */
-export function MenuConfig({ className = "" }: { className?: string }) {
+export function MenuConfig({ secoes, className = "" }: { secoes: Record<Secao, ReactNode>; className?: string }) {
   const path = usePathname();
-  const [aberto, setAberto] = useState(false);
-  const menu = useSaida(aberto);
-  const raiz = useRef<HTMLDivElement>(null);
-  const botao = useRef<HTMLButtonElement>(null);
-  const itens = useRef<(HTMLAnchorElement | null)[]>([]);
-  const menuId = useId();
-  const ativo = naConfiguracao(path);
+  const params = useSearchParams();
+  const pedida = SECOES.find((s) => s.id === params.get("config"))?.id;
+  const janela = useRef<HTMLDialogElement>(null);
+  const abriuAqui = useRef(false);
+  // a seção na tela troca um instante depois da pedida, para a anterior sair antes da nova chegar
+  const [mostrada, setMostrada] = useState<Secao>(pedida ?? "regras");
+  const trocando = !!pedida && pedida !== mostrada;
 
-  useEffect(() => {
-    if (!aberto) return;
-    const fora = (e: PointerEvent) => !raiz.current?.contains(e.target as Node) && setAberto(false);
-    document.addEventListener("pointerdown", fora);
-    return () => document.removeEventListener("pointerdown", fora);
-  }, [aberto]);
-
-  useEffect(() => {
-    if (aberto) itens.current[Math.max(0, CONFIGURACOES.findIndex((c) => c.href === path))]?.focus();
-  }, [aberto, path]);
-
-  const navegar = (e: React.KeyboardEvent) => {
-    const i = itens.current.findIndex((el) => el === document.activeElement);
-    const n = CONFIGURACOES.length;
-    const ir = (k: number) => {
-      e.preventDefault();
-      itens.current[(k + n) % n]?.focus();
-    };
-    if (e.key === "ArrowDown") ir(i + 1);
-    else if (e.key === "ArrowUp") ir(i - 1);
-    else if (e.key === "Home") ir(0);
-    else if (e.key === "End") ir(n - 1);
-    else if (e.key === "Escape") {
-      e.preventDefault();
-      setAberto(false);
-      botao.current?.focus();
-    } else if (e.key === "Tab") setAberto(false);
+  const endereco = (config?: Secao) => {
+    const p = new URLSearchParams(params);
+    if (config) p.set("config", config);
+    else p.delete("config");
+    return p.size ? `${path}?${p}` : path;
   };
 
+  // abre e fecha seguindo o endereço; ao fechar, a saída toca antes de a janela sumir
+  useEffect(() => {
+    const d = janela.current;
+    if (!d) return;
+    if (pedida && !d.open) {
+      d.removeAttribute("data-saindo");
+      d.showModal();
+    } else if (!pedida && d.open) {
+      // fecha também pelo "Voltar" do navegador: a saída toca do mesmo jeito
+      d.setAttribute("data-saindo", "");
+      const reduzir = matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const t = setTimeout(() => d.close(), reduzir ? 0 : 170);
+      return () => clearTimeout(t);
+    }
+  }, [pedida]);
+
+  useEffect(() => {
+    if (!pedida || pedida === mostrada) return;
+    const t = setTimeout(() => setMostrada(pedida), 110);
+    return () => clearTimeout(t);
+  }, [pedida, mostrada]);
+
+  // só o endereço muda (history do navegador, que o Next acompanha): abrir e trocar de seção não vão ao servidor
+  const abrir = () => {
+    abriuAqui.current = true;
+    window.history.pushState(null, "", endereco("regras"));
+  };
+  // aberta pela engrenagem: fechar é voltar (o histórico fica limpo); aberta por link: tira o ?config
+  const fechar = () => {
+    if (abriuAqui.current) {
+      abriuAqui.current = false;
+      window.history.back();
+    } else window.history.replaceState(null, "", endereco());
+  };
+  // no celular as seções rolam de lado: a escolhida vem para a vista
+  const trilho = useRef<HTMLElement>(null);
+  useEffect(() => {
+    trilho.current?.querySelector("[aria-current]")?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+  }, [pedida]);
+  const indice = SECOES.findIndex((s) => s.id === (pedida ?? mostrada));
+
   return (
-    <div ref={raiz} className="relative">
+    <>
       <button
-        ref={botao}
         type="button"
         aria-label="Configurações"
         title="Configurações"
-        aria-haspopup="menu"
-        aria-expanded={aberto}
-        aria-controls={menuId}
-        onClick={() => setAberto((a) => !a)}
-        className={`menu-config grid place-items-center rounded-md hover:bg-subtle hover:text-fg aria-expanded:bg-subtle aria-expanded:text-fg ${ativo ? "bg-subtle text-fg" : "text-muted"} ${className}`}
+        aria-haspopup="dialog"
+        aria-expanded={!!pedida}
+        onClick={abrir}
+        className={`menu-config grid place-items-center rounded-md hover:bg-subtle hover:text-fg aria-expanded:bg-subtle aria-expanded:text-fg text-muted ${className}`}
       >
         <Settings size={16} strokeWidth={1.75} aria-hidden="true" className="engrenagem" />
       </button>
-      {menu.montado && (
-        <div
-          id={menuId}
-          role="menu"
-          aria-label="Configurações"
-          onKeyDown={navegar}
-          data-saindo={menu.saindo || undefined}
-          // no celular a engrenagem fica na ponta direita: abre para a esquerda; no computador, para a direita (sobre a tela)
-          className="popover menu-config-lista absolute top-full right-0 z-30 mt-1.5 w-52 lg:right-auto lg:left-0 rounded-lg border border-line bg-surface p-1 shadow-[0_12px_32px_rgb(0_0_0/0.18)]"
-        >
-          <p className="px-2.5 pt-1.5 pb-1 text-[11.5px] text-muted">Configurações</p>
-          {CONFIGURACOES.map((c, i) => (
-            <Link
-              key={c.href}
-              href={c.href}
-              ref={(el) => {
-                itens.current[i] = el;
-              }}
-              role="menuitem"
-              tabIndex={-1}
-              aria-current={path === c.href ? "page" : undefined}
-              onClick={() => setAberto(false)}
-              className="flex min-h-9 items-center rounded-md px-2.5 text-[13px] font-medium outline-none hover:bg-subtle focus-visible:bg-subtle aria-[current=page]:bg-subtle"
-            >
-              {c.label}
-            </Link>
-          ))}
+      <dialog
+        ref={janela}
+        className="janela janela-config"
+        aria-labelledby="config-titulo"
+        onCancel={(e) => {
+          e.preventDefault();
+          fechar();
+        }}
+        onClick={(e) => e.target === e.currentTarget && fechar()}
+      >
+        {/* o foco de abertura vai para a janela, não para o X (que ganharia o anel de foco à toa) */}
+        <div className="janela-cartao config-cartao outline-none" tabIndex={-1} autoFocus>
+          <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3.5">
+            <h2 id="config-titulo" className="font-semibold">Configurações</h2>
+            <button type="button" onClick={fechar} aria-label="Fechar" className="grid size-8 place-items-center rounded-md text-muted hover:bg-subtle hover:text-fg">
+              <X size={16} strokeWidth={1.75} aria-hidden="true" />
+            </button>
+          </div>
+          <div className="config-corpo">
+            <nav ref={trilho} aria-label="Seções" className="config-trilho" style={{ "--i": indice } as React.CSSProperties}>
+              {/* a marca da seção ativa é uma só e desliza até a escolhida */}
+              <span aria-hidden="true" className="config-marca" />
+              {SECOES.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  aria-current={s.id === (pedida ?? mostrada) || undefined}
+                  onClick={() => window.history.replaceState(null, "", endereco(s.id))}
+                  className="config-item"
+                >
+                  {s.label}
+                </button>
+              ))}
+            </nav>
+            <div className="config-conteudo" data-trocando={trocando || undefined}>
+              <div key={mostrada} className="config-secao">
+                {secoes[mostrada]}
+              </div>
+            </div>
+          </div>
         </div>
-      )}
-    </div>
+      </dialog>
+    </>
   );
 }

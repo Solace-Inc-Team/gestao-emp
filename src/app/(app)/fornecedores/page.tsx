@@ -42,7 +42,6 @@ export default async function Fornecedores({ searchParams }: PageProps<"/fornece
         <span className="text-muted">/</span>
         <h1 className="h1">Fornecedores</h1>
       </div>
-      <p className="mb-4 max-w-2xl text-muted">De quem a empresa compra gás, água e acessórios. O fornecedor aparece na entrada de compra do estoque.</p>
       {inactive > 0 && (
         <p className="mb-4 text-sm">
           {all ? (

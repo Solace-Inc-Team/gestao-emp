@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useId, useOptimistic, useRef, useState, useTransition } from "react";
 import { Check, ChevronsUpDown, Settings2 } from "lucide-react";
 import { escolherFilialAction } from "@/app/actions";
@@ -14,6 +15,7 @@ type Filial = { id: string; name: string };
  * o nome dela pulsa de leve, para a mudança das telas ter uma causa à vista.
  */
 export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; atual: string; filiais: Filial[] }) {
+  const path = usePathname();
   const [aberto, setAberto] = useState(false);
   const [trocando, iniciar] = useTransition();
   const [mostrada, mostrar] = useOptimistic(atual);
@@ -134,7 +136,7 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
           })}
           <div className="my-1 border-t border-line" />
           <Link
-            href="/configuracoes/filiais"
+            href={`${path}?config=filiais`}
             ref={(el) => {
               itens.current[filiais.length] = el;
             }}

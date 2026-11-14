@@ -29,7 +29,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
 
   return (
     <>
-      <PageHeader title="Despesas" description="Tudo que sai do caixa da loja. Devoluções de pedidos estornados entram aqui sozinhas." />
+      <PageHeader title="Despesas" />
 
       <form className="mb-6 flex flex-wrap items-end gap-3">
         <div>
@@ -115,7 +115,7 @@ export default async function Despesas({ searchParams }: PageProps<"/despesas">)
               <div className="flex flex-col items-center px-6 py-14 text-center">
                 <Receipt size={28} strokeWidth={1.5} className="text-muted" aria-hidden="true" />
                 <p className="mt-3 font-medium">Nenhuma despesa no período</p>
-                <p className="mt-1 text-muted">Lance combustível, compras e contas ao lado para ver o resultado do mês nos relatórios.</p>
+                <p className="mt-1 text-muted">Nenhuma despesa no período.</p>
               </div>
             )}
           </section>

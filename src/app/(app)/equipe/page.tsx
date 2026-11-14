@@ -72,7 +72,6 @@ export default async function Equipe() {
         </section>
         <section className="panel p-4">
           <h2 className="h2 mb-1">Adicionar pessoa</h2>
-          <p className="mb-3 text-sm text-muted">Entregadores veem só os próprios pedidos no celular, ou trabalham sem celular pela folha da rota. Atendentes não alteram preços nem estoque por ajuste.</p>
           <ActionForm action={createUserAction} className="space-y-3" reset>
             <div>
               <label className="label" htmlFor="u-name">Nome</label>

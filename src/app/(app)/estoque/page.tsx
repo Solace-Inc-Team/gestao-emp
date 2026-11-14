@@ -75,16 +75,14 @@ export default async function Estoque() {
             ))}
           </tbody>
         </table>
-        <p className="border-t border-line px-4 py-2 text-[13px] text-muted sm:hidden">Arraste a tabela para o lado para ver todas as colunas.</p>
         <p className="border-t border-line px-4 py-3 text-sm text-muted">
-          O total de vasilhames deve ficar estável: cada venda com troca tira um cheio e devolve um vazio. Vasilhame emprestado a cliente conta em “Em comodato”. Se o total cair, há botijão ou galão sem retorno.
+          O total de vasilhames não deve cair. Se cair, há casco que saiu sem voltar.
         </p>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
         <section className="panel p-4">
           <h2 className="h2 mb-1">Entrada de compra</h2>
-          <p className="mb-3 text-sm text-muted">Cheios recebidos do fornecedor e vazios entregues a ele na troca.</p>
           <ActionForm action={purchaseAction} className="grid gap-3 sm:grid-cols-2" reset>
             <div className="sm:col-span-2">
               <label className="label" htmlFor="p-product">Produto</label>
@@ -124,14 +122,13 @@ export default async function Estoque() {
                 <option value="cartao">Cartão</option>
               </select>
             </div>
-            <p className="text-[13px] text-muted sm:col-span-2">Com o valor preenchido, a compra já entra nas despesas de hoje.</p>
+            <p className="text-[13px] text-muted sm:col-span-2">Com valor, entra nas despesas de hoje.</p>
             <button className="btn btn-primary sm:col-span-2 sm:justify-self-start">Registrar entrada</button>
           </ActionForm>
         </section>
 
         <section className="panel p-4">
           <h2 className="h2 mb-1">Registrar avaria</h2>
-          <p className="mb-3 text-sm text-muted">Botijão vazando, galão trincado, lacre rompido. Sai do estoque de venda e fica separado até voltar ao fornecedor.</p>
           <ActionForm action={damagedAction} className="grid gap-3 sm:grid-cols-2" reset>
             <div>
               <label className="label" htmlFor="d-product">Produto</label>
@@ -161,7 +158,6 @@ export default async function Estoque() {
         {user.role === "dono" && (
           <section className="panel p-4">
             <h2 className="h2 mb-1">Ajuste por contagem</h2>
-            <p className="mb-3 text-sm text-muted">Informe quanto existe fisicamente na loja. A diferença fica registrada com o motivo.</p>
             <ActionForm action={adjustAction} className="grid gap-3 sm:grid-cols-2" reset confirm="Registrar o ajuste de estoque?">
               <div>
                 <label className="label" htmlFor="a-product">Produto</label>
