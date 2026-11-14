@@ -46,6 +46,14 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       links: [
         { href: "/relatorios", label: "Relatórios" },
         { href: "/despesas", label: "Despesas" },
+        // do dia a dia do dono: preço que muda, gente que entra e sai, e quem fez o quê
+        ...(user.role === "dono"
+          ? [
+              { href: "/produtos", label: "Produtos e preços" },
+              { href: "/equipe", label: "Equipe" },
+              { href: "/auditoria", label: "Auditoria" },
+            ]
+          : []),
       ],
     },
     { links: [{ href: "/ajuda", label: "Ajuda" }] },
@@ -70,7 +78,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
                 <span className="block text-[11.5px] text-muted">{roleLabel[user.role]}</span>
               </span>
             </Link>
-            {/* configurações do dono: tudo numa engrenagem, em vez de quatro linhas no menu */}
+            {/* configurações do dono (o que se ajusta uma vez): numa engrenagem, fora do menu do dia a dia */}
             {user.role === "dono" && <MenuConfig className="size-11 lg:size-8" />}
             <TemaBotao className="size-11 lg:size-8" />
             <form action={logout} className="lg:hidden">

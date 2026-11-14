@@ -4,19 +4,16 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ViewTransition, useEffect, useRef } from "react";
 
-// Tudo que é configuração do dono, num lugar só: a engrenagem do menu abre esta lista, e cada tela dela
-// mostra as abas no alto para pular de uma para outra sem voltar ao menu.
+// Configuração de verdade: o que se ajusta uma vez e quase não se mexe. A engrenagem do menu abre esta lista,
+// e cada tela dela mostra as abas no alto. Produtos, equipe e auditoria são do dia a dia: ficam no menu.
 export const CONFIGURACOES = [
-  { href: "/configuracoes", label: "Regras da casa", desc: "Desconto da equipe e prazo de atraso" },
-  { href: "/configuracoes/pagamentos", label: "Pagamentos", desc: "Chave Pix e Mercado Pago" },
-  { href: "/configuracoes/site", label: "Pedidos pelo site", desc: "Link e QR para o cliente pedir" },
-  { href: "/configuracoes/filiais", label: "Filiais", desc: "Lojas da empresa" },
-  { href: "/produtos", label: "Produtos e preços", desc: "O que você vende e por quanto" },
-  { href: "/equipe", label: "Equipe", desc: "Acessos, perfis e entregadores" },
-  { href: "/auditoria", label: "Auditoria", desc: "Quem fez o quê e quando" },
+  { href: "/configuracoes", label: "Regras da casa" },
+  { href: "/configuracoes/pagamentos", label: "Pagamentos" },
+  { href: "/configuracoes/site", label: "Pedidos pelo site" },
+  { href: "/configuracoes/filiais", label: "Filiais" },
 ] as const;
 
-export const naConfiguracao = (path: string) => CONFIGURACOES.some((c) => path === c.href || (c.href !== "/configuracoes" && path.startsWith(c.href + "/")));
+export const naConfiguracao = (path: string) => path === "/configuracoes" || path.startsWith("/configuracoes/");
 
 export function ConfigNav() {
   const path = usePathname();

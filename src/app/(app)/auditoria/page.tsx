@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { ConfigNav } from "@/components/config-nav";
 import { listAudit, listUsers } from "@/domain/queries";
 import { parsePeriod } from "@/lib/period";
 import { areas, descrever, type Area } from "@/lib/audit-text";
@@ -42,7 +41,6 @@ export default async function Auditoria({ searchParams }: PageProps<"/auditoria"
 
   return (
     <>
-      <ConfigNav />
       <PageHeader
         title="Auditoria"
         description="Quem fez o quê, e quando. Os registros ficam guardados como aconteceram: ninguém consegue editar nem apagar."

@@ -8,9 +8,8 @@ import { CONFIGURACOES, naConfiguracao } from "./config-nav";
 import { useSaida } from "./saida";
 
 /**
- * Engrenagem do dono, no alto do menu: abre a lista de tudo que é configuração (regras, pagamentos, site,
- * filiais, produtos, equipe, auditoria), que antes ocupava quatro linhas do menu. Abre e fecha com movimento;
- * setas, Esc e clique fora funcionam como em qualquer menu.
+ * Engrenagem do dono, no alto do menu: abre o que se configura uma vez (regras, pagamentos, site, filiais).
+ * Abre e fecha com movimento; setas, Esc e clique fora funcionam como em qualquer menu.
  */
 export function MenuConfig({ className = "" }: { className?: string }) {
   const path = usePathname();
@@ -74,7 +73,7 @@ export function MenuConfig({ className = "" }: { className?: string }) {
           onKeyDown={navegar}
           data-saindo={menu.saindo || undefined}
           // no celular a engrenagem fica na ponta direita: abre para a esquerda; no computador, para a direita (sobre a tela)
-          className="popover menu-config-lista absolute top-full right-0 z-30 mt-1.5 w-64 lg:right-auto lg:left-0 rounded-lg border border-line bg-surface p-1 shadow-[0_12px_32px_rgb(0_0_0/0.18)]"
+          className="popover menu-config-lista absolute top-full right-0 z-30 mt-1.5 w-52 lg:right-auto lg:left-0 rounded-lg border border-line bg-surface p-1 shadow-[0_12px_32px_rgb(0_0_0/0.18)]"
         >
           <p className="px-2.5 pt-1.5 pb-1 text-[11.5px] text-muted">Configurações</p>
           {CONFIGURACOES.map((c, i) => (
@@ -88,10 +87,9 @@ export function MenuConfig({ className = "" }: { className?: string }) {
               tabIndex={-1}
               aria-current={path === c.href ? "page" : undefined}
               onClick={() => setAberto(false)}
-              className="block rounded-md px-2.5 py-1.5 outline-none hover:bg-subtle focus-visible:bg-subtle aria-[current=page]:bg-subtle"
+              className="flex min-h-9 items-center rounded-md px-2.5 text-[13px] font-medium outline-none hover:bg-subtle focus-visible:bg-subtle aria-[current=page]:bg-subtle"
             >
-              <span className="block text-[13px] font-medium">{c.label}</span>
-              <span className="block text-[12px] text-muted">{c.desc}</span>
+              {c.label}
             </Link>
           ))}
         </div>

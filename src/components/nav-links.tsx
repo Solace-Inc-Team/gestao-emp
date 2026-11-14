@@ -15,6 +15,9 @@ import {
   HandCoins,
   CircleHelp,
   Receipt,
+  Tag,
+  UserCog,
+  History,
   type LucideIcon,
 } from "lucide-react";
 
@@ -29,6 +32,9 @@ const icons: Record<string, LucideIcon> = {
   "/fiado": HandCoins,
   "/relatorios": BarChart3,
   "/despesas": Receipt,
+  "/produtos": Tag,
+  "/equipe": UserCog,
+  "/auditoria": History,
   "/ajuda": CircleHelp,
 };
 
