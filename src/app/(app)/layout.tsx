@@ -53,7 +53,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="app-shell lg:grid lg:min-h-screen lg:grid-cols-[15rem_1fr]">
-      <aside className="border-b border-line lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
+      <aside className="relative z-20 border-b border-line lg:sticky lg:top-0 lg:flex lg:h-screen lg:flex-col lg:border-r lg:border-b-0">
         <div className="flex items-center justify-between gap-3 px-5 pt-4 pb-3 lg:pt-5">
           <MarcaDaSessao />
           {/* o tema fica no alto nas duas larguras; Sair aqui só no celular (no computador está no rodapé) */}
