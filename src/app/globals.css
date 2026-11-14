@@ -1364,6 +1364,16 @@ body[data-confirmando] .deliver-btn {
   }
 }
 
+/* barra de rolagem fina e discreta, na cor do tema, sem as setinhas do Windows (página e quadros que rolam) */
+@layer base {
+  :root {
+    scrollbar-color: color-mix(in srgb, var(--muted) 40%, transparent) transparent;
+  }
+  * {
+    scrollbar-width: thin;
+  }
+}
+
 /* menu do celular rolando de lado: esmaece só a borda que ainda tem itens */
 @media (max-width: 1023px) {
   .nav-rola {
