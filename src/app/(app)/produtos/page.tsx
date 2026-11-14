@@ -4,6 +4,7 @@ import { ActionForm } from "@/components/action-form";
 import { saveProductAction } from "@/app/actions";
 import { PageHeader } from "@/components/ui";
 import { centsToInput } from "@/lib/money";
+import { ConfigNav } from "@/components/config-nav";
 
 export const metadata = { title: "Produtos e preços" };
 
@@ -44,6 +45,7 @@ export default async function Produtos() {
   const products = await listProducts(user.tenantId);
   return (
     <>
+      <ConfigNav />
       <PageHeader title="Produtos e preços" />
       <p className="-mt-3 mb-6 max-w-2xl text-muted">
         Mudar o preço vale para os próximos pedidos. Pedidos já lançados guardam o preço da época, e toda alteração fica registrada.

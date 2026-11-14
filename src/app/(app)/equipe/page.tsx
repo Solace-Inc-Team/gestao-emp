@@ -4,6 +4,7 @@ import { ActionForm } from "@/components/action-form";
 import { createUserAction, mudarDeFilialAction, resetUserPasswordAction, toggleUserAction } from "@/app/actions";
 import { PopoverForm } from "@/components/popover-form";
 import { PageHeader, roleLabel } from "@/components/ui";
+import { ConfigNav } from "@/components/config-nav";
 
 export const metadata = { title: "Equipe" };
 
@@ -15,6 +16,7 @@ export default async function Equipe() {
   const varias = filiais.length > 1;
   return (
     <>
+      <ConfigNav />
       <PageHeader title="Equipe" />
       <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
         <section className="panel overflow-x-auto">

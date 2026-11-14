@@ -9,6 +9,7 @@ import { NavLinks, type NavGroup } from "@/components/nav-links";
 import { roleLabel } from "@/components/ui";
 import { PageTransition } from "@/components/page-transition";
 import { SeletorFilial } from "@/components/seletor-filial";
+import { MenuConfig } from "@/components/menu-config";
 
 const initials = (name: string) =>
   name
@@ -45,14 +46,6 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
       links: [
         { href: "/relatorios", label: "Relatórios" },
         { href: "/despesas", label: "Despesas" },
-        ...(user.role === "dono"
-          ? [
-              { href: "/produtos", label: "Produtos e preços" },
-              { href: "/equipe", label: "Equipe" },
-              { href: "/configuracoes", label: "Configurações" },
-              { href: "/auditoria", label: "Auditoria" },
-            ]
-          : []),
       ],
     },
     { links: [{ href: "/ajuda", label: "Ajuda" }] },
@@ -77,6 +70,8 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
                 <span className="block text-[11.5px] text-muted">{roleLabel[user.role]}</span>
               </span>
             </Link>
+            {/* configurações do dono: tudo numa engrenagem, em vez de quatro linhas no menu */}
+            {user.role === "dono" && <MenuConfig className="size-11 lg:size-8" />}
             <TemaBotao className="size-11 lg:size-8" />
             <form action={logout} className="lg:hidden">
               <button className="tap px-2 text-[13px] text-muted hover:text-fg">Sair</button>

@@ -10,7 +10,7 @@ const passos: { chave: keyof Feito; titulo: string; texto: string; href: string;
   { chave: "produtos", titulo: "Cadastre os produtos e preços", texto: "Gás, galão, o que você vende. O preço do pedido sempre vem daqui.", href: "/produtos", acao: "Cadastrar produtos" },
   { chave: "estoque", titulo: "Lance o estoque inicial", texto: "Quantos cheios e vazios tem na loja hoje. Use a entrada de compra ou o inventário.", href: "/estoque", acao: "Lançar estoque" },
   { chave: "equipe", titulo: "Adicione os entregadores", texto: "Cada um entra com o próprio e-mail e vê só as entregas dele no celular.", href: "/equipe", acao: "Adicionar equipe" },
-  { chave: "pix", titulo: "Informe a chave Pix", texto: "Para o QR sair com o valor certo no celular do entregador e no pedido pelo site.", href: "/configuracoes", acao: "Informar chave" },
+  { chave: "pix", titulo: "Informe a chave Pix", texto: "Para o QR sair com o valor certo no celular do entregador e no pedido pelo site.", href: "/configuracoes/pagamentos", acao: "Informar chave" },
   { chave: "turno", titulo: "Abra o primeiro turno", texto: "Com o troco inicial, o entregador pode receber pedidos.", href: "/caixa", acao: "Abrir turno" },
   { chave: "pedido", titulo: "Lance o primeiro pedido", texto: "Do telefone ao acerto: daqui em diante é o dia a dia.", href: "/pedidos/novo", acao: "Novo pedido" },
 ];

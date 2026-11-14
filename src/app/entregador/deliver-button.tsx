@@ -118,8 +118,9 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
       </div>
     );
 
+  // volta do "Desfazer" (ou do erro): o botão chega de novo com movimento, não reaparece seco
   return (
-    <>
+    <div className="enter">
       <button
         type="button"
         disabled={pending || left === 0}
@@ -133,10 +134,10 @@ export function DeliverButton({ orderId, label }: { orderId: string; label: stri
         {pending || left === 0 ? "Confirmando…" : label}
       </button>
       {error && (
-        <p role="alert" className="mt-2 rounded-lg bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger">
+        <p role="alert" className="erro-form mt-2 rounded-lg bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger">
           {error}
         </p>
       )}
-    </>
+    </div>
   );
 }

@@ -134,7 +134,8 @@ export function NewOrderForm({
         <section className="panel p-4">
           <h2 className="h2 mb-3">Cliente{mode === "balcao" && <span className="text-base font-normal text-muted"> (opcional)</span>}</h2>
           {customer && !creating ? (
-            <div className="flex items-start justify-between gap-3 rounded-md bg-accent-soft p-3">
+            // cada estado do quadro (buscar, cadastrar, escolhido) chega com movimento quando toma o lugar do outro
+            <div className="enter flex items-start justify-between gap-3 rounded-md bg-accent-soft p-3">
               <div>
                 <p className="font-semibold">{customer.name}</p>
                 <p className="text-sm text-muted">{customer.address || "Sem endereço"}</p>
@@ -144,7 +145,7 @@ export function NewOrderForm({
             </div>
           ) : null}
           {customer && !creating && mode === "entrega" && (customer.addresses?.length ?? 0) > 0 && (
-            <div className="mt-3">
+            <div className="enter mt-3">
               <label className="label" htmlFor="addressId">Entregar em</label>
               <select id="addressId" name="addressId" className="input" defaultValue="">
                 <option value="">Endereço principal: {customer.address || "sem endereço"}</option>
@@ -155,7 +156,7 @@ export function NewOrderForm({
             </div>
           )}
           {customer && !creating ? null : creating ? (
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="enter grid gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <label className="label" htmlFor="nc-name">Nome</label>
                 <input id="nc-name" name="newCustomerName" required maxLength={120} defaultValue={q} className="input" autoFocus />
@@ -177,7 +178,7 @@ export function NewOrderForm({
               </button>
             </div>
           ) : (
-            <div>
+            <div className="enter">
               <label className="label" htmlFor="busca">Buscar por nome, telefone ou endereço <span className="hidden font-normal text-muted lg:inline">(atalho: /)</span></label>
               <input id="busca" ref={searchRef} value={search} onChange={(e) => setSearch(e.target.value)} className="input" autoComplete="off" />
               {shown.length > 0 && (
@@ -197,7 +198,7 @@ export function NewOrderForm({
                   ))}
                 </ul>
               )}
-              {nothingFound && <p className="mt-2 text-sm text-muted">Nenhum cliente encontrado.</p>}
+              {nothingFound && <p className="enter mt-2 text-sm text-muted">Nenhum cliente encontrado.</p>}
               <button type="button" className="tap mt-2 text-sm font-semibold text-accent" onClick={() => setCreating(true)}>
                 {nothingFound ? `+ Cadastrar "${q}" como cliente novo` : "+ Cadastrar cliente novo"}
               </button>

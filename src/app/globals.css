@@ -424,6 +424,23 @@ details[open] > :not(summary) {
   }
 }
 
+/* engrenagem: gira um pouco quando a mão chega e um quarto de volta com o menu aberto */
+.engrenagem {
+  transition: rotate var(--dur-slow) var(--ease-chegada);
+}
+.menu-config:hover .engrenagem {
+  rotate: 30deg;
+}
+.menu-config[aria-expanded="true"] .engrenagem {
+  rotate: 90deg;
+}
+
+@media (min-width: 1024px) {
+  .menu-config-lista {
+    transform-origin: top left;
+  }
+}
+
 /* menu de filiais: abre descendo do botão (o popover já cresce; aqui ele também desce um pouco) */
 .seletor-filial + .popover {
   transition:
@@ -1736,14 +1753,40 @@ details[open] > summary.desvio .desvio-seta {
 }
 
 
-/* página inicial: o botão "Ver um dia" e as paradas do relógio levam até a seção
-   rolando, para a pessoa ver o caminho entre onde estava e aonde foi. Só nesta página (nas trocas de
-   tela do sistema a rolagem continua direta) e só para quem não pediu menos movimento. */
+/* atalho dentro da página (tópicos da Ajuda, "Gerenciar filiais", erro de formulário): rola até lá em vez de
+   pular, para a pessoa ver o caminho. Nas trocas de tela o Next desliga (data-scroll-behavior no <html>). */
 @media (prefers-reduced-motion: no-preference) {
-  html:has(#dia),
-  html:has(#entrega) {
+  html {
     scroll-behavior: smooth;
   }
+  /* e o lugar de chegada acende um instante, para o olho saber onde parou */
+  :target > h2:first-child,
+  section:target > div:first-child > h2:first-child {
+    animation: alvo-acende 1.4s var(--ease-trajeto);
+  }
+}
+@keyframes alvo-acende {
+  0%,
+  35% {
+    color: var(--accent);
+  }
+}
+
+/* aviso de erro do formulário: chega descendo e sai esmaecendo (useSaida) */
+.erro-form {
+  transition:
+    opacity var(--dur) var(--ease-out),
+    translate var(--dur) var(--ease-out);
+  @starting-style {
+    opacity: 0;
+    translate: 0 -4px;
+  }
+}
+.erro-form[data-saindo] {
+  opacity: 0;
+  translate: 0 -4px;
+  transition-duration: var(--dur-fast);
+  transition-timing-function: ease-in;
 }
 
 /* estoque no celular: cada movimentação em três linhas curtas.

@@ -28,7 +28,8 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     // suppressHydrationWarning: o script abaixo põe data-tema no <html> antes do React chegar
-    <html lang="pt-BR" className={`${geist.variable} ${geistMono.variable} h-full`} suppressHydrationWarning>
+    // data-scroll-behavior: a rolagem suave vale para os atalhos dentro da página; nas trocas de tela o Next desliga
+    <html lang="pt-BR" className={`${geist.variable} ${geistMono.variable} h-full`} data-scroll-behavior="smooth" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: scriptTema }} />
       </head>

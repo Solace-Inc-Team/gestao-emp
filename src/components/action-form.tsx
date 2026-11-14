@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, useTransition, type ReactNode } from "reac
 import { CircleAlert, CircleCheck } from "lucide-react";
 import { progress } from "./nav-progress";
 import { confirmar } from "./confirm-dialog";
+import { useSaida } from "./saida";
 
 export type ActionState = { error?: string; ok?: string } | undefined | void;
 
@@ -61,6 +62,10 @@ export function ActionForm({
   const [error, setError] = useState<string>();
   const [pending, start] = useTransition();
   const errorRef = useRef<HTMLParagraphElement>(null);
+  // o aviso sai esmaecendo: guarda o último texto enquanto a saída toca
+  const aviso = useSaida(!!error);
+  const [ultimoErro, setUltimoErro] = useState(error);
+  if (error && error !== ultimoErro) setUltimoErro(error);
 
   useEffect(() => {
     // em formulário comprido o erro fica fora da tela: rola até ele
@@ -127,14 +132,15 @@ export function ActionForm({
       {/* o fieldset recebe o layout (space-y, grid) para que o espaçamento chegue aos campos */}
       <fieldset disabled={pending} className={`min-w-0 ${className ?? ""}`}>
         {children}
-        {error && (
+        {aviso.montado && (
           <p
             ref={errorRef}
             role="alert"
-            className="col-span-full mt-2 flex basis-full items-start gap-2 rounded-lg bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger"
+            data-saindo={aviso.saindo || undefined}
+            className="erro-form col-span-full mt-2 flex basis-full items-start gap-2 rounded-lg bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger"
           >
             <CircleAlert size={16} strokeWidth={2} className="mt-px shrink-0" aria-hidden="true" />
-            {error}
+            {error ?? ultimoErro}
           </p>
         )}
       </fieldset>

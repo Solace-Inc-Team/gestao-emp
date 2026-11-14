@@ -134,7 +134,7 @@ export function SeletorFilial({ empresa, atual, filiais }: { empresa: string; at
           })}
           <div className="my-1 border-t border-line" />
           <Link
-            href="/configuracoes#filiais"
+            href="/configuracoes/filiais"
             ref={(el) => {
               itens.current[filiais.length] = el;
             }}

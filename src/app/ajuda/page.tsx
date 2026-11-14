@@ -95,18 +95,18 @@ const secoes: Secao[] = [
           <li>Diferença de acerto: em <B>Caixa e acertos</B>, abra o acerto e diga <B>Como foi resolvido</B>.</li>
           <li><B>Estornar pedido</B>, ajuste de estoque e inventário pedem sua senha de novo. O registro nunca é apagado: o estorno cria um lançamento ao contrário.</li>
           <li>Estoque: faça inventário com frequência em <B>Estoque</B>. Só as diferenças viram ajuste, com motivo.</li>
-          <li><B>Produtos e preços</B>, <B>Equipe</B> (incluir pessoas, redefinir senha, desativar quem saiu) e <B>Configurações</B> (limite de desconto, prazo de atraso, chave Pix, pedido pelo site).</li>
+          <li>A engrenagem no alto do menu (<B>Configurações</B>) reúne tudo que se ajusta de vez em quando: <B>Regras da casa</B> (limite de desconto, prazo de atraso), <B>Pagamentos</B> (chave Pix, Mercado Pago), <B>Pedidos pelo site</B>, <B>Filiais</B>, <B>Produtos e preços</B>, <B>Equipe</B> (incluir pessoas, redefinir senha, desativar quem saiu) e <B>Auditoria</B>. Dentro, as abas no alto levam de uma para outra.</li>
           <li><B>Relatórios</B>: vendas por dia, entregador e produto; <B>Fechamento do dia</B> para imprimir; vendas em planilha.</li>
-          <li><B>Auditoria</B>: quem fez o quê e quando, com o antes e depois de preços e ajustes.</li>
+          <li><B>Auditoria</B> (na engrenagem): quem fez o quê e quando, com o antes e depois de preços e ajustes.</li>
           <li>Comodato de antes do sistema: na tela do cliente, <B>Registrar comodato que já existia</B>, com sua senha. Não mexe no estoque; os vasilhames emprestados aparecem em <B>Em comodato</B> no estoque.</li>
           <li>Ative a verificação em duas etapas em <B>Trocar senha</B>: é a sua conta que aprova o caixa.</li>
         </ul>
         <h3>Filiais</h3>
         <ul>
-          <li>Em <B>Configurações</B>, <B>Nova filial</B>. Cada filial tem o próprio estoque, equipe, turnos e despesas; clientes, produtos e preços valem para todas.</li>
+          <li>Na engrenagem, <B>Filiais</B> e <B>Nova filial</B>. Cada filial tem o próprio estoque, equipe, turnos e despesas; clientes, produtos e preços valem para todas.</li>
           <li>Com mais de uma filial, o menu ganha a escolha da filial: tudo que você vê e lança passa a ser dela. A equipe só vê a filial onde trabalha.</li>
-          <li>Em <B>Equipe</B>, cada pessoa tem sua filial; use <B>Mudar de filial</B> para trocar (entregador só depois do acerto).</li>
-          <li>Cada filial ganha o próprio link de pedidos em <B>Configurações</B>. Em <B>Relatórios</B> e <B>Despesas</B>, escolha <B>Todas as filiais</B> para ver a empresa somada.</li>
+          <li>Em <B>Equipe</B> (na engrenagem), cada pessoa tem sua filial; use <B>Mudar de filial</B> para trocar (entregador só depois do acerto).</li>
+          <li>Cada filial ganha o próprio link de pedidos em <B>Pedidos pelo site</B>. Em <B>Relatórios</B> e <B>Despesas</B>, escolha <B>Todas as filiais</B> para ver a empresa somada.</li>
         </ul>
       </>
     ),
@@ -132,7 +132,7 @@ const secoes: Secao[] = [
         <h3>Botijão ou galão danificado</h3>
         <p>Em <B>Estoque</B>, <B>Registrar avaria</B>: ele sai de cheios ou vazios e vai para avariados, com o defeito descrito.</p>
         <h3>Esqueceu a senha</h3>
-        <p>Peça ao dono para redefinir em <B>Equipe</B>. Se for o dono, fale com a Solace.</p>
+        <p>Peça ao dono para redefinir em <B>Equipe</B>, na engrenagem. Se for o dono, fale com a Solace.</p>
       </>
     ),
   },
