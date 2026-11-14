@@ -55,6 +55,9 @@ export function NavLinks({ groups }: { groups: NavGroup[] }) {
     const bordas = () => {
       el.toggleAttribute("data-mais-esq", el.scrollLeft > 4);
       el.toggleAttribute("data-mais-dir", el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+      // no computador, com a janela baixa, o menu rola para baixo: mesma ideia, em cima e embaixo
+      el.toggleAttribute("data-mais-cima", el.scrollTop > 4);
+      el.toggleAttribute("data-mais-baixo", el.scrollTop + el.clientHeight < el.scrollHeight - 4);
     };
     if (el.scrollWidth > el.clientWidth) {
       const atual = el.querySelector<HTMLElement>("[aria-current=page]");
@@ -70,7 +73,7 @@ export function NavLinks({ groups }: { groups: NavGroup[] }) {
   }, [path]);
 
   return (
-    <nav ref={nav} aria-label="Principal" className="nav-rola relative flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-col lg:gap-5 lg:overflow-visible lg:pb-4">
+    <nav ref={nav} aria-label="Principal" className="nav-rola relative flex gap-1 overflow-x-auto px-3 pb-3 lg:min-h-0 lg:flex-1 lg:flex-col lg:gap-5 lg:overflow-x-visible lg:overflow-y-auto lg:pb-4 lg:[scrollbar-width:thin]">
       {groups.map((g, i) => (
         <div key={i} className="flex shrink-0 gap-1 lg:flex-col lg:gap-0.5">
           {g.title && <p className="hidden px-2 pb-1 text-xs font-medium text-muted lg:block">{g.title}</p>}

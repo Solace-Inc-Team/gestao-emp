@@ -1380,6 +1380,20 @@ body[data-confirmando] .deliver-btn {
   }
 }
 
+@media (min-width: 1024px) {
+  .nav-rola {
+    --cima: 0px;
+    --baixo: 0px;
+    mask-image: linear-gradient(to bottom, transparent 0, #000 var(--cima), #000 calc(100% - var(--baixo)), transparent 100%);
+  }
+  .nav-rola[data-mais-cima] {
+    --cima: 24px;
+  }
+  .nav-rola[data-mais-baixo] {
+    --baixo: 32px;
+  }
+}
+
 /* barras da semana no painel: neutras, o dia escolhido em azul; o valor aparece em cima ao passar o mouse */
 .semana-barra > span:first-child {
   background: color-mix(in srgb, var(--muted) 30%, transparent);

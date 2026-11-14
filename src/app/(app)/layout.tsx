@@ -96,7 +96,7 @@ export default async function AppLayout({ children }: LayoutProps<"/">) {
           </p>
         )}
         <NavLinks groups={groups} />
-        <div className="mt-auto hidden items-center gap-2.5 border-t border-line px-4 py-3 lg:flex">
+        <div className="mt-auto hidden shrink-0 items-center gap-2.5 border-t border-line px-4 py-3 lg:flex">
           <span className="grid size-8 shrink-0 place-items-center rounded-full bg-subtle text-xs font-semibold">
             {initials(user.name)}
           </span>
