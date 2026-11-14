@@ -37,7 +37,7 @@ export function CloseShiftForm({ shiftId, expectedCents }: { shiftId: string; ex
         {diff !== null && (
           // a cor acompanha: verde quando bate, amarelo se sobra, vermelho se falta
           <span
-            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold transition-colors duration-300 ${
+            className={`enter inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-semibold transition-colors duration-300 ${
               diff === 0 ? "bg-ok-soft text-ok" : diff < 0 ? "bg-danger-soft text-danger" : "bg-warn-soft text-warn-fg"
             }`}
           >

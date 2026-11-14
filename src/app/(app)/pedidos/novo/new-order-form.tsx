@@ -5,6 +5,7 @@ import { ActionForm } from "@/components/action-form";
 import { createOrderAction } from "@/app/actions";
 import { formatBRL, parseBRL } from "@/lib/money";
 import { LiveNumber } from "@/components/live-number";
+import { Aparece } from "@/components/saida";
 
 type Product = { id: string; name: string; priceCents: number; containerPriceCents: number; returnable: boolean; available: number; reserved: number };
 type Customer = { id: string; name: string; phone: string; address: string; addresses?: { id: string; label: string; address: string }[] };
@@ -221,9 +222,9 @@ export function NewOrderForm({
                         {p.reserved > 0 && ` (${p.reserved} em pedidos aguardando)`}
                       </p>
                       {/* o pedido passa mesmo assim (a carga pode chegar antes da entrega), mas a pessoa fica sabendo */}
-                      {n > p.available && (
+                      <Aparece quando={n > p.available}>
                         <p className="text-sm font-medium text-warn-fg">Acima do estoque livre ({p.available})</p>
-                      )}
+                      </Aparece>
                     </div>
                     <div className="flex items-center gap-1" role="group" aria-label={`Quantidade de ${p.name}`}>
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, -1)} aria-label="Diminuir">−</button>
@@ -232,7 +233,7 @@ export function NewOrderForm({
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, 1)} aria-label="Aumentar">+</button>
                     </div>
                   </div>
-                  {n > 0 && p.returnable && (
+                  <Aparece quando={n > 0 && p.returnable}>
                     <label className="mt-2 flex items-center gap-2 text-sm">
                       <input
                         type="checkbox"
@@ -241,7 +242,7 @@ export function NewOrderForm({
                       />
                       Cliente não tem vasilhame para trocar
                     </label>
-                  )}
+                  </Aparece>
                   {/* sem vazio: vender o casco ou emprestar; a escolha muda o preço na hora */}
                   {p.returnable && (
                     // sempre na página, recolhida: abre e fecha deslizando; fechada, fica fora do teclado e do leitor de tela
@@ -280,8 +281,8 @@ export function NewOrderForm({
             <label className="label" htmlFor="notes">Observações</label>
             <input id="notes" name="notes" maxLength={500} className="input" placeholder="Ex.: deixar na portaria, tocar o interfone 12" />
           </div>
-          {mode === "entrega" && (
-            <>
+          {/* trocar Entrega e Balcão recolhe e abre os campos da entrega no lugar */}
+          <Aparece quando={mode === "entrega"} className="space-y-3">
               <div>
                 <label className="label" htmlFor="origin">Pedido chegou por</label>
                 <select id="origin" name="origin" className="input" defaultValue="whatsapp">
@@ -304,8 +305,7 @@ export function NewOrderForm({
                   ))}
                 </select>
               </div>
-            </>
-          )}
+          </Aparece>
         </section>
       </div>
 
@@ -325,20 +325,18 @@ export function NewOrderForm({
               </button>
             ))}
           </div>
-          {payment === "dinheiro" && (
-            <div className="mt-3">
+          <Aparece quando={payment === "dinheiro"} className="pt-3">
               <label className="label" htmlFor="change">Troco para (opcional)</label>
               <input id="change" name="changeFor" maxLength={12} inputMode="decimal" className="input" placeholder="100,00" />
-            </div>
-          )}
-          {(payment === "pix" || payment === "cartao") && (
-            <div className="mt-3">
+          </Aparece>
+          <Aparece quando={payment === "pix" || payment === "cartao"} className="pt-3">
               <label className="label" htmlFor="cashPart">Parte em dinheiro (opcional)</label>
               <input id="cashPart" name="cashPart" inputMode="decimal" maxLength={12} className="input" placeholder="0,00" />
               <p className="mt-1 text-[13px] text-muted">Se o cliente pagar um pedaço em dinheiro, esse valor entra no acerto do entregador.</p>
-            </div>
-          )}
-          {payment === "fiado" && <p className="mt-3 text-sm text-muted">Fiado exige cliente identificado.</p>}
+          </Aparece>
+          <Aparece quando={payment === "fiado"} className="pt-3">
+            <p className="text-sm text-muted">Fiado exige cliente identificado.</p>
+          </Aparece>
           <details className="mt-3" open={!!discount}>
             <summary className="tap cursor-pointer text-sm text-accent">Dar desconto</summary>
             <div className="mt-2 space-y-2">
@@ -350,12 +348,12 @@ export function NewOrderForm({
                 <label className="label" htmlFor="discountReason">Motivo</label>
                 <input id="discountReason" name="discountReason" maxLength={160} required={discountCents > 0} className="input" placeholder="Ex.: cliente antigo, 10 galões" />
               </div>
-              {parsedDiscount > subtotal && subtotal > 0 && (
+              <Aparece quando={parsedDiscount > subtotal && subtotal > 0}>
                 <p className="text-[13px] font-medium text-danger">O desconto é maior que o valor dos produtos ({formatBRL(subtotal)}).</p>
-              )}
-              {overLimit && (
+              </Aparece>
+              <Aparece quando={overLimit}>
                 <p className="text-[13px] font-medium text-warn-fg">Acima do seu limite de {discountLimitPct}%. Só o dono consegue lançar este desconto.</p>
-              )}
+              </Aparece>
             </div>
           </details>
           <div className="mt-5 border-t border-line pt-4">

@@ -10,6 +10,7 @@ import { LiveNumber } from "@/components/live-number";
 import { CheckDrawn } from "@/components/ui";
 import { validarCampos } from "@/components/action-form";
 import type { PortalResult } from "@/app/actions";
+import { Aparece, useSaida } from "@/components/saida";
 
 type Product = { id: string; name: string; priceCents: number; returnable: boolean; containerPriceCents: number };
 
@@ -43,6 +44,8 @@ export function PortalForm({
   const items = products
     .filter((p) => qty[p.id] > 0)
     .map((p) => ({ productId: p.id, quantity: qty[p.id], returnsEmpty: p.returnable && !noBottle[p.id] }));
+  // a barra do celular sobe com o primeiro produto e desce quando o carrinho esvazia
+  const barra = useSaida(items.length > 0, 200);
   const unidades = items.reduce((s, i) => s + i.quantity, 0);
   const total = products.reduce((s, p) => s + (qty[p.id] ?? 0) * price(p), 0);
   const step = (id: string, d: number) => setQty((q) => ({ ...q, [id]: Math.max(0, Math.min(20, (q[id] ?? 0) + d)) }));
@@ -100,13 +103,13 @@ export function PortalForm({
                       <button type="button" className="btn h-11 w-11 px-0 text-xl" onClick={() => step(p.id, 1)} aria-label="Aumentar">+</button>
                     </div>
                   </div>
-                  {n > 0 && p.returnable && (
+                  <Aparece quando={n > 0 && p.returnable}>
                     <label className="mt-2 flex min-h-11 items-center gap-2 text-sm">
                       <input type="checkbox" checked={!!noBottle[p.id]} onChange={(e) => setNoBottle((b) => ({ ...b, [p.id]: e.target.checked }))} />
                       Não tenho vasilhame vazio para trocar
                       {p.containerPriceCents > 0 && <span className="text-muted">(+{formatBRL(p.containerPriceCents)} cada)</span>}
                     </label>
-                  )}
+                  </Aparece>
                 </li>
               );
             })}
@@ -154,17 +157,17 @@ export function PortalForm({
                 </button>
               ))}
           </div>
-          {payment === "dinheiro" && (
-            <div>
+          <Aparece quando={payment === "dinheiro"}>
               <label className="label" htmlFor="changeFor">Precisa de troco para quanto? (opcional)</label>
               <input id="changeFor" name="changeFor" inputMode="decimal" maxLength={12} className="input" placeholder="100,00" />
-            </div>
-          )}
-          {payment === "pix" && <p className="text-sm text-muted">Depois de enviar, aparece o QR e o código Pix com o valor do pedido.</p>}
+          </Aparece>
+          <Aparece quando={payment === "pix"}>
+            <p className="text-sm text-muted">Depois de enviar, aparece o QR e o código Pix com o valor do pedido.</p>
+          </Aparece>
         </section>
 
         {result?.error && (
-          <p ref={errorRef} role="alert" className="flex items-start gap-2 rounded-lg bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger">
+          <p ref={errorRef} role="alert" className="erro-form flex items-start gap-2 rounded-lg bg-danger-soft px-3 py-2 text-[13px] font-medium text-danger">
             <CircleAlert size={16} strokeWidth={2} className="mt-px shrink-0" aria-hidden="true" />
             {result.error}
           </p>
@@ -179,13 +182,15 @@ export function PortalForm({
           <button className="btn btn-primary mt-4 h-12 w-full text-lg" disabled={!items.length || pending}>
             {pending ? "Enviando…" : "Fazer pedido"}
           </button>
-          {!items.length && <p className="mt-2 text-center text-[13px] text-muted">Escolha ao menos um produto acima.</p>}
+          <Aparece quando={!items.length}>
+            <p className="pt-2 text-center text-[13px] text-muted">Escolha ao menos um produto acima.</p>
+          </Aparece>
         </div>
       </fieldset>
 
       {/* no celular, depois do primeiro produto, o total sobe numa barra fixa embaixo e o botão leva aos dados de entrega */}
-      {items.length > 0 && (
-        <div className="barra-pedido barra-sobe fixed inset-x-0 bottom-0 z-20 flex items-center gap-3 border-t border-line bg-bg/95 px-4 pt-3 backdrop-blur sm:hidden">
+      {barra.montado && (
+        <div data-saindo={barra.saindo || undefined} className="barra-pedido barra-sobe fixed inset-x-0 bottom-0 z-20 flex items-center gap-3 border-t border-line bg-bg/95 px-4 pt-3 backdrop-blur sm:hidden">
           <div className="min-w-0 flex-1">
             <p className="text-[13px] text-muted">
               {unidades} {unidades === 1 ? "item" : "itens"}

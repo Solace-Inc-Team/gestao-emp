@@ -161,8 +161,10 @@ export default async function Painel({ searchParams }: PageProps<"/">) {
                         {fmtTime(o.createdAt)}
                         {o.driverName ? `, ${o.driverName}` : ""}
                       </p>
+                      {/* no celular a situação desce para baixo do nome: a linha cabe sem rolar de lado */}
+                      <span className="mt-1 inline-block sm:hidden"><StatusBadge status={o.status} /></span>
                     </td>
-                    <td><StatusBadge status={o.status} /></td>
+                    <td className="hidden sm:table-cell"><StatusBadge status={o.status} /></td>
                     <td className="text-right"><Money cents={o.totalCents} /></td>
                   </tr>
                 ))}

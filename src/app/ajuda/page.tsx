@@ -156,7 +156,7 @@ export default async function Ajuda() {
     <div className="min-h-screen">
       <header className="border-b border-line">
         <div className="mx-auto flex h-14 max-w-3xl items-center justify-between px-6">
-          <Link href={voltar} aria-label="Voltar ao sistema">
+          <Link href={voltar} aria-label="Voltar ao sistema" className="alvo">
             <Logo />
           </Link>
           <Link href={voltar} className="btn h-9 text-[13px]">Voltar ao sistema</Link>

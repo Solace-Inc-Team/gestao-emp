@@ -61,7 +61,7 @@ export default async function Entregas() {
                 <Card key={o.id} id={o.id}>
                   <li className={`border-b border-line px-4 py-3 last:border-0 ${minutesSince(o.createdAt) < 1 ? "row-new" : ""}`}>
                     <div className="flex flex-wrap items-baseline justify-between gap-x-3">
-                      <Link href={`/pedidos/${o.id}`} className="font-semibold hover:text-accent">
+                      <Link href={`/pedidos/${o.id}`} className="alvo font-semibold hover:text-accent">
                         <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
                         {o.origin === "portal" && <SiteBadge />}
                       </Link>
@@ -108,7 +108,7 @@ export default async function Entregas() {
               return (
                 <div key={d.id} className="border-b border-line last:border-0">
                   {/* com pedidos, o nome é cabeçalho do grupo; livre, é uma linha comum: está pronto para sair */}
-                  <p className={`flex justify-between px-4 text-[13px] font-medium ${mine.length ? "bg-subtle py-2" : "py-3"}`}>
+                  <p className={`flex flex-wrap items-center justify-between gap-x-3 gap-y-1 px-4 text-[13px] font-medium ${mine.length ? "bg-subtle py-2" : "py-3"}`}>
                     <span>{d.name}</span>
                     {mine.length ? (
                       <span className="flex items-center gap-3 text-muted">

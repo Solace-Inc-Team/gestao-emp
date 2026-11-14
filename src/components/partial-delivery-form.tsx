@@ -5,6 +5,7 @@ import { ActionForm } from "./action-form";
 import { partialDeliveryAction } from "@/app/actions";
 import { LiveNumber } from "@/components/live-number";
 import { partialDiscount } from "@/lib/cash";
+import { Aparece } from "./saida";
 
 type Item = { id: string; name: string; quantity: number; unitPriceCents: number };
 export type PartialOrder = { id: string; deliveryFeeCents: number; discountCents: number; changeForCents: number | null };
@@ -49,7 +50,7 @@ export function PartialDeliveryForm({ order, items, forDriver }: { order: Partia
           />
         </div>
       ))}
-      {filled && (
+      <Aparece quando={filled}>
         <p aria-live="polite" className="rounded-md bg-surface px-3 py-2 font-medium">
           Novo total <LiveNumber value={total} cents />
           {change > 0 && (
@@ -58,7 +59,7 @@ export function PartialDeliveryForm({ order, items, forDriver }: { order: Partia
             </span>
           )}
         </p>
-      )}
+      </Aparece>
       <div>
         <label className="label" htmlFor={`pnote-${order.id}`}>Por quê</label>
         <input id={`pnote-${order.id}`} name="note" required minLength={3} maxLength={160} className="input" placeholder="Ex.: cliente só quis 1 galão" />

@@ -27,16 +27,17 @@ export default async function Caixa() {
           {open.length ? (
             <ul>
               {open.map((s) => (
-                <li key={s.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-line px-4 py-4 last:border-0">
-                  <div>
+                // mesma grade em toda linha: nome à esquerda, valor e botão à direita, sem pular de lugar por causa do texto
+                <li key={s.id} className="grid gap-3 border-b border-line px-4 py-4 last:border-0 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
+                  <div className="min-w-0">
                     <p className="text-lg font-semibold">{s.driverName}</p>
                     <p className="text-sm text-muted">
                       Desde {fmtDateTime(s.openedAt)}, {s.orderCount} {s.orderCount === 1 ? "pedido" : "pedidos"}
                       {s.inRoute ? `, ${s.inRoute} em rota` : ""}
                     </p>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
+                  <div className="flex items-center justify-between gap-4 sm:justify-end">
+                    <div className="sm:text-right">
                       <p className="text-sm text-muted">Deve apresentar</p>
                       <Money cents={s.expected} className="text-2xl font-semibold" />
                     </div>

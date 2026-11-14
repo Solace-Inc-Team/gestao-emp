@@ -36,6 +36,7 @@ const fatos = [
 const perguntas = [
   ["Precisa instalar alguma coisa?", "Não. O Depósito abre no navegador do computador e do celular. No celular do entregador dá para pôr um ícone na tela inicial, como um aplicativo."],
   ["Emite nota fiscal?", "Ainda não. O Depósito cuida da operação: pedido, entrega, estoque e caixa. A nota continua no emissor que você já usa."],
+  ["E se o entregador não tiver celular?", "Funciona igual. Ele sai com a folha da rota impressa, com endereço, troco e o QR do Pix de cada pedido, e na volta a loja marca o que foi entregue."],
   ["E se o celular do entregador ficar sem internet?", "Ele confirma a entrega mesmo assim. A confirmação fica guardada no aparelho e é enviada sozinha quando o sinal volta, sem duplicar."],
   ["O cliente consegue pedir sozinho?", "Sim. Cada loja tem um link de pedido. O pedido cai na fila com o selo do site e, se for Pix, o cliente já recebe o QR para pagar."],
   ["Quem trabalha comigo vê tudo?", "Não. São quatro perfis, dono, caixa, atendente e entregador, e cada um vê só o que é seu."],

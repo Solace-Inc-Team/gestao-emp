@@ -388,10 +388,27 @@ details[open] > :not(summary) {
   transition:
     grid-template-rows var(--dur) var(--ease-out),
     opacity var(--dur) var(--ease-out);
+  /* quem chega já aberto (Aparece) também cresce a partir do zero */
+  @starting-style {
+    grid-template-rows: 0fr;
+    opacity: 0;
+  }
 }
 .recolhe > * {
   min-height: 0;
   overflow: hidden;
+}
+
+/* barra do pedido no celular: desce ao esvaziar o carrinho, como subiu */
+/* (a entrada é animação, então a saída também: transição não age sobre o que a animação segura) */
+.barra-pedido[data-saindo] {
+  animation: barra-desce var(--dur) ease-in both;
+}
+@keyframes barra-desce {
+  to {
+    translate: 0 100%;
+    opacity: 0;
+  }
 }
 
 /* saída dos que ficam um instante na tela depois de fechados (useSaida): mais rápida que a entrada */
@@ -421,6 +438,37 @@ details[open] > :not(summary) {
   }
   .filtro-painel[data-saindo] {
     translate: 0 -4px;
+  }
+}
+
+/* botão de copiar: o ícone de copiar sai girando e o ✓ chega no lugar; a palavra troca esmaecendo */
+.copiar-icone {
+  grid-area: 1 / 1;
+  transition:
+    opacity var(--dur) var(--ease-out),
+    scale var(--dur) var(--ease-chegada),
+    rotate var(--dur) var(--ease-chegada);
+}
+.copiar-ok {
+  opacity: 0;
+  scale: 0.5;
+  rotate: -45deg;
+}
+.copiar[data-feito] .copiar-de {
+  opacity: 0;
+  scale: 0.5;
+  rotate: 45deg;
+}
+.copiar[data-feito] .copiar-ok {
+  opacity: 1;
+  scale: 1;
+  rotate: 0deg;
+  color: var(--ok);
+}
+.copiar-texto {
+  transition: opacity var(--dur) var(--ease-out);
+  @starting-style {
+    opacity: 0;
   }
 }
 

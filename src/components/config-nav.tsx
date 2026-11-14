@@ -50,7 +50,7 @@ export function ConfigNav() {
             >
               {c.label}
               {on && (
-                <ViewTransition name="config-aba-ativa" share="morph" default="none">
+                <ViewTransition name="config-aba-ativa" share="move" default="none">
                   <span aria-hidden="true" className="absolute inset-x-2.5 -bottom-px h-0.5 rounded-full bg-fg" />
                 </ViewTransition>
               )}
