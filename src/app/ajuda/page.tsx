@@ -56,6 +56,13 @@ const secoes: Secao[] = [
           <li>Pix: <B>Mostrar QR do Pix para o cliente</B>. O Pix só conta depois que a loja conferir no extrato.</li>
         </ol>
         <p>No topo fica quanto dinheiro você deve ter em mãos agora. É esse valor que o caixa vai contar no acerto.</p>
+        <h3>Entregador sem celular</h3>
+        <p>Ninguém é obrigado a usar o celular pessoal. Em <B>Equipe</B>, marque <B>Trabalha sem celular</B> ao cadastrar: ele não entra no sistema.</p>
+        <ol>
+          <li>Depois de despachar, em <B>Entregas</B>, clique em <B>Folha da rota</B> ao lado do nome dele e imprima. A folha tem endereço, telefone, o que levar, quanto cobrar, o troco e o QR do Pix de cada pedido.</li>
+          <li>Na rua, ele marca à caneta: entregue, só uma parte ou não entregue.</li>
+          <li>Na volta, lance cada pedido em <B>Entregas</B> ou no acerto dele: <B>Entregue</B>, ou <B>Parcial ou não entregue</B>. Depois feche o acerto normalmente.</li>
+        </ol>
       </>
     ),
   },

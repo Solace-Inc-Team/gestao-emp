@@ -1018,3 +1018,24 @@ test("Mercado Pago: conecta com o token da loja, cobra o Pix do pedido, confirma
   assert.equal(semMp.enc, null);
   assert.equal((await pix.pixDoPedido(A.t.id, o2.id))?.automatico, false);
 });
+
+test("entregador sem celular: entra na equipe sem e-mail nem senha, e a loja lança a entrega dele", async () => {
+  const { db } = m.db;
+  const { users } = m.schema;
+  const { eq } = await import("drizzle-orm");
+  await assert.rejects(m.registry.createUser(A.ctx, { name: "Sem Email", email: "", password: "", role: "entregador" }), /E-mail inválido/);
+  await assert.rejects(m.registry.createUser(A.ctx, { name: "Atendente Sem", semAcesso: true, role: "atendente" }), /Só entregador/);
+  const u = await m.registry.createUser(A.ctx, { name: "Zé Sem Celular", semAcesso: true, role: "entregador" });
+  const [z] = await db.select().from(users).where(eq(users.id, u.id));
+  assert.ok(m.registry.semAcesso(z.email));
+  assert.equal(z.branchId, A.branch.id);
+  // turno, saída e entrega lançados pela atendente, sem o entregador entrar no sistema
+  const atendente = { ...A.ctx, role: "atendente" as const };
+  await m.shifts.openShift(atendente, u.id, 2000);
+  const o = await m.orders.createOrder(atendente, {
+    mode: "entrega", customerId: A.customer.id, items: [{ productId: A.product.id, quantity: 1, returnsEmpty: true }],
+    paymentMethod: "dinheiro", deliveryFeeCents: 0, changeForCents: null, notes: "", driverId: u.id,
+  });
+  await m.orders.deliverOrder(atendente, o.id);
+  assert.equal((await m.q.getOrder(A.t.id, o.id))!.status, "entregue");
+});

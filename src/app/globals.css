@@ -852,6 +852,13 @@ body[data-confirmando] .deliver-btn {
   .no-print {
     display: none !important;
   }
+  /* sem o menu, a coluna dele não pode sobrar: a folha ocupa a largura toda do papel */
+  .app-shell {
+    display: block !important;
+  }
+  .break-inside-avoid {
+    break-inside: avoid;
+  }
   body {
     background: #fff;
     color: #000;

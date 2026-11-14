@@ -478,7 +478,14 @@ export async function createUserAction(fd: FormData) {
     async () =>
       createUser(
         user,
-        userSchema.parse({ name: str(fd, "name"), email: str(fd, "email"), password: str(fd, "password"), role: str(fd, "role"), branchId: optId(fd, "branchId") }),
+        userSchema.parse({
+          name: str(fd, "name"),
+          email: str(fd, "email"),
+          password: str(fd, "password"),
+          role: str(fd, "role"),
+          semAcesso: str(fd, "semAcesso") === "true",
+          branchId: optId(fd, "branchId"),
+        }),
       ),
     ["/"],
     "Usuário criado.",

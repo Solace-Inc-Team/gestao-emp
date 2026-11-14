@@ -236,9 +236,9 @@ export default async function Pedido({ params }: PageProps<"/pedidos/[id]">) {
           )}
 
           {o.status === "em_rota" && (
-            <section className="panel p-4">
-              <h2 className="h2 mb-1">Confirmar entrega</h2>
-              <p className="mb-3 text-sm text-muted">Use quando o entregador avisar por telefone. Ele também pode confirmar pelo celular.</p>
+            <section id="resultado" className="panel scroll-mt-6 p-4">
+              <h2 className="h2 mb-1">Resultado da entrega</h2>
+              <p className="mb-3 text-sm text-muted">Lance aqui o que o entregador contou ao voltar ou por telefone. Quem usa o celular do sistema confirma por lá.</p>
               <ActionForm action={deliverAction}>
                 <input type="hidden" name="orderId" value={o.id} />
                 <button className="btn btn-primary w-full">Confirmar entrega</button>

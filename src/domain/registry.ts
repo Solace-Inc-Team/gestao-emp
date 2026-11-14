@@ -7,6 +7,7 @@ import { hashPassword } from "@/lib/password";
 import { audit } from "./stock";
 import { filialAtiva } from "./filiais";
 import { fiadoBalance } from "./receivables";
+import { randomUUID } from "node:crypto";
 
 export const customerSchema = z.object({
   name: z.string().trim().min(2, "Nome muito curto.").max(120, "O nome pode ter até 120 letras."),
@@ -158,27 +159,45 @@ export async function saveProduct(ctx: Ctx, raw: z.input<typeof productSchema>, 
   });
 }
 
-export const userSchema = z.object({
-  name: z.string().trim().min(2, "Nome muito curto.").max(80, "O nome pode ter até 80 letras."),
-  email: z.email("E-mail inválido.").transform((e) => e.toLowerCase()),
-  password: z.string().min(8, "Senha precisa de ao menos 8 caracteres."),
-  role: z.enum(["dono", "atendente", "caixa", "entregador"], { message: "Escolha a função." }),
-  // filial de quem não é dono; sem ela, a filial atual
-  branchId: z.uuid().nullable().default(null),
-});
+// endereço de quem não entra no sistema (entregador sem celular): não recebe e-mail e não tem senha conhecida
+export const SEM_ACESSO = "@sem-acesso.invalid";
+export const semAcesso = (email: string) => email.endsWith(SEM_ACESSO);
+
+export const userSchema = z
+  .object({
+    name: z.string().trim().min(2, "Nome muito curto.").max(80, "O nome pode ter até 80 letras."),
+    // entregador sem celular: sem e-mail e sem senha (a loja lança as entregas dele)
+    semAcesso: z.boolean().default(false),
+    email: z.string().trim().toLowerCase().default(""),
+    password: z.string().default(""),
+    role: z.enum(["dono", "atendente", "caixa", "entregador"], { message: "Escolha a função." }),
+    // filial de quem não é dono; sem ela, a filial atual
+    branchId: z.uuid().nullable().default(null),
+  })
+  .superRefine((u, c) => {
+    if (u.semAcesso) {
+      if (u.role !== "entregador") c.addIssue({ code: "custom", message: "Só entregador pode trabalhar sem acesso ao sistema." });
+      return;
+    }
+    if (!z.email().safeParse(u.email).success) c.addIssue({ code: "custom", message: "E-mail inválido." });
+    if (u.password.length < 8) c.addIssue({ code: "custom", message: "Senha precisa de ao menos 8 caracteres." });
+  });
 
 export async function createUser(ctx: Ctx, input: z.input<typeof userSchema>) {
   assertRole(ctx, "dono");
-  const passwordHash = await hashPassword(input.password);
+  const u0 = userSchema.parse(input);
+  // sem acesso: e-mail que não existe e senha que ninguém conhece; para dar acesso depois, cadastre de novo
+  const email = u0.semAcesso ? `entregador.${randomUUID().slice(0, 8)}${SEM_ACESSO}` : u0.email;
+  const passwordHash = await hashPassword(u0.semAcesso ? randomUUID() + randomUUID() : u0.password);
   try {
     return await tenantTransaction(ctx, async (tx) => {
       // o dono vê todas as filiais; o resto da equipe trabalha numa só
-      const branchId = input.role === "dono" ? null : (await filialAtiva(tx, ctx, input.branchId ?? ctx.branchId)).id;
+      const branchId = u0.role === "dono" ? null : (await filialAtiva(tx, ctx, u0.branchId ?? ctx.branchId)).id;
       const [u] = await tx
         .insert(users)
-        .values({ tenantId: ctx.tenantId, name: input.name, email: input.email, role: input.role, passwordHash, branchId })
+        .values({ tenantId: ctx.tenantId, name: u0.name, email, role: u0.role, passwordHash, branchId })
         .returning({ id: users.id });
-      await audit(tx, ctx, "usuario.criar", "user", u.id, { email: input.email, role: input.role });
+      await audit(tx, ctx, "usuario.criar", "user", u.id, { email: u0.semAcesso ? "sem acesso (sem celular)" : email, role: u0.role });
       return u;
     });
   } catch (e) {

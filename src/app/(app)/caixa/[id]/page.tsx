@@ -12,6 +12,8 @@ import { resolutions } from "@/domain/shifts";
 import { formatBRL } from "@/lib/money";
 import { DivisaoPagamento } from "@/components/divisao-pagamento";
 import { CloseShiftForm } from "./close-form";
+import { ResultadoRua } from "@/components/resultado-rua";
+import { Fragment } from "react";
 
 export const metadata = { title: "Acerto" };
 
@@ -146,14 +148,24 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
           <table className="table">
             <tbody>
               {s.orders.map((o) => (
-                <tr key={o.id}>
-                  <td className="num text-muted"><Link href={`/pedidos/${o.id}`} className="hover:text-accent">#{o.number}</Link></td>
-                  <td>{o.customerName ?? "Balcão"}</td>
-                  {/* no celular a forma de pagamento sai para o total caber sem rolar */}
-                  <td className="hidden sm:table-cell">{paymentLabel[o.paymentMethod]}</td>
-                  <td><StatusBadge status={o.status} /></td>
-                  <td className="text-right"><Money cents={o.totalCents} className={o.status === "cancelado" ? "line-through text-muted" : ""} /></td>
-                </tr>
+                <Fragment key={o.id}>
+                  <tr>
+                    <td className="num text-muted"><Link href={`/pedidos/${o.id}`} className="hover:text-accent">#{o.number}</Link></td>
+                    <td>{o.customerName ?? "Balcão"}</td>
+                    {/* no celular a forma de pagamento sai para o total caber sem rolar */}
+                    <td className="hidden sm:table-cell">{paymentLabel[o.paymentMethod]}</td>
+                    <td><StatusBadge status={o.status} /></td>
+                    <td className="text-right"><Money cents={o.totalCents} className={o.status === "cancelado" ? "line-through text-muted" : ""} /></td>
+                  </tr>
+                  {/* ainda na rua: quando o entregador volta sem celular, o caixa lança o resultado aqui antes de fechar */}
+                  {o.status === "em_rota" && canSettle && (
+                    <tr className="bg-subtle/40">
+                      <td colSpan={5} className="pt-0">
+                        <ResultadoRua id={o.id} numero={o.number} totalCents={o.totalCents} pagamento={paymentLabel[o.paymentMethod]} />
+                      </td>
+                    </tr>
+                  )}
+                </Fragment>
               ))}
             </tbody>
           </table>
@@ -249,7 +261,7 @@ export default async function Acerto({ params }: PageProps<"/caixa/[id]">) {
                 <p className="text-muted">O acerto é feito pelo caixa ou pelo dono, que conferem o dinheiro do entregador.</p>
               ) : inRoute > 0 ? (
                 <p className="rounded-md bg-warn-soft p-3 text-warn-fg">
-                  {inRoute} {inRoute === 1 ? "pedido ainda está" : "pedidos ainda estão"} em rota. Confirme a entrega ou cancele antes de fechar.
+                  {inRoute} {inRoute === 1 ? "pedido ainda está" : "pedidos ainda estão"} em rota. Lance o resultado em “Pedidos do turno” (Entregue, ou parcial e não entregue) antes de fechar.
                 </p>
               ) : (
                 <CloseShiftForm shiftId={s.id} expectedCents={s.expected} />

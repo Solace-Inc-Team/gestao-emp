@@ -5,6 +5,8 @@ import { createUserAction, mudarDeFilialAction, resetUserPasswordAction, toggleU
 import { PopoverForm } from "@/components/popover-form";
 import { PageHeader, roleLabel } from "@/components/ui";
 import { ConfigNav } from "@/components/config-nav";
+import { AcessoCampos } from "./acesso-campos";
+import { semAcesso } from "@/domain/registry";
 
 export const metadata = { title: "Equipe" };
 
@@ -32,7 +34,7 @@ export default async function Equipe() {
                       {u.name}
                       {!u.active && <span className="ml-2 rounded bg-subtle px-1.5 py-0.5 text-xs font-medium text-muted">desativado</span>}
                     </p>
-                    <p className="text-sm text-muted">{u.email}</p>
+                    <p className="text-sm text-muted">{semAcesso(u.email) ? "Sem celular: não entra no sistema" : u.email}</p>
                   </td>
                   <td>
                     {roleLabel[u.role]}
@@ -50,11 +52,13 @@ export default async function Equipe() {
                             </select>
                           </PopoverForm>
                         )}
+                        {!semAcesso(u.email) && (
                         <PopoverForm label="Redefinir senha" action={resetUserPasswordAction} submit="Salvar senha nova">
                           <input type="hidden" name="userId" value={u.id} />
                           <label className="label mb-0" htmlFor={`p-${u.id}`}>Senha nova</label>
                           <input id={`p-${u.id}`} name="password" type="text" minLength={8} required autoComplete="off" className="input" />
                         </PopoverForm>
+                        )}
                         <ActionForm action={toggleUserAction}>
                           <input type="hidden" name="userId" value={u.id} />
                           <input type="hidden" name="active" value={String(!u.active)} />
@@ -70,29 +74,13 @@ export default async function Equipe() {
         </section>
         <section className="panel p-4">
           <h2 className="h2 mb-1">Adicionar pessoa</h2>
-          <p className="mb-3 text-sm text-muted">Entregadores veem só os próprios pedidos no celular. Atendentes não alteram preços nem estoque por ajuste.</p>
+          <p className="mb-3 text-sm text-muted">Entregadores veem só os próprios pedidos no celular, ou trabalham sem celular pela folha da rota. Atendentes não alteram preços nem estoque por ajuste.</p>
           <ActionForm action={createUserAction} className="space-y-3" reset>
             <div>
               <label className="label" htmlFor="u-name">Nome</label>
               <input id="u-name" name="name" required className="input" />
             </div>
-            <div>
-              <label className="label" htmlFor="u-email">E-mail de acesso</label>
-              <input id="u-email" name="email" type="email" required className="input" />
-            </div>
-            <div>
-              <label className="label" htmlFor="u-pass">Senha inicial</label>
-              <input id="u-pass" name="password" type="password" minLength={8} required autoComplete="new-password" className="input" />
-            </div>
-            <div>
-              <label className="label" htmlFor="u-role">Perfil</label>
-              <select id="u-role" name="role" className="input" defaultValue="entregador">
-                <option value="entregador">Entregador</option>
-                <option value="atendente">Atendente</option>
-                <option value="caixa">Caixa (faz os acertos)</option>
-                <option value="dono">Dono</option>
-              </select>
-            </div>
+            <AcessoCampos />
             {varias && (
               <div>
                 <label className="label" htmlFor="u-filial">Filial</label>

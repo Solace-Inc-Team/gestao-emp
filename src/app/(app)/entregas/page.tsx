@@ -6,6 +6,8 @@ import { getSettings, listDrivers, listOrders, listShifts } from "@/domain/queri
 import { ActionForm } from "@/components/action-form";
 import { dispatchAction } from "@/app/actions";
 import { Empty, Money, PageHeader, SiteBadge, paymentLabel } from "@/components/ui";
+import { ResultadoRua } from "@/components/resultado-rua";
+import { Printer } from "lucide-react";
 
 export const metadata = { title: "Entregas" };
 
@@ -109,7 +111,14 @@ export default async function Entregas() {
                   <p className={`flex justify-between px-4 text-[13px] font-medium ${mine.length ? "bg-subtle py-2" : "py-3"}`}>
                     <span>{d.name}</span>
                     {mine.length ? (
-                      <span className="text-muted">{mine.length} em rota</span>
+                      <span className="flex items-center gap-3 text-muted">
+                        {mine.length} em rota
+                        {/* para quem sai sem celular: a folha com tudo que ele precisa na rua */}
+                        <Link href={`/entregas/rota/${d.id}`} className="tap flex items-center gap-1 font-normal hover:text-fg">
+                          <Printer size={13} strokeWidth={1.75} aria-hidden="true" />
+                          Folha da rota
+                        </Link>
+                      </span>
                     ) : (
                       <span className="flex items-center gap-1.5 text-ok">
                         <span className="size-1.5 rounded-full bg-ok" aria-hidden="true" />
@@ -119,14 +128,20 @@ export default async function Entregas() {
                   </p>
                   {mine.map((o) => (
                     <Card key={o.id} id={o.id}>
-                      <div className={`flex flex-wrap items-baseline justify-between gap-x-3 px-4 py-2.5 ${minutesSince(o.dispatchedAt) < 1 ? "row-new" : ""}`}>
-                        <Link href={`/pedidos/${o.id}`} className="min-w-0 hover:text-accent">
-                          <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
-                          <span className="block text-sm text-muted">{o.customerAddress}</span>
-                        </Link>
-                        <span className={`text-[13px] ${late(o) ? "font-semibold text-danger" : "text-muted"}`}>
-                          saiu há {waited(minutesSince(o.dispatchedAt))}
-                        </span>
+                      <div className={`border-b border-line/60 px-4 py-2.5 last:border-0 ${minutesSince(o.dispatchedAt) < 1 ? "row-new" : ""}`}>
+                        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                          <Link href={`/pedidos/${o.id}`} className="min-w-0 hover:text-accent">
+                            <span className="num text-muted">#{o.number}</span> {o.customerName ?? "Cliente"}
+                            <span className="block text-sm text-muted">{o.customerAddress}</span>
+                          </Link>
+                          <span className={`text-[13px] ${late(o) ? "font-semibold text-danger" : "text-muted"}`}>
+                            saiu há {waited(minutesSince(o.dispatchedAt))}
+                          </span>
+                        </div>
+                        {/* o entregador voltou ou ligou: a loja lança o que aconteceu */}
+                        <div className="mt-2">
+                          <ResultadoRua id={o.id} numero={o.number} totalCents={o.totalCents} pagamento={paymentLabel[o.paymentMethod]} />
+                        </div>
                       </div>
                     </Card>
                   ))}
